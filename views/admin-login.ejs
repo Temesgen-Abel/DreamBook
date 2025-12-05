@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('includes/head') %>
+<body>
+ <%- include('includes/header') %>
+
+<main>
+    <form action="/admin-login" method="POST">
+        <% if (errors && errors.length) { %>
+            <% errors.forEach(function(error) { %>
+                <p class="notice"><%= error %></p>
+            <% }) %>
+        <% } %>
+          <fieldset>
+            <legend>Login</legend>
+            <label for="username"><small>Username</small></label>
+            <input type="text" id="username" name="username" autocomplete="off">
+            <label for="password"><small>Password</small></label>
+            <input type="password" id="password" name="password" autocomplete="off">
+            <br>
+            <button type="submit">Login</button>
+
+            </fieldset>
+        </fieldset>
+    </form>
+</main>
+
+</body>
+
+<%- include('includes/footer') %>
+</html>

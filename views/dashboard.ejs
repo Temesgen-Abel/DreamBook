@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('includes/head') %>
+
+<body>
+<%- include('includes/header') %>
+
+<div class="wrapper page-wrapper dashboard-page">
+  <h2>Publicly Posted Dreams</h2>
+
+  <div class="posts-list">
+    <% if (posts.length) { %>
+      <% posts.forEach(post => { %>
+        <div class="post-card">
+          <h4><%= post.username %></h4>
+          <p><%- post.body %></p>
+          <div class="reactions">
+            👍 <%= countReactions.get(post.id)?.likes || 0 %>
+            👎 <%= countReactions.get(post.id)?.dislikes || 0 %>
+          </div>
+          <small>Created: <%= new Date(post.createdDate).toLocaleString() %></small>
+          <a href="/post/<%= post.id %>" class="btn">View</a>
+          <% if (user && Number(post.authorid) === Number(user.id)) { %>
+            <form action="/delete-post/<%= post.id %>" method="POST" style="display:inline;">
+              <button type="submit" class="btn danger">Delete</button>
+            </form>
+          <% } %>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <p>No posts yet.</p>
+    <% } %>
+  </div>
+
+  <nav class="pagination">
+    <% if (currentPage > 1) { %>
+      <a href="/dashboard?page=<%= currentPage - 1 %>">Previous</a>
+    <% } %>
+    <% for (let i = 1; i <= totalPages; i++) { %>
+      <% if (i === currentPage) { %>
+        <strong><%= i %></strong>
+      <% } else { %>
+        <a href="/dashboard?page=<%= i %>"><%= i %></a>
+      <% } %>
+    <% } %>
+    <% if (currentPage < totalPages) { %>
+      <a href="/dashboard?page=<%= currentPage + 1 %>">Next</a>
+    <% } %>
+  </nav>
+</div>
+
+<%- include('includes/footer') %>
+</body>
+</html>

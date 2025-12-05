@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('includes/head') %>
+
+<body>
+<%- include('includes/header') %>
+
+<div class="wrapper page-wrapper">
+  <form action="/create-post" method="POST" class="post-form">
+    <% if (errors && errors.length) { %>
+      <% errors.forEach(err => { %>
+        <p class="notice"><%= err %></p>
+      <% }) %>
+    <% } %>
+
+    <fieldset>
+      <legend>Post a New Dream</legend>
+      <label for="body">Describe your dream</label>
+      <textarea name="body" id="body" required><%= body || '' %></textarea>
+      <button type="submit" class="btn">Post Dream</button>
+    </fieldset>
+  </form>
+</div>
+
+<%- include('includes/footer') %>
+</body>
+</html>

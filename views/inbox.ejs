@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('includes/head') %>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+<%- include('includes/header') %>
+
+<div class="chat-layout">
+
+    <!-- SIDEBAR (Users + Online users) -->
+    <div class="sidebar">
+        <h2>Inbox</h2>
+
+        <h3 style="padding:10px;">Online Users</h3>
+        <ul id="online-users-list" class="user-list"></ul>
+
+        <h3 style="padding:10px;">All Users</h3>
+        <% (users || []).forEach(u => { %>
+            <div class="user-item">
+                <a href="/chat/<%= u.id %>"><%= u.username %></a>
+            </div>
+        <% }) %>
+    </div>
+
+    <!-- MAIN CHAT AREA -->
+    <div class="chat-area">
+
+        <!-- Conversation List Preview -->
+        <div class="messages">
+            <h2 style="margin-bottom: 15px;">Conversations</h2>
+
+            <ul id="inbox-list" class="conversation-list">
+                <% (conversations || []).forEach(c => { %>
+                    <li class="bubble them">
+                        <a href="/chat/<%= c.id %>">
+                            <strong><%= c.username %></strong><br>
+                            <%= c.lastMessage || "No messages yet" %>
+                        </a>
+                    </li>
+                <% }) %>
+            </ul>
+
+            <h2 style="margin-top: 25px;">Notifications</h2>
+            <div id="notifications-wrapper">
+                <a href="/notifications">
+                    Notifications <span id="notif-badge"><%= unreadCount || 0 %></span>
+                </a>
+                <ul id="notifications-list"></ul>
+            </div>
+        </div>
+
+        <!-- Send message -->
+        <form class="send-box" action="/inbox" method="POST">
+            <select name="receiverId" required>
+                <option value="">Select a user</option>
+                <% (users || []).forEach(u => { %>
+                    <option value="<%= u.id %>"><%= u.username %></option>
+                <% }) %>
+            </select>
+
+            <textarea name="message" rows="2" placeholder="Type a message..." required></textarea>
+            <button type="submit">Send</button>
+        </form>
+
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function () {
+    const currentUserId = <%= JSON.stringify(user && user.id || null) %>;
+    const allUsers      = <%- JSON.stringify(users || []) %>;
+
+    const socket = io();
+
+    socket.on("connect", () => {
+        if (currentUserId) socket.emit("join_room", currentUserId);
+    });
+
+    /* ===== ONLINE USERS RENDER ===== */
+    function renderOnlineUsers(arr) {
+        const ul = document.getElementById("online-users-list");
+        ul.innerHTML = "";
+
+        (arr || []).forEach(uid => {
+            const user = allUsers.find(u => String(u.id) === String(uid));
+            if (!user) return;
+            ul.innerHTML += `
+                <li class="user-item">
+                    <a href="/chat/${user.id}">
+                        <span class="online-dot"></span> ${user.username}
+                    </a>
+                </li>`;
+        });
+    }
+
+    socket.on("online_users", list => renderOnlineUsers(list));
+
+    /* ===== NOTIFICATIONS ===== */
+    function incBadge(by = 1) {
+        const badge = document.getElementById("notif-badge");
+        badge.textContent = Number(badge.textContent) + by;
+    }
+
+    function prependNotification(data) {
+        const ul = document.getElementById("notifications-list");
+        ul.innerHTML = `
+            <li class="bubble them">
+                <strong>${data.fromName}</strong> — ${data.preview}
+            </li>
+        ` + ul.innerHTML;
+    }
+
+    socket.on("notification", data => {
+        incBadge(1);
+        prependNotification(data);
+    });
+
+})();
+</script>
+
+</body>
+</html>

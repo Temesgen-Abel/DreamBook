@@ -1,0 +1,58 @@
+/* RESET */
+*{margin:0;padding:0;box-sizing:border-box;}
+body {font-family: "Inter", sans-serif; background:#f6f8fb; color:#1f2d3d; line-height:1.6;}
+a {text-decoration:none; color:#007bff;}
+button {cursor:pointer;}
+
+/* WRAPPER */
+.wrapper{max-width:1000px;margin:0 auto;padding:20px;}
+
+/* HEADER */
+nav {display:flex; justify-content:space-between; align-items:center; background:#292b29; padding:12px 20px;}
+nav a {color:#fff;margin:0 10px;}
+nav .DreamBook-logo {width:40px;}
+.dropdown {position:relative;}
+.dropdown .dropbtn {background:#292b29;color:#fff;border:none;padding:6px 12px;border-radius:6px;}
+.dropdown-content {display:none; position:absolute; right:0; background:#fff; min-width:150px; border-radius:6px; overflow:hidden;}
+.dropdown:hover .dropdown-content {display:block;}
+.dropdown-content a {color:#333; display:block; padding:8px;}
+
+/* BUTTONS */
+.btn {padding:6px 12px; background:#6ea8fe; color:#fff; border:none; border-radius:6px; margin:4px;}
+.btn.danger {background:#ff6b6b;}
+
+/* POST CARD */
+.post-card, .comment {background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:15px;}
+.post-card h1,h4 {margin-bottom:8px;}
+.post-card .post-body {margin-bottom:12px;}
+.reactions {font-size:0.9rem; color:#555; margin-top:6px;}
+
+/* DASHBOARD POSTS */
+.posts-list {display:grid; grid-template-columns:1fr; gap:15px;}
+.pagination {margin:20px 0;text-align:center;}
+.pagination a, .pagination strong {margin:0 5px;}
+
+/* SINGLE POST */
+.single-post-page textarea {width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;}
+
+/* COMMENT FORM */
+.comment-form textarea {width:100%; padding:6px; margin-bottom:6px; border-radius:6px; border:1px solid #ccc;}
+.comment-form button {margin-right:6px;}
+
+/* ADMIN CHAT LAYOUT */
+.chat-layout {display:grid; grid-template-columns:280px 1fr; gap:10px; height:80vh;}
+.sidebar {background:#fff; border-right:1px solid #ddd; overflow-y:auto;}
+.sidebar h2 {background:#075E54; color:#fff; padding:10px;}
+.user-item {padding:10px; border-bottom:1px solid #eee;}
+.user-item.active {background:#f0f0f0;}
+.chat-area {display:flex; flex-direction:column; background:#ece5dd; overflow:hidden;}
+.messages {flex:1; padding:10px; overflow-y:auto;}
+.bubble {padding:8px 12px; border-radius:12px; margin-bottom:6px; max-width:70%;}
+.me {background:#d9fdd3; align-self:flex-end; border-bottom-right-radius:0;}
+.them {background:#fff; border-bottom-left-radius:0;}
+.send-box {display:flex; padding:10px; background:#fff; border-top:1px solid #ccc;}
+.send-box textarea {flex:1; border-radius:8px; padding:6px;}
+.send-box button {padding:6px 12px; background:#25d366; color:#fff; border:none; border-radius:8px; margin-left:6px;}
+
+/* RESPONSIVE */
+@media(max-width:768px){.chat-layout{grid-template-columns:1fr; height:auto;}.send-box{flex-direction:column;}.send-box button{margin-left:0;margin-top:6px;}}

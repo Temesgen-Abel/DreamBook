@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('includes/head') %>
+<body>
+<%- include('includes/header') %>
+
+<h3>Welcome to DreamBook</h3>
+
+<main>
+    <% if (error) { %>
+        <p style="color:red;">
+            <%= error %> 
+            You can reset your password 
+            <a href="/password-reset">here</a>.
+        </p>
+    <% } %>
+
+    <form action="/login" method="POST">
+        <% if (errors && errors.length) { %>
+            <% errors.forEach(function(error) { %>
+                <p class="notice"><%= error %></p>
+            <% }) %>
+        <% } %>
+
+        <fieldset>
+            <legend>Login</legend>
+
+            <label for="username"><small>Username</small></label>
+            <input type="text" id="username" name="username" autocomplete="off" required>
+
+            <label for="password"><small>Password</small></label>
+            <input type="password" id="password" name="password" autocomplete="off" required>
+            <br>
+
+            <button type="submit">Login</button>
+
+            <p>Don't have an account? <a href="/register">Sign up here</a></p>
+
+            <p>Admin? <a href="/admin-login">Login here</a></p>
+        </fieldset>
+    </form>
+</main>
+
+</body>
+<%- include('includes/footer') %>
+</html>
