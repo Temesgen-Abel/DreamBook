@@ -6,29 +6,25 @@ const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const cookieParser = require("cookie-parser");
 const express = require("express");
-const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
+const Database = require("better-sqlite3");
+const fs = require("fs");
 
-// ensure a JWT secret is available (use .env in production; fallback only for dev)
-const JWT_SECRET = process.env.JWTSECRET || (() => {
-  console.warn("WARNING: JWTSECRET not set — generating a temporary development secret. Set JWTSECRET in .env for production.");
-  return crypto.randomBytes(32).toString("hex");
-})();
-
-const dbFile = path.join(__dirname, "data", "user.db");
+// choose DB file from env (set this in Render to point at your mounted persistent disk, e.g. /data/user.db)
+const dbFile = process.env.DB_FILE || path.join(__dirname, "data", "user.db");
 const dbDir = path.dirname(dbFile);
-// create data dir if missing
+// create data dir if missing (works both locally and on Render disk mount)
 if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 
 let db;
 try {
-  // open SQLite DB (better-sqlite3)
-  db = require("better-sqlite3")(dbFile);
+  db = new Database(dbFile, { verbose: process.env.NODE_ENV !== "production" ? console.log : null });
+  // recommended safe pragmas
+  db.pragma("journal_mode = WAL");
+  db.pragma("synchronous = NORMAL");
 } catch (err) {
   console.error("Failed to open SQLite database:", err && err.message ? err.message : err);
-  console.error("Hints: ensure the 'data' folder exists and permissions are correct.");
-  console.error("If this is a native module build error, run: npm rebuild better-sqlite3 --build-from-source");
+  console.error("Ensure DB_FILE is correct and the process has write permission to the directory.");
   process.exit(1);
 }
 
