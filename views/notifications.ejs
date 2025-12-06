@@ -58,18 +58,51 @@
     <button class="mark-read-btn">Mark all as read</button>
   </form>
 
-  <% if (notifications.length === 0) { %>
+  <% if (!notifications || notifications.length === 0) { %>
     <p>No notifications yet.</p>
   <% } %>
 
   <% notifications.forEach(n => { %>
     <div class="notif-card <%= n.is_read ? '' : 'unread' %>">
       <strong><%= n.sendername %></strong> sent you a message:
-      <p><%= n.message.substring(0, 80) %>...</p>
+      <p><%= n.message.length > 80 ? n.message.substring(0, 80) + '...' : n.message %></p>
       <small><%= n.createdAt %></small>
     </div>
   <% }) %>
 </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function () {
+    const socket = io();
+
+    /* ===== NOTIFICATIONS UPDATE ===== */
+    function incBadge(by = 1) {
+        const badge = document.getElementById("notif-badge");
+        if (!badge) return;
+        badge.textContent = Number(badge.textContent) + by;
+    }
+
+    function prependNotification(data) {
+        const container = document.querySelector(".notif-container");
+        if (!container) return;
+
+        const card = document.createElement("div");
+        card.classList.add("notif-card", "unread");
+        card.innerHTML = `
+            <strong>${data.fromName}</strong> sent you a message:
+            <p>${data.preview}</p>
+            <small>${new Date().toLocaleString()}</small>
+        `;
+        container.insertBefore(card, container.children[2]); // insert below "Notifications" heading & button
+        incBadge(1);
+    }
+
+    socket.on("notification", data => {
+        prependNotification(data);
+    });
+})();
+</script>
 
 <%- include("includes/footer") %>
 

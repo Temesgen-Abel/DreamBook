@@ -3,6 +3,7 @@
 <head>
     <%- include('includes/head') %>
     <link rel="stylesheet" href="/style.css">
+
 </head>
 
 <body>
@@ -14,15 +15,8 @@
     <div class="sidebar">
         <h2>Inbox</h2>
 
-        <h3 style="padding:10px;">Online Users</h3>
+        <h3 style="padding:10px;">Users</h3>
         <ul id="online-users-list" class="user-list"></ul>
-
-        <h3 style="padding:10px;">All Users</h3>
-        <% (users || []).forEach(u => { %>
-            <div class="user-item">
-                <a href="/chat/<%= u.id %>"><%= u.username %></a>
-            </div>
-        <% }) %>
     </div>
 
     <!-- MAIN CHAT AREA -->
@@ -76,51 +70,47 @@
 
     const socket = io();
 
+    const onlineUsers = new Set();
+
     socket.on("connect", () => {
         if (currentUserId) socket.emit("join_room", currentUserId);
     });
 
     /* ===== ONLINE USERS RENDER ===== */
-    function renderOnlineUsers(arr) {
+    function renderOnlineUsers(list) {
         const ul = document.getElementById("online-users-list");
         ul.innerHTML = "";
 
-        (arr || []).forEach(uid => {
-            const user = allUsers.find(u => String(u.id) === String(uid));
+        (list || []).forEach(u => {
+            const user = allUsers.find(x => x.id === u.id);
             if (!user) return;
+
+            const isOnline = onlineUsers.has(user.id);
+            const lastSeenText = isOnline 
+                ? "Online" 
+                : `Last seen: ${new Date(u.lastSeen).toLocaleString()}`;
+
             ul.innerHTML += `
                 <li class="user-item">
                     <a href="/chat/${user.id}">
-                        <span class="online-dot"></span> ${user.username}
+                        <span class="${isOnline ? "online-dot" : "offline-dot"}"></span> ${user.username} — ${lastSeenText}
                     </a>
-                </li>`;
+                </li>
+            `;
         });
     }
 
-    socket.on("online_users", list => renderOnlineUsers(list));
-
-    /* ===== NOTIFICATIONS ===== */
-    function incBadge(by = 1) {
-        const badge = document.getElementById("notif-badge");
-        badge.textContent = Number(badge.textContent) + by;
-    }
-
-    function prependNotification(data) {
-        const ul = document.getElementById("notifications-list");
-        ul.innerHTML = `
-            <li class="bubble them">
-                <strong>${data.fromName}</strong> — ${data.preview}
-            </li>
-        ` + ul.innerHTML;
-    }
-
-    socket.on("notification", data => {
-        incBadge(1);
-        prependNotification(data);
+    socket.on("online_users_update", list => {
+        onlineUsers.clear();
+        list.forEach(u => {
+            onlineUsers.add(u.id);
+        });
+        renderOnlineUsers(list);
     });
 
 })();
 </script>
 
 </body>
+<%- include('includes/footer') %>
 </html>

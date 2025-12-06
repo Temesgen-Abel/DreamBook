@@ -223,7 +223,6 @@ function createAdminUser() {
 createAdminUser();
 
 
-
 // If an older table has userid NOT NULL, migrate to a new table with nullable userid
 const colInfo = db.prepare("PRAGMA table_info('password_resets')").all();
 const useridCol = colInfo.find(c => c.name === 'userid');
@@ -1058,14 +1057,50 @@ app.get("/create-post", mustBeLoggedIn, (_, res) => {
 });
 
 app.post("/create-post", mustBeLoggedIn, (req, res) => {
-  insertPost.run(
+  const now = new Date().toISOString();
+  const body = String(req.body.body || "").trim();
+  if (!body) return res.redirect("/dashboard");
+
+  // save post and get inserted id
+  const result = insertPost.run(
     req.user.id,
     req.user.username,
-    req.body.body.trim(),
-    new Date().toISOString()
+    body,
+    now
   );
+
+  const postId = result.lastInsertRowid;
+  const newPost = getPostById.get(postId);
+
+  // emit real-time events: broadcast new_post to all connected clients
+  try {
+    io.emit("new_post", {
+      id: newPost.id,
+      authorid: newPost.authorid,
+      username: newPost.username,
+      body: sanitizeBody(newPost.body),
+      createdDate: newPost.createdDate
+    });
+
+    // also emit a lightweight notification to each online user's room
+    Array.from(onlineUsers).forEach(uid => {
+      io.to(`user_${uid}`).emit("notification", {
+        type: "new_post",
+        postId: newPost.id,
+        fromId: newPost.authorid,
+        fromName: newPost.username,
+        preview: (newPost.body || "").substring(0, 120),
+        timestamp: newPost.createdDate || now
+      });
+    });
+  } catch (err) {
+    console.error("Failed to emit new post events:", err);
+  }
+
   res.redirect("/dashboard");
 });
+
+//emit new posts to all connected clients
 
 // VIEW SINGLE POST (fixed to include authorUsername for post + comments)
 app.get("/post/:id", mustBeLoggedIn, (req, res) => {
@@ -1112,7 +1147,7 @@ app.post("/edit-post/:id", mustBeLoggedIn, (req, res) => {
 
   updatePost.run(
     text,
-    createdDate().toISOString(),
+    new Date().toISOString(),
     req.params.id
   );
 
@@ -1290,7 +1325,7 @@ app.post("/notifications/mark-all-read", mustBeLoggedIn, (req, res) => {
 
 app.get("/notifications/unread-count", (req, res) => {
   try {
-    const userId = req.session.userId; // or however you track session
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.json({ unread: 0 });
@@ -1319,56 +1354,63 @@ server.listen(PORT, () => console.log(`Server running with Socket.IO on port ${P
 io.on("connection", socket => {
   console.log("🔥 Socket connected:", socket.id);
 
-  // USER JOINS THEIR ROOM AFTER LOGIN
   socket.on("join_room", userId => {
     const id = Number(userId);
+    if (isNaN(id)) return;
 
-    console.log("📥 join_room from:", socket.id, " -> userId:", id);
-
-    if (isNaN(id)) {
-      console.warn("⚠️ Invalid userId received:", userId);
-      return;
-    }
-
-    // Store ID for disconnect cleanup
     socket.userId = id;
-
-    // Join their personal room
     socket.join(`user_${id}`);
 
-    // Add to online users
+    if (!userSockets.has(id)) userSockets.set(id, new Set());
+    userSockets.get(id).add(socket.id);
     onlineUsers.add(id);
 
-    console.log("📡 Online users now:", Array.from(onlineUsers));
+    // update lastSeen as ISO string for consistent serialization
+    lastSeen.set(id, new Date().toISOString());
 
-    // Notify all clients
-    io.emit("online_users_update", Array.from(onlineUsers));
+    io.emit("online_users_update", Array.from(userSockets.keys()).map(uid => ({
+      id: uid,
+      lastSeen: lastSeen.get(uid)
+    })));
   });
 
-  // TYPING INDICATOR
   socket.on("typing", data => {
-    io.to(`user_${data.receiverId}`).emit("typing", data);
+    const rid = Number(data?.receiverId);
+    if (isNaN(rid)) return;
+    io.to(`user_${rid}`).emit("typing", data);
   });
 
   socket.on("stop_typing", data => {
-    io.to(`user_${data.receiverId}`).emit("stop_typing", data);
+    const rid = Number(data?.receiverId);
+    if (isNaN(rid)) return;
+    io.to(`user_${rid}`).emit("stop_typing", data);
   });
 
-  // USER DISCONNECTS
   socket.on("disconnect", () => {
     console.log("❌ Socket disconnected:", socket.id, "userId:", socket.userId);
+    const uid = socket.userId;
+    if (!uid) return;
 
-    if (!socket.userId) return;
+    // remove this socket; if no sockets remain, mark user offline
+    const set = userSockets.get(uid);
+    if (set) {
+      set.delete(socket.id);
+      if (set.size === 0) {
+        userSockets.delete(uid);
+        onlineUsers.delete(uid);
+      }
+    }
 
-    // Remove from online users
-    onlineUsers.delete(socket.userId);
+    lastSeen.set(uid, new Date().toISOString());
 
-    // Broadcast update
-    io.emit("online_users_update", Array.from(onlineUsers));
+    io.emit("online_users_update", Array.from(userSockets.keys()).map(id => ({
+      id,
+      lastSeen: lastSeen.get(id)
+    })));
   });
 });
 
-// ensure we know which token column exists (token | reset_token); create reset_token if missing
+//ensure we know which token column exists (token | reset_token); create reset_token if missing
 {
   const prCols = db.prepare("PRAGMA table_info('password_resets')").all();
   let tokenCol = prCols.find(c => c.name === 'token') ? 'token' :
@@ -1401,3 +1443,68 @@ io.on("connection", socket => {
   db.deletePasswordResetById = deletePasswordResetById;
   db.insertPasswordReset = insertPasswordReset;
 }
+
+// track sockets per user and last-seen times
+const userSockets = new Map(); // userId -> Set(socketId)
+const lastSeen = new Map();
+
+ // SOCKET.IO SETUP
+ // ------------------------------
+io.on("connection", socket => {
+  console.log("🔥 Socket connected:", socket.id);
+
+  socket.on("join_room", userId => {
+    const id = Number(userId);
+    if (isNaN(id)) return;
+
+    socket.userId = id;
+    socket.join(`user_${id}`);
+
+    if (!userSockets.has(id)) userSockets.set(id, new Set());
+    userSockets.get(id).add(socket.id);
+    onlineUsers.add(id);
+
+    // update lastSeen as ISO string for consistent serialization
+    lastSeen.set(id, new Date().toISOString());
+
+    io.emit("online_users_update", Array.from(userSockets.keys()).map(uid => ({
+      id: uid,
+      lastSeen: lastSeen.get(uid)
+    })));
+  });
+
+  socket.on("typing", data => {
+    const rid = Number(data?.receiverId);
+    if (isNaN(rid)) return;
+    io.to(`user_${rid}`).emit("typing", data);
+  });
+
+  socket.on("stop_typing", data => {
+    const rid = Number(data?.receiverId);
+    if (isNaN(rid)) return;
+    io.to(`user_${rid}`).emit("stop_typing", data);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("❌ Socket disconnected:", socket.id, "userId:", socket.userId);
+    const uid = socket.userId;
+    if (!uid) return;
+
+    // remove this socket; if no sockets remain, mark user offline
+    const set = userSockets.get(uid);
+    if (set) {
+      set.delete(socket.id);
+      if (set.size === 0) {
+        userSockets.delete(uid);
+        onlineUsers.delete(uid);
+      }
+    }
+
+    lastSeen.set(uid, new Date().toISOString());
+
+    io.emit("online_users_update", Array.from(userSockets.keys()).map(id => ({
+      id,
+      lastSeen: lastSeen.get(id)
+    })));
+  });
+});
