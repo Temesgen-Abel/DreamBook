@@ -9,7 +9,7 @@
 
 <main>
 
-    <form action="/register" method="POST">
+    <form action="/register" method="POST" class "auth-form">
         <% if (errors && errors.length) { %>
             <% errors.forEach(function(error) { %>
                 <p class="notice"><%= error %></p>
@@ -22,7 +22,7 @@
             <label for="username"> Username <label>
             <input type="text" id="username" name="username" autocomplete="off">
 <br>        
-           <label for="password">Password</label>
+           <label  for="password">Password</label>
             <input type="password" id="password" name="password" autocomplete="off">
 <br>
             <label email="email">email</label>
@@ -38,5 +38,6 @@
  <%- include('includes/footer') %>
 
 </html>
+
 
 
