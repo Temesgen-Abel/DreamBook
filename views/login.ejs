@@ -1,0 +1,37 @@
+<h3 style="text-align:center; margin-top:20px;">Welcome to DreamBook</h3>
+
+<main class="auth-wrapper">
+
+    <% if (error) { %>
+        <p class="auth-error">
+            <%= error %> 
+            You can reset your password 
+            <a href="/password-reset">here</a>.
+        </p>
+    <% } %>
+
+    <form action="/login" method="POST" class="auth-form">
+
+        <% if (errors && errors.length) { %>
+            <% errors.forEach(function(error) { %>
+                <p class="auth-error"><%= error %></p>
+            <% }) %>
+        <% } %>
+
+        <fieldset>
+            <legend>Login</legend>
+
+            <label for="username"><small>Username</small></label>
+            <input type="text" id="username" name="username" autocomplete="off" required>
+
+            <label for="password"><small>Password</small></label>
+            <input type="password" id="password" name="password" autocomplete="off" required>
+
+            <button type="submit">Login</button>
+
+            <p class="auth-links">Don't have an account? <a href="/register">Sign up</a></p>
+            <p class="auth-links">Admin? <a href="/admin-login">Login here</a></p>
+
+        </fieldset>
+    </form>
+</main>

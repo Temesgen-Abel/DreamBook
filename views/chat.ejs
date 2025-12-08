@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title><small>Chat with <%= otherUser.username %></small></title>
+  <link rel="stylesheet" href="/style.css">
+  <%- include('includes/head') %>
+  <style>
+    /* small dropdown for options */
+    .options-container { position: relative; display: inline-block; }
+    .options-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 28px;
+      background: #fff;
+      border: 1px solid #ccc;
+      z-index: 50;
+      min-width: 200px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    }
+    .options-menu .item { padding: 8px 10px; cursor: pointer; border-bottom:1px solid #eee; }
+    .options-menu .item:last-child { border-bottom: none; }
+    .options-menu .item form { margin: 0; }
+    .options-btn { background:transparent;border:none;cursor:pointer;padding:4px 8px; }
+  </style>
+</head>
+
+<body>
+
+<%- include('includes/header') %>
+
+<main>
+
+  <h1>Chat with <%= otherUser.username %></h1>
+
+  <!-- Conversation options: single button that opens a menu with Delete Conversation -->
+  <div class="conversation-options" style="display:inline-block; position:relative; margin-left:12px;">
+    <button class="options-btn" type="button" onclick="toggleOptionsMenu('conversation')">⋯</button>
+    <div id="options-conversation" class="options-menu" role="menu" style="right:0; top:28px;">
+      <div class="item">
+        <form action="/chat/<%= otherUser.id %>/delete-conversation" method="POST" onsubmit="return confirm('Delete entire conversation?');">
+          <button type="submit" style="background:none;border:none;padding:8px 10px;color:#c0392b;cursor:pointer;width:100%;text-align:left;">Delete entire conversation</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <!-- MESSAGES -->
+  <ul class="chat-messages" id="chat-list">
+    <% if (messages.length === 0) { %>
+      <li>No messages yet. Start the conversation!</li>
+    <% } else { %>
+      <% messages.forEach(function(m) { %>
+        <li class="chat-message" data-message-id="<%= m.id %>">
+          <strong><%= m.sendername %>:</strong>
+          <div class="body"><%- m.message %></div>
+          <small><%= m.createdAt %></small>
+
+          <!-- SINGLE OPTIONS BUTTON (opens menu with delete message / delete conversation) -->
+          <div class="options-container" style="float:right;">
+            <button class="options-btn" type="button" onclick="toggleOptionsMenu('<%= m.id %>')">⋯</button>
+            <div id="options-<%= m.id %>" class="options-menu" role="menu">
+              <% if (Number(m.senderid) === Number(user.id)) { %>
+                <div class="item">
+                  <form action="/chat/<%= otherUser.id %>/message/<%= m.id %>/delete" method="POST" onsubmit="return confirm('Delete this message?');">
+                    <button type="submit" style="background:none;border:none;padding:0;color:#c0392b;cursor:pointer;">Delete this message</button>
+                  </form>
+                </div>
+              <% } %>
+              <div class="item">
+                <form action="/chat/<%= otherUser.id %>/delete-conversation" method="POST" onsubmit="return confirm('Delete entire conversation?');">
+                  <button type="submit" style="background:none;border:none;padding:0;color:#c0392b;cursor:pointer;">Delete entire conversation</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+        </li>
+      <% }) %>
+    <% } %>
+  </ul>
+
+  <hr>
+
+  <!-- (removed separate Delete Conversation form, now available from options) -->
+
+  <hr>
+
+  <!-- SEND MESSAGE -->
+  <form action="/chat/<%= otherUser.id %>/send" method="POST" id="msgForm">
+    <input type="text" 
+           name="message" 
+           required 
+           id="messageInput" 
+           placeholder="Type your message...">
+    <button type="submit">Send</button>
+  </form>
+
+</main>
+
+<!-- SOCKET.IO -->
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+
+<script>
+/* helper to toggle one options menu and close others */
+function toggleOptionsMenu(id) {
+  const menuId = 'options-' + id;
+  const all = document.querySelectorAll('.options-menu');
+  all.forEach(m => { if (m.id !== menuId) m.style.display = 'none'; });
+  const el = document.getElementById(menuId);
+  if (!el) return;
+  el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+}
+
+// close menus when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.options-container')) {
+    document.querySelectorAll('.options-menu').forEach(m => m.style.display = 'none');
+  }
+});
+</script>
+
+<script>
+/* ---------------------------------------
+   CONNECT TO SOCKET.IO SERVER
+----------------------------------------*/
+const socket = io("http://localhost:5733");
+
+/* ---------------------------------------
+   JOIN PERSONAL ROOM
+----------------------------------------*/
+socket.emit("join_room", "<%= user.id %>");
+
+/* ---------------------------------------
+   SEND MESSAGE THROUGH SOCKET (mirror)
+----------------------------------------*/
+const input = document.getElementById("messageInput");
+const form = document.getElementById("msgForm");
+
+form.addEventListener("submit", () => {
+  socket.emit("send_local_message", {
+    senderId: "<%= user.id %>",
+    receiverId: "<%= otherUser.id %>",
+    message: input.value
+  });
+});
+
+/* ---------------------------------------
+   RECEIVE NEW MESSAGE
+----------------------------------------*/
+socket.on("new_message", msg => {
+  const list = document.getElementById("chat-list");
+
+  // Escape HTML
+  const safe = msg.message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const li = document.createElement("li");
+  li.className = "chat-message";
+  li.innerHTML = `
+    <strong>${msg.sendername}:</strong>
+    <div class="body">${safe}</div>
+    <small>${msg.createdAt}</small>
+  `;
+
+  list.appendChild(li);
+
+  // Scroll down
+  window.scrollTo(0, document.body.scrollHeight);
+
+  // Desktop notification
+  if (msg.senderid !== Number("<%= user.id %>") && Notification.permission === "granted") {
+    new Notification("New message from " + msg.sendername, { body: msg.message });
+  }
+});
+
+/* ---------------------------------------
+   REQUEST NOTIFICATION PERMISSION
+----------------------------------------*/
+if (Notification.permission !== "granted") {
+  Notification.requestPermission();
+}
+
+/* ---------------------------------------
+   TYPING INDICATOR
+----------------------------------------*/
+const typingDiv = document.createElement("div");
+typingDiv.id = "typing-indicator";
+typingDiv.style.display = "none";
+typingDiv.style.marginTop = "10px";
+typingDiv.textContent = "<%= otherUser.username %> is typing...";
+document.querySelector("main").appendChild(typingDiv);
+
+let typingTimeout;
+
+input.addEventListener("input", () => {
+  socket.emit("typing", { 
+    senderId: '<%= user.id %>', 
+    receiverId: '<%= otherUser.id %>' 
+  });
+
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    socket.emit("stop_typing", { 
+      senderId: '<%= user.id %>', 
+      receiverId: '<%= otherUser.id %>' 
+    });
+  }, 800);
+});
+
+// Show indicator
+socket.on("typing", data => {
+  if (data.senderId === Number("<%= otherUser.id %>"))
+    typingDiv.style.display = "block";
+});
+
+// Hide indicator
+socket.on("stop_typing", data => {
+  if (data.senderId === Number("<%= otherUser.id %>"))
+    typingDiv.style.display = "none";
+});
+</script>
+
+<%- include('includes/footer') %>
+</body>
+</html>

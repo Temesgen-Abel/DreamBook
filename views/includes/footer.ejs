@@ -1,0 +1,34 @@
+<footer>
+    <small>&copy; DreamBook_2025</small>
+</footer>
+
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script>
+const socket = io("http://localhost:5733");
+
+// Join the correct room
+socket.emit("join_room", "user_<%= user ? user.id : '' %>");
+
+// Listen for real-time messages
+socket.on("new_message", data => {
+  const badge = document.getElementById("notif-count");
+  if (badge) badge.textContent = Number(badge.textContent) + 1;
+
+  if (Notification.permission === "granted") {
+    new Notification(`New message from ${data.sendername}`, {
+      body: data.body
+    });
+  }
+});
+
+// Load unread count on page refresh
+async function loadUnread() {
+  const res = await fetch("/notifications/unread-count");
+  const json = await res.json();
+  document.getElementById("notif-count").textContent = json.count;
+}
+
+loadUnread();
+</script>
+</body>
+</html>

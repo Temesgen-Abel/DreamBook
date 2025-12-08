@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('includes/head') %>
+
+<body class="single-post-page">
+<%- include('includes/header') %>
+
+<div class="wrapper page-wrapper">
+  <div class="post-card">
+    <h1><%= post.title %></h1>
+    <p class="post-date">Posted by <strong><%= post.username %></strong> on <%= new Date(post.createdDate).toLocaleString() %></p>
+    <div class="post-body"><%- post.body %></div>
+
+    <form action="/post/<%= post.id %>/reactions" method="POST">
+      <button name="reaction" value="like">👍 Like</button>
+      <button name="reaction" value="dislike">👎 Dislike</button>
+      <button type="button" onclick="document.getElementById('new-comment-form').classList.toggle('hidden')">💬 Comment</button>
+    </form>
+
+    <div class="reactions">
+      👍 <%= reactions.likes %> • 👎 <%= reactions.dislikes %> • 💬 <%= comments.length %> comments
+    </div>
+  </div>
+
+  <section id="comment-section">
+    <h2>Comments</h2>
+
+    <% if (user) { %>
+      <form id="new-comment-form" class="comment-form hidden" action="/post/<%= post.id %>/comment" method="POST">
+        <textarea name="body" required placeholder="Write a comment..."></textarea>
+        <button type="submit">Comment</button>
+        <button type="button" onclick="document.getElementById('new-comment-form').classList.add('hidden')">Cancel</button>
+      </form>
+    <% } %>
+
+    <% comments.forEach(comment => { %>
+      <div class="comment" id="comment-<%= comment.id %>">
+        <strong><%= comment.authorUsername %></strong>
+        <p><%= comment.body %></p>
+      </div>
+    <% }) %>
+  </section>
+</div>
+
+<%- include('includes/footer') %>
+</body>
+</html>

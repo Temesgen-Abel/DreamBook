@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>To know the Dream Reality Probability</title>
+</head>
+<%- include('includes/head') %>
+<body>
+  <%- include('includes/header') %>
+
+  <h4>Dream Reality Probability Checker</h4>
+  <% if (result) { %>
+  <p>The Dream Analysis Result shows that <strong><%= result.category %>.</strong>
+  If you want to post your dream for public interpretation press <a href="/create-post">here</a> , or if you want your dream to be interpreted privatly
+please please click <a href="/inbox">here</a> </p>
+<% } %> 
+
+  <form action="/dream-realness" method="POST">
+
+    <!-- Timing of Dream -->
+    <h3>Timing of Dream</h3>
+    <label><input type="radio" name="timing" value="evening" required> Evening</label><br>
+    <label><input type="radio" name="timing" value="midnight"> Midnight</label><br>
+    <label><input type="radio" name="timing" value="post_midnight"> Post-Midnight</label><br>
+    <label><input type="radio" name="timing" value="morning"> Morning</label><br>
+    <label><input type="radio" name="timing" value="day_dream"> Day Dream</label><br>
+
+    <!-- Memory of Dream -->
+    <h3>Dream Memorability</h3>
+    <label><input type="radio" name="memory" value="vivid" required> Vivid Dream</label><br>
+    <label><input type="radio" name="memory" value="not_memorable"> Not Memorable Dream</label><br>
+
+    <!-- Health of Dreamer -->
+    <h3>Health of Dreamer</h3>
+    <label><input type="radio" name="health" value="healthy" required> Healthy Dreamer</label><br>
+    <label><input type="radio" name="health" value="patient"> Patient Dreamer</label><br>
+
+    <!-- Emotional State -->
+    <h3>Emotional State</h3>
+    <label><input type="radio" name="emotion" value="not_emotional" required> Not Result of Emotion</label><br>
+    <label><input type="radio" name="emotion" value="emotional"> Result of Emotion</label><br>
+
+    <br>
+    <button type="submit">Check Dream Probability</button>
+  </form>
+</body>
+    <%- include('includes/footer') %>
+</html>

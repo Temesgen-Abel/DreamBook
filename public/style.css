@@ -1,0 +1,290 @@
+/* galaxy*/
+.DreamBook-logo { margin: 0; padding: 0; width: 30px; display: flex; }
+
+/* Background galaxy blocks left intact if used */
+.galaxy-bg { position: fixed; inset: 0; overflow: hidden; z-index: -1; pointer-events: none; background: radial-gradient(#bcb5b5 0%, #0f0fc9 70%); }
+.galaxy-rotate { position: absolute; width: 2000px; height: 2000px; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: 50% 50%; animation: galaxySpin 120s linear infinite; will-change: transform; }
+
+/* star layers — use repeating radial-gradients to draw many small dots */
+.stars, .stars2, .stars3 {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+  background-size: 600px 600px;
+  opacity: 0.9;
+  animation: starDrift 60s linear infinite;
+  will-change: transform;
+}
+/* different textures/speeds for parallax */
+.stars  { background-image: radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 2px); animation-duration: 120s; opacity: 0.85; }
+.stars2 { background-image: radial-gradient(circle, rgba(255,255,255,0.7) 1px, transparent 2px); background-size: 400px 400px; animation-duration: 90s; opacity: 0.6; transform: translateZ(0); }
+.stars3 { background-image: radial-gradient(circle, rgba(255,255,255,0.55) 1px, transparent 2px); background-size: 260px 260px; animation-duration: 70s; opacity: 0.45; }
+
+/* drift and spin */
+@keyframes starDrift {
+  from { transform: translate3d(0,0,0) }
+  to   { transform: translate3d(-1500px,1500px,0) }
+}
+@keyframes galaxySpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* debug helper: temporarily make stars obvious while testing */
+.galaxy-bg.debug { background: rgba(0,0,0,0.2); outline: 2px dashed rgba(255,255,255,0.06); }
+
+/* moonlight effect */
+.moon {
+  position: absolute; /* place inside .galaxy-rotate */
+  right: 10%;
+  top: 15%;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  box-shadow: 0 0 60px rgba(255,255,255,0.5), 0 0 120px rgba(180,180,255,0.25);
+  background: radial-gradient(circle at 30% 30%, #f5f5f5, #d0d0d0, #888);
+  pointer-events: none;
+  z-index: 0;
+}
+
+
+
+/* RESET */
+*{margin:0;padding:0;box-sizing:border-box;}
+body {font-family: "Inter", sans-serif; background:#f6f8fb; color:#1f2d3d; line-height:1.6;}
+a {text-decoration:none; color:#007bff;}
+button {cursor:pointer;}
+
+/* WRAPPER */
+.wrapper{max-width:1000px;margin:0 auto;padding:20px;}
+
+/* HEADER */
+nav {display:flex; justify-content:space-between; align-items:center; background:#292b29; padding:12px 20px;}
+nav a {color:#fff;margin:0 10px;}
+nav .DreamBook-logo {width:40px;}
+.dropdown {position:relative;}
+.dropdown .dropbtn {background:#292b29;color:#fff;border:none;padding:6px 12px;border-radius:6px;}
+.dropdown-content {display:none; position:absolute; right:0; background:#fff; min-width:150px; border-radius:6px; overflow:hidden;}
+.dropdown:hover .dropdown-content {display:block;}
+.dropdown-content a {color:#333; display:block; padding:8px;}
+
+/* BUTTONS */
+.btn {padding:6px 12px; background:#6ea8fe; color:#fff; border:none; border-radius:6px; margin:4px;}
+.btn.danger {background:#ff6b6b;}
+
+/* POST CARD */
+.post-card, .comment {background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:15px;}
+.post-card h1,h4 {margin-bottom:8px;}
+.post-card .post-body {margin-bottom:12px;}
+.reactions {font-size:0.9rem; color:#555; margin-top:6px;}
+
+/* DASHBOARD POSTS */
+.posts-list {display:grid; grid-template-columns:1fr; gap:15px;}
+.pagination {margin:20px 0;text-align:center;}
+.pagination a, .pagination strong {margin:0 5px;}
+
+/* SINGLE POST */
+.single-post-page textarea {width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;}
+
+/* COMMENT FORM */
+.comment-form textarea {width:100%; padding:6px; margin-bottom:6px; border-radius:6px; border:1px solid #ccc;}
+.comment-form button {margin-right:6px;}
+
+/* ADMIN CHAT LAYOUT */
+.chat-layout {display:grid; grid-template-columns:280px 1fr; gap:10px; height:80vh;}
+.sidebar {background:#fff; border-right:1px solid #ddd; overflow-y:auto;}
+.sidebar h2 {background:#075E54; color:#fff; padding:10px;}
+.user-item {padding:10px; border-bottom:1px solid #eee;}
+.user-item.active {background:#f0f0f0;}
+.chat-area {display:flex; flex-direction:column; background:#ece5dd; overflow:hidden;}
+.messages {flex:1; padding:10px; overflow-y:auto;}
+.bubble {padding:8px 12px; border-radius:12px; margin-bottom:6px; max-width:70%;}
+.me {background:#d9fdd3; align-self:flex-end; border-bottom-right-radius:0;}
+.them {background:#fff; border-bottom-left-radius:0;}
+.send-box {display:flex; padding:10px; background:#fff; border-top:1px solid #ccc;}
+.send-box textarea {flex:1; border-radius:8px; padding:6px;}
+.send-box button {padding:6px 12px; background:#25d366; color:#fff; border:none; border-radius:8px; margin-left:6px;}
+
+/* RESPONSIVE */
+@media(max-width:768px){.chat-layout{grid-template-columns:1fr; height:auto;}.send-box{flex-direction:column;}.send-box button{margin-left:0;margin-top:6px;}}
+
+/* NAVBAR */
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #292b29;
+  padding: 12px 20px;
+  position: relative;
+}
+
+nav a {
+  color: #fff;
+  margin: 0 10px;
+}
+
+/* MOBILE MENU BUTTON */
+.menu-btn {
+  display: none;
+  font-size: 26px;
+  color: #fff;
+  background: none;
+  border: none;
+}
+
+/* NAV LINKS WRAPPER */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* MOBILE DROPDOWN FIX */
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 768px) {
+  .menu-btn {
+    display: block;
+  }
+
+  .nav-links {
+    position: absolute;
+    top: 60px;
+    right: 0;
+    background: #292b29;
+    width: 100%;
+    flex-direction: column;
+    display: none;
+    padding: 15px 0;
+  }
+
+  .nav-links a {
+    margin: 10px 0;
+  }
+
+  /* Show menu when active */
+  .nav-links.active {
+    display: flex;
+  }
+
+  /* Mobile dropdown fix */
+  .dropdown-content {
+    position: static;
+    background: #444;
+    width: 100%;
+  }
+
+  .dropdown-content a {
+    color: #fff;
+  }
+}
+
+/* AUTH FORMS (small + clean) */
+/* WRAPPER */
+.auth-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: #f0f2f5; /* Facebook-light background */
+}
+
+/* FORM BOX */
+.auth-form {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  padding: 30px 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* LEGEND / TITLE */
+.auth-form legend {
+  font-weight: bold;
+  font-size: 1.4rem;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* INPUTS */
+.auth-form input {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border 0.2s;
+}
+
+.auth-form input:focus {
+  border-color: #1877f2; /* Facebook blue */
+  outline: none;
+}
+
+/* BUTTON */
+.auth-form button {
+  width: 100%;
+  padding: 14px;
+  background: #1877f2;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.auth-form button:hover {
+  background: #166fe5;
+}
+
+/* LINKS */
+.auth-links {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 0.95rem;
+}
+
+.auth-links a {
+  color: #1877f2;
+  text-decoration: none;
+}
+
+.auth-links a:hover {
+  text-decoration: underline;
+}
+
+/* ERROR MESSAGE */
+.auth-error {
+  color: red;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.online-dot {
+            width: 8px;
+            height: 8px;
+            background: green;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .offline-dot {
+            width: 10px;
+            height: 10px;
+            background: gray;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .user-item {
+            margin-bottom: 5px;
+        }
+

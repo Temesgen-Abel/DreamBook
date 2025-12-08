@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('includes/head') %>
+    <link rel="stylesheet" href="/style.css">
+
+</head>
+
+<body>
+<%- include('includes/header') %>
+
+<div class="chat-layout">
+
+    <!-- SIDEBAR (Users + Online users) -->
+    <div class="sidebar">
+        <h2>Inbox</h2>
+
+        <h3 style="padding:10px;">Users</h3>
+        <ul id="online-users-list" class="user-list"></ul>
+    </div>
+
+    <!-- MAIN CHAT AREA -->
+    <div class="chat-area">
+
+        <!-- Conversation List Preview -->
+        <div class="messages">
+            <h2 style="margin-bottom: 15px;">Conversations</h2>
+
+            <ul id="inbox-list" class="conversation-list">
+                <% (conversations || []).forEach(c => { %>
+                    <li class="bubble them">
+                        <a href="/chat/<%= c.id %>">
+                            <strong><%= c.username %></strong><br>
+                            <%= c.lastMessage || "No messages yet" %>
+                        </a>
+                    </li>
+                <% }) %>
+            </ul>
+
+            <h2 style="margin-top: 25px;">Notifications</h2>
+            <div id="notifications-wrapper">
+                <a href="/notifications">
+                    Notifications <span id="notif-badge"><%= unreadCount || 0 %></span>
+                </a>
+                <ul id="notifications-list"></ul>
+            </div>
+        </div>
+
+        <!-- Send message -->
+        <form class="send-box" action="/inbox" method="POST">
+            <select name="receiverId" required>
+                <option value="">Select a user</option>
+                <% (users || []).forEach(u => { %>
+                    <option value="<%= u.id %>"><%= u.username %></option>
+                <% }) %>
+            </select>
+
+            <textarea name="message" rows="2" placeholder="Type a message..." required></textarea>
+            <button type="submit">Send</button>
+        </form>
+
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function () {
+    const currentUserId = <%= JSON.stringify(user && user.id || null) %>;
+    const allUsers      = <%- JSON.stringify(users || []) %>;
+
+    const socket = io();
+
+    const onlineUsers = new Set();
+
+    socket.on("connect", () => {
+        if (currentUserId) socket.emit("join_room", currentUserId);
+    });
+
+    /* ===== ONLINE USERS RENDER ===== */
+    function renderOnlineUsers(list) {
+        const ul = document.getElementById("online-users-list");
+        ul.innerHTML = "";
+
+        (list || []).forEach(u => {
+            const user = allUsers.find(x => x.id === u.id);
+            if (!user) return;
+
+            const isOnline = onlineUsers.has(user.id);
+            const lastSeenText = isOnline 
+                ? "Online" 
+                : `Last seen: ${new Date(u.lastSeen).toLocaleString()}`;
+
+            ul.innerHTML += `
+                <li class="user-item">
+                    <a href="/chat/${user.id}">
+                        <span class="${isOnline ? "online-dot" : "offline-dot"}"></span> ${user.username} — ${lastSeenText}
+                    </a>
+                </li>
+            `;
+        });
+    }
+
+    socket.on("online_users_update", list => {
+        onlineUsers.clear();
+        list.forEach(u => {
+            onlineUsers.add(u.id);
+        });
+        renderOnlineUsers(list);
+    });
+
+})();
+</script>
+
+</body>
+<%- include('includes/footer') %>
+</html>

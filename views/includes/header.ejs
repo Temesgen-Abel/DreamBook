@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/style.css" />
+  <title>DreamBook</title>
+</head>
+<body>
+<header>
+  <nav class="nav">
+
+    <!-- LOGO -->
+    <a href="/" aria-label="DreamBook Home">
+      <img src="/images/DreamBook.png" alt="DreamBook logo" class="DreamBook-logo" />
+    </a>
+
+    <!-- MOBILE MENU BUTTON -->
+    <button class="menu-btn" onclick="toggleMenu()" aria-label="Toggle navigation menu" aria-expanded="false">
+      ☰
+    </button>
+
+    <!-- NAV LINKS WRAPPER -->
+    <div class="nav-links" id="navLinks">
+
+      <!-- Always visible links -->
+      <a href="/dictionary">Dream Dictionary</a>
+      <a href="/dream-realness">Dream Analyzer</a>
+      <a href="/dashboard">Public Posts</a>
+      <a href="/create-post">Post Your Dream</a>
+      <a href="/inbox" class="highlight">Inbox</a>
+      <a href="/notifications">Notifications</a>
+
+      <!-- Notification bell -->
+      <button id="notif-bell" aria-label="Notifications">
+        🔔 <span id="notif-count">0</span>
+      </button>
+
+      <!-- Dropdown for account -->
+      <div class="dropdown">
+        <button class="dropbtn" aria-haspopup="true" aria-expanded="false">Account ▼</button>
+        <div class="dropdown-content">
+          <% if (user) { %>
+            <a href="/logout"><%= user.username %> Logout</a>
+          <% } else { %>
+            <a href="/register">Signup</a>
+            <a href="/login">Login</a>
+          <% } %>
+        </div>
+      </div>
+
+    </div>
+  </nav>
+</header>
+
+<script>
+function toggleMenu() {
+  const navLinks = document.getElementById("navLinks");
+  const menuBtn = document.querySelector(".menu-btn");
+  navLinks.classList.toggle("active");
+  const expanded = navLinks.classList.contains("active");
+  menuBtn.setAttribute("aria-expanded", expanded);
+}
+</script>
+
+</body>
+</html>

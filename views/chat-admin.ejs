@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+<%- include('includes/head') %>
+<body>
+<%- include('includes/header') %>
+<head>
+  <meta charset="utf-8">
+  <title>Admin Chat Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+<div class="chat-layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h2>Users</h2>
+
+    <% users.forEach(u => { %>
+      <div class="user-item <%= otherUser && otherUser.id === u.id ? 'active' : '' %>">
+        <a href="/chat-admin?user=<%= u.id %>"><%= u.username %></a>
+      </div>
+    <% }) %>
+  </div>
+
+  <!-- CHAT AREA -->
+  <div class="chat-area">
+    <div class="messages">
+      <% messages.forEach(m => { %>
+        <div class="bubble <%= m.senderid == otherUser.id ? 'them' : 'me' %>">
+          <strong><%= m.sendername %></strong><br>
+          <%= m.message %>
+
+          <form action="/chat-admin/message/<%= m.id %>/delete" method="POST">
+            <input type="hidden" name="userId" value="<%= otherUser.id %>">
+            <button class="delete-btn">Delete</button>
+          </form>
+        </div>
+      <% }) %>
+    </div>
+
+    <!-- Send message -->
+    <form class="send-box" action="/chat-admin/<%= otherUser.id %>" method="POST">
+      <textarea name="message" rows="2" placeholder="Type a message..." required></textarea>
+      <button type="submit">Send</button>
+    </form>
+
+  </div>
+
+</div>
+
+</body>
+</html>

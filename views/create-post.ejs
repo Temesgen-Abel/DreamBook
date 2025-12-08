@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('includes/head') %>
+
+<body>
+<%- include('includes/header') %>
+
+<div class="wrapper page-wrapper">
+  <form action="/create-post" method="POST" class="post-form">
+    <% if (errors && errors.length) { %>
+      <% errors.forEach(err => { %>
+        <p class="notice"><%= err %></p>
+      <% }) %>
+    <% } %>
+
+    <fieldset>
+      <legend>Post a New Dream</legend>
+      <label for="body">Describe your dream</label>
+     <textarea name="body" id="body" required><%= typeof body !== 'undefined' ? body : '' %></textarea>
+      <button type="submit" class="btn">Post Dream</button>
+    </fieldset>
+  </form>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function () {
+    const currentUserId = <%= JSON.stringify(user && user.id || null) %>;
+
+    const socket = io();
+
+    socket.on("connect", () => {
+        if (currentUserId) socket.emit("join_room", currentUserId);
+    });
+
+    /* ===== NOTIFICATIONS FOR NEW POSTS ===== */
+    function incBadge(by = 1) {
+        const badge = document.getElementById("notif-badge");
+        if (!badge) return;
+        badge.textContent = Number(badge.textContent) + by;
+    }
+
+    function prependNotification(data) {
+        const ul = document.getElementById("notifications-list");
+        if (!ul) return;
+
+        ul.innerHTML = `
+            <li class="bubble them">
+                <strong>${data.author}</strong> — ${data.preview}
+            </li>
+        ` + ul.innerHTML;
+
+        incBadge(1);
+    }
+
+    socket.on("new_post", data => {
+        prependNotification(data);
+        alert(`New post from ${data.author}: ${data.preview}`);
+    });
+
+})();
+</script>
+
+
+</body>
+<%- include('includes/footer') %>
+</html>

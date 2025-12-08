@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Notifications</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body { font-family: Arial, sans-serif; }
+
+    .notif-container {
+      width: 80%;
+      margin: 20px auto;
+    }
+
+    .notif-card {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      border-left: 5px solid #3498db;
+      transition: background 0.2s ease;
+    }
+
+    .notif-card.unread {
+      background: #eef6ff;
+      border-left-color: #e74c3c;
+    }
+
+    .notif-card small {
+      color: #666;
+    }
+
+    .mark-read-btn {
+      margin: 20px 0;
+      padding: 10px 20px;
+      background: #27ae60;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .mark-read-btn:hover {
+      background: #219150;
+    }
+  </style>
+</head>
+<body>
+
+<%- include("includes/header") %>
+
+<div class="notif-container">
+  <h2>Notifications</h2>
+
+  <form action="/notifications/mark-all-read" method="POST">
+    <button class="mark-read-btn">Mark all as read</button>
+  </form>
+
+  <% if (!notifications || notifications.length === 0) { %>
+    <p>No notifications yet.</p>
+  <% } %>
+
+  <% notifications.forEach(n => { %>
+    <div class="notif-card <%= n.is_read ? '' : 'unread' %>">
+      <strong><%= n.sendername %></strong> sent you a message:
+      <p><%= n.message.length > 80 ? n.message.substring(0, 80) + '...' : n.message %></p>
+      <small><%= n.createdAt %></small>
+    </div>
+  <% }) %>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function () {
+    const socket = io();
+
+    /* ===== NOTIFICATIONS UPDATE ===== */
+    function incBadge(by = 1) {
+        const badge = document.getElementById("notif-badge");
+        if (!badge) return;
+        badge.textContent = Number(badge.textContent) + by;
+    }
+
+    function prependNotification(data) {
+        const container = document.querySelector(".notif-container");
+        if (!container) return;
+
+        const card = document.createElement("div");
+        card.classList.add("notif-card", "unread");
+        card.innerHTML = `
+            <strong>${data.fromName}</strong> sent you a message:
+            <p>${data.preview}</p>
+            <small>${new Date().toLocaleString()}</small>
+        `;
+        container.insertBefore(card, container.children[2]); // insert below "Notifications" heading & button
+        incBadge(1);
+    }
+
+    socket.on("notification", data => {
+        prependNotification(data);
+    });
+})();
+</script>
+
+<%- include("includes/footer") %>
+
+</body>
+</html>
