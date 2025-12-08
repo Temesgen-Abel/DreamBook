@@ -1,9 +1,7 @@
 /********************************************************************
- * DreamBook – Single-file Fully PostgreSQL-based Node.js Server
+ * DreamBook – Fully Integrated Node.js Server
  ********************************************************************/
 
-// -----------------------------
-// Environment & Dependencies
 // -----------------------------
 require("dotenv").config();
 const express = require("express");
@@ -12,7 +10,7 @@ const { Pool } = require("pg");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
-const { marked } = require("marked");  // FIXED: Using require instead of dynamic import
+const { marked } = require("marked");
 const sanitizeHTML = require("sanitize-html");
 const nodemailer = require("nodemailer");
 const path = require("path");
@@ -22,19 +20,18 @@ const fs = require("fs");
 // ===================================================================
 // 1. DATABASE SETUP
 // ===================================================================
-// Replace the entire createPoolOrExit() function with:
+let pool;
 async function createPoolOrExit() {
   const conn = process.env.DATABASE_URL || process.env.PG_CONNECTION;
   
   if (!conn) {
     console.error("ERROR: Missing DATABASE_URL or PG_CONNECTION");
-    console.error("Current DATABASE_URL:", process.env.DATABASE_URL ? "Exists" : "Missing");
     process.exit(1);
   }
 
   pool = new Pool({
     connectionString: conn,
-    ssl: { rejectUnauthorized: false }  // Always use SSL on Render
+    ssl: { rejectUnauthorized: false }
   });
 
   try {
@@ -59,9 +56,8 @@ async function dbRun(text, params = []) {
   return pool.query(text, params);
 }
 
-
 // ===================================================================
-// 2. FLEXIBLE POSTGRESQL SCHEMA (Fresh DB)
+// 2. DATABASE SCHEMA
 // ===================================================================
 async function initDb() {
   await dbRun(`
@@ -138,12 +134,9 @@ async function initDb() {
   console.log("✔ Database schema initialized");
 }
 
-
 // ===================================================================
 // 3. UTILITIES
 // ===================================================================
-
-// ---- sanitizeHTML + markdown ----
 function sanitizeBody(text) {
   text = typeof text === "string" ? text.trim() : "";
   return sanitizeHTML(marked.parse(text), {
@@ -152,7 +145,6 @@ function sanitizeBody(text) {
   });
 }
 
-// ---- JWT helpers ----
 const JWT_SECRET = process.env.JWTSECRET || crypto.randomBytes(32).toString("hex");
 
 function signToken(user) {
@@ -165,7 +157,6 @@ function signToken(user) {
 function newResetToken() {
   return crypto.randomBytes(20).toString("hex");
 }
-
 
 // ===================================================================
 // 4. MIDDLEWARE
@@ -223,7 +214,6 @@ async function unreadMiddleware(req, res, next) {
   next();
 }
 
-
 // ===================================================================
 // 5. EXPRESS + SOCKET.IO SETUP
 // ===================================================================
@@ -234,21 +224,19 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
-// Debug logger
 app.use((req, _, next) => {
   console.log(`[REQ] ${req.method} ${req.path}`);
   next();
 });
 
-// HTTP + Socket.io
 const server = http.createServer(app);
 const io = require("socket.io")(server, { cors: { origin: "*" } });
 app.set("io", io);
 
+// ===================================================================
+// 6. ROUTES
+// ===================================================================
 
-// ===================================================================
-// 6. AUTH ROUTES
-// ===================================================================
 app.get("/login", (_, res) => res.render("login", { errors: [], error: null }));
 
 app.post("/login", async (req, res) => {
@@ -687,7 +675,7 @@ app.get("/notifications/unread-count", mustBeLoggedIn, async (req, res) => {
 
 
 // ===================================================================
-// 13. SOCKET.IO USERS ONLINE
+// 7. SOCKET.IO USERS ONLINE
 // ===================================================================
 const userSockets = new Map();
 const lastSeen = new Map();
@@ -743,9 +731,8 @@ io.on("connection", socket => {
   });
 });
 
-
 // ===================================================================
-// 14. ADMIN AUTO-CREATE
+// 8. ADMIN AUTO-CREATE
 // ===================================================================
 async function ensureAdmin() {
   if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
@@ -767,9 +754,8 @@ async function ensureAdmin() {
   }
 }
 
-
 // ===================================================================
-// 15. START SERVER
+// 9. START SERVER
 // ===================================================================
 (async () => {
   await createPoolOrExit();
