@@ -3,7 +3,7 @@
   "name": "dreambook",
   "version": "1.0.0",
   "description": "",
-  "main": "node.js",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "build": "npm install --only=production"
@@ -30,4 +30,5 @@
     "socket.io": "^4.8.1"
   }
 }
+
 
