@@ -9,7 +9,7 @@
     "build": "npm install --only=production"
   },
   "engines": {
-    "node": "18.x"
+    "node": "v24.11.0"
   },
   "keywords": [],
   "author": "",
@@ -30,3 +30,4 @@
     "socket.io": "^4.8.1"
   }
 }
+
