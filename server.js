@@ -237,6 +237,11 @@ app.set("io", io);
 // 6. ROUTES
 // ===================================================================
 
+app.get("/", (req, res) => {
+  if (req.user) return res.redirect("/dashboard");
+  res.render("homepage", { user: req.user, errors: [] });
+});
+
 app.get("/login", (_, res) => res.render("login", { errors: [], error: null }));
 
 app.post("/login", async (req, res) => {
@@ -765,3 +770,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
