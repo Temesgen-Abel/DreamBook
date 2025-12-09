@@ -4,71 +4,62 @@
     <%- include('includes/head') %>
     <link rel="stylesheet" href="/style.css">
 </head>
+
 <body>
 <%- include('includes/header') %>
 
-<h3 style="text-align:center; margin-top:20px;">Welcome to DreamBook</h3>
+<main class="auth-two-column">
 
-<main class="auth-wrapper">
+    <!-- LEFT: LOGIN FORM -->
+    <div class="left-column">
+        <form action="/login" method="POST" class="auth-form">
 
-    <% if (error) { %>
-        <p class="auth-error">
-            <%= error %> 
-            You can reset your password 
-            <a href="/password-reset">here</a>.
-        </p>
-    <% } %>
+            <% if (errors && errors.length) { %>
+                <% errors.forEach(function(error) { %>
+                    <p class="auth-error"><%= error %></p>
+                <% }) %>
+            <% } %>
 
-    <left-side>
-  <div class="landing-image">
-    <form action="/login" method="POST" class="auth-form">
+            <fieldset class="login-form">
+                <legend>Login</legend>
 
-        <% if (errors && errors.length) { %>
-            <% errors.forEach(function(error) { %>
-                <p class="auth-error"><%= error %></p>
-            <% }) %>
-        <% } %>
+                <label for="username"><small>Username</small></label>
+                <input type="text" id="username" name="username" required>
 
-        <fieldset class="login-form">
-            <legend>Login</legend>
+                <label for="password"><small>Password</small></label>
+                <input type="password" id="password" name="password" required>
 
-            <label class="input" for="username"><small>Username</small></label>
-            <input type="text" id="username" name="username" autocomplete="off" required>
+                <button type="submit">Login</button>
 
-            <label class="input" for="password"><small>Password</small></label>
-            <input type="password" id="password" name="password" autocomplete="off" required>
-
-            <button type="submit">Login</button>
-
-            <p class="auth-links">Don't have an account? <a href="/register">Sign up</a></p>
-            <p class="auth-links">Admin? <a href="/admin-login">Login here</a></p>
-
-        </fieldset>
-    </form>
-
-    <div class="right-side">
-  <div class="landing-content">
-
-    <h1>Welcome to <span>DreamBook</span></h1>
-
-    <p class="subtitle">
-      Discover the meaning behind your dreams and explore our rich library of dream interpretations.
-    </p>
-
-    <ul class="features">
-      <li>✓ Search thousands of dream meanings</li>
-      <li>✓ Learn spiritual and psychological interpretations</li>
-      <li>✓ Save your dream history</li>
-      <li>✓ Access dream dictionary anytime</li>
-    </ul>
-
-    <div class="illustration-box">
-      <p>Your dreams have meaning — unlock them with DreamBook.</p>
+                <p class="auth-links">Don't have an account? <a href="/register">Sign up</a></p>
+                <p class="auth-links">Admin? <a href="/admin-login">Login here</a></p>
+            </fieldset>
+        </form>
     </div>
 
-  </div>
-</div>
+    <!-- RIGHT: LANDING CONTENT -->
+    <div class="right-column">
+        <div class="landing-content">
+            <h1>Welcome to <span class="brand">DreamBook</span></h1>
+
+            <p class="subtitle">
+                Discover the meaning behind your dreams and explore our rich library of dream interpretations.
+            </p>
+
+            <ul class="features">
+                <li>✓ Search thousands of dream meanings</li>
+                <li>✓ Learn spiritual and psychological interpretations</li>
+                <li>✓ Save your dream history</li>
+                <li>✓ Access dream dictionary anytime</li>
+            </ul>
+
+            <div class="illustration-box">
+                <p>Your dreams have meaning — unlock them with DreamBook.</p>
+            </div>
+        </div>
+    </div>
 
 </main>
+
 </body>
 </html>
