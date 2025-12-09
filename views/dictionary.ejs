@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <%- include('includes/head') %>
@@ -36,7 +37,7 @@
       </fieldset>
 
       <!-- Add Dream Meaning Form -->
-      <form id="addForm" action="/dictionary" method="POST" style="display:none;">
+      <form id="addForm" action="/dictionary/add" method="POST" style="display:none;">
         <fieldset>
           <legend>Post Dream Meaning</legend>
           <input type="text" name="term" placeholder="Enter a word" required>
@@ -54,6 +55,15 @@
             <input type="text" id="search" name="term" placeholder="e.g. snake, water, flying" required>
           </div>
           <button type="submit" name="action" value="search">Search</button>
+
+          <% if (typeof results !== 'undefined' && results.length) { %>
+            <h4>Search Results:</h4>
+            <ul>
+              <% results.forEach(function(result) { %>
+                <li><strong><%= result.term %>:</strong> <%= result.meaning %></li>
+              <% }) %>  
+            </ul>
+          <% } %>
         </fieldset>
       </form>
     </main>
@@ -85,3 +95,4 @@
     </script>
   </body>
 </html>
+=======
