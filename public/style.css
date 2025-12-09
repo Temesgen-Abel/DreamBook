@@ -47,8 +47,6 @@
   z-index: 0;
 }
 
-
-
 /* RESET */
 *{margin:0;padding:0;box-sizing:border-box;}
 body {font-family: "Inter", sans-serif; background:#f6f8fb; color:#1f2d3d; line-height:1.6;}
@@ -217,7 +215,7 @@ nav a {
   padding: 14px;
   margin-bottom: 14px;
   border: 1px solid #ccc;
-  border-radius: 8px;
+  border-radius: 100px;
   font-size: 1rem;
   transition: border 0.2s;
 }
@@ -267,24 +265,8 @@ nav a {
   text-align: center;
   margin-bottom: 12px;
 }
-.left-side {
-  width: 40%;
-  background: #f0f0f0;
-  padding: 40px;
-  display: flex;
-  justify-content: center;
-}
 
-.login-form {
-  width: 100%;
-  max-width: 320px;
-}
-
-.login-form h2 {
-  margin-bottom: 20px;
-}
-
-.login-form input {
+.auth-form input {
   width: 100%;
   padding: 12px;
   margin: 8px 0 16px;
@@ -292,7 +274,7 @@ nav a {
   border-radius: 6px;
 }
 
-.login-form button {
+.outh-form button {
   width: 100%;
   padding: 12px;
   border: none;
@@ -323,39 +305,6 @@ nav a {
         .user-item {
             margin-bottom: 5px;
         }
-
-      .log-box {
-  background: #63676a;
-  padding: 100px;
-  border-radius: 100px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  display: flex;
-  align-items: center;
-}
-
-.right-side {
-  width: 60%;
-  background: white;
-  padding: 60px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.landing-content {
-  max-width: 520px;
-}
-
-.right-side h1 {
-  font-size: 48px;
-  font-weight: 800;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.right-side h1 span {
-  color: #007bff;
-}
 
 .subtitle {
   font-size: 20px;
@@ -389,4 +338,5 @@ nav a {
   margin: 0;
   color: #333;
 }
+
 
