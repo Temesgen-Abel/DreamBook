@@ -186,8 +186,8 @@ nav a {
 /* WRAPPER */
 .auth-wrapper {
   display: flex;
-  justify-content: centre;
-  align-items: centre;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
   padding: 20px;
   background: #f0f2f5; /* Facebook-light background */
@@ -247,7 +247,7 @@ nav a {
 
 /* LINKS */
 .auth-links {
-  text-align: centre;
+  text-align: center;
   margin-top: 15px;
   font-size: 0.95rem;
 }
@@ -263,10 +263,47 @@ nav a {
 
 /* ERROR MESSAGE */
 .auth-error {
-  colour: red;
-  text-align: centre;
+  color: red;
+  text-align: center;
   margin-bottom: 12px;
 }
+.left-side {
+  width: 40%;
+  background: #f0f0f0;
+  padding: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-form {
+  width: 100%;
+  max-width: 320px;
+}
+
+.login-form h2 {
+  margin-bottom: 20px;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.login-form button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: #007bff;
+  color: white;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
 
 .online-dot {
             width: 8px;
@@ -279,7 +316,7 @@ nav a {
         .offline-dot {
             width: 10px;
             height: 10px;
-            background: grey;
+            background: gray;
             border-radius: 50%;
             display: inline-block;
             margin-right: 5px;
@@ -287,15 +324,69 @@ nav a {
         .user-item {
             margin-bottom: 5px;
         }
-.log-box {
-  background: #63666a;
+
+      .log-box {
+  background: #63676a;
   padding: 100px;
-  width: 100px 
   border-radius: 100px;
-  align-content: centre 
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
 }
 
+.right-side {
+  width: 60%;
+  background: white;
+  padding: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
+.landing-content {
+  max-width: 520px;
+}
 
+.right-side h1 {
+  font-size: 48px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  color: #333;
+}
 
+.right-side h1 span {
+  color: #007bff;
+}
+
+.subtitle {
+  font-size: 20px;
+  margin-bottom: 20px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.features {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 30px;
+}
+
+.features li {
+  margin-bottom: 10px;
+  font-size: 18px;
+  color: #444;
+}
+
+.illustration-box {
+  margin-top: 30px;
+  padding: 25px;
+  border-radius: 10px;
+  background: #f3f6ff;
+  border-left: 5px solid #007bff;
+}
+
+.illustration-box p {
+  font-size: 18px;
+  margin: 0;
+  color: #333;
+}
