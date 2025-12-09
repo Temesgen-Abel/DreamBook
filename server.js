@@ -643,7 +643,7 @@ app.post("/inbox", mustBeLoggedIn, async (req, res) => {
 });
 
 
-//routes for dictionary
+//10. routes for dictionary
 app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
   const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
   res.render("dictionary", { terms, user: req.user, errors: [] });
@@ -715,6 +715,48 @@ app.get("/notifications/unread-count", mustBeLoggedIn, async (req, res) => {
   );
   res.json({ unread: row?.count || 0 });
 });
+
+//13. dream analyzer
+
+// --------------------------------------
+// DREAM REALNESS CALCULATOR
+// --------------------------------------
+const timingWeights = { evening: 5, midnight: 25, post_midnight: 20, morning: 15, day_dream: 0 };
+const memoryWeights = { vivid: 20, not_memorable: 14.5 };
+const healthWeights = { healthy: 25, patient: 14.5 };
+const emotionWeights = { not_emotional: 25, emotional: 14.5 };
+
+function calculateDreamProbability(timing, memory, health, emotion) {
+  const totalScore =
+    (timingWeights[timing] || 0) +
+    (memoryWeights[memory] || 0) +
+    (healthWeights[health] || 0) +
+    (emotionWeights[emotion] || 0);
+
+  let category =
+    totalScore >= 80 ? "High Probability of Dream Realness"
+    : totalScore >= 63 ? "Moderate Probability"
+    : totalScore >= 53 ? "Low Probability"
+    : "Nightmare";
+
+  return { totalScore, category };
+}
+
+app.get("/dream-realness", (_, res) => {
+  res.render("dream-realness", { result: null });
+});
+
+app.post("/dream-realness", (req, res) => {
+  const result = calculateDreamProbability(
+    req.body.timing,
+    req.body.memory,
+    req.body.health,
+    req.body.emotion
+  );
+
+  res.render("dream-realness", { result });
+});
+
 
 
 // ===================================================================
@@ -808,5 +850,6 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
