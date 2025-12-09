@@ -19,6 +19,8 @@
         </p>
     <% } %>
 
+    <left-side>
+  <div class="landing-image">
     <form action="/login" method="POST" class="auth-form">
 
         <% if (errors && errors.length) { %>
@@ -30,10 +32,10 @@
         <fieldset class="log-box">
             <legend>Login</legend>
 
-            <label for="username"><small>Username</small></label>
+            <label class="input" for="username"><small>Username</small></label>
             <input type="text" id="username" name="username" autocomplete="off" required>
 
-            <label for="password"><small>Password</small></label>
+            <label class="input" for="password"><small>Password</small></label>
             <input type="password" id="password" name="password" autocomplete="off" required>
 
             <button type="submit">Login</button>
@@ -43,6 +45,30 @@
 
         </fieldset>
     </form>
+
+    <div class="right-side">
+  <div class="landing-content">
+
+    <h1>Welcome to <span>DreamBook</span></h1>
+
+    <p class="subtitle">
+      Discover the meaning behind your dreams and explore our rich library of dream interpretations.
+    </p>
+
+    <ul class="features">
+      <li>✓ Search thousands of dream meanings</li>
+      <li>✓ Learn spiritual and psychological interpretations</li>
+      <li>✓ Save your dream history</li>
+      <li>✓ Access dream dictionary anytime</li>
+    </ul>
+
+    <div class="illustration-box">
+      <p>Your dreams have meaning — unlock them with DreamBook.</p>
+    </div>
+
+  </div>
+</div>
+
 </main>
 </body>
 </html>
