@@ -300,7 +300,6 @@ app.post("/register", async (req, res) => {
   res.redirect("/dashboard");
 });
 
-
 // ===================================================================
 // 7. PASSWORD RESET
 // ===================================================================
@@ -362,7 +361,7 @@ app.use(authMiddleware);
 app.use(unreadMiddleware);
 
 
-// ------------------- Dashboard -------------------
+// 9.  Dashboard -------------------
 app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
   const page = Math.max(1, Number(req.query.page) || 1);
   const pageSize = 10;
@@ -385,7 +384,7 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
 });
 
 
-// ------------------- Create post -------------------
+// 10. Create post -------------------
 app.get("/create-post", mustBeLoggedIn, (_, res) => res.render("create-post", { errors: [] }));
 
 app.post("/create-post", mustBeLoggedIn, async (req, res) => {
@@ -415,7 +414,7 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
 });
 
 
-// ------------------- Single post -------------------
+// 11. Single post -------------------
 app.get("/post/:id", mustBeLoggedIn, async (req, res) => {
   const postId = Number(req.params.id);
 
@@ -452,7 +451,7 @@ app.get("/post/:id", mustBeLoggedIn, async (req, res) => {
 });
 
 
-// ------------------- Edit post -------------------
+// 12.  Edit post -------------------
 app.post("/edit-post/:id", mustBeLoggedIn, async (req, res) => {
   const id = req.params.id;
   const post = await dbGet("SELECT * FROM posts WHERE id=$1", [id]);
@@ -480,7 +479,7 @@ app.post("/delete-post/:id", mustBeLoggedIn, async (req, res) => {
 
 
 // ===================================================================
-// 9. COMMENTS
+// 13. COMMENTS
 // ===================================================================
 app.post("/post/:id/comment", mustBeLoggedIn, async (req, res) => {
   const postId = Number(req.params.id);
@@ -532,7 +531,7 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 
 // ===================================================================
-// 10. REACTIONS
+// 14. REACTIONS
 // ===================================================================
 app.post("/post/:id/reactions", mustBeLoggedIn, async (req, res) => {
   const postId = Number(req.params.id);
@@ -557,7 +556,7 @@ app.post("/post/:id/reactions", mustBeLoggedIn, async (req, res) => {
 
 
 // ===================================================================
-// 11. MESSAGES (inbox)
+// 15. MESSAGES (inbox)
 // ===================================================================
 app.get("/inbox", mustBeLoggedIn, async (req, res) => {
   const me = req.user.id;
@@ -643,7 +642,7 @@ app.post("/inbox", mustBeLoggedIn, async (req, res) => {
 });
 
 
-//10. routes for dictionary
+//16. routes for dictionary
 app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
   const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
   res.render("dictionary", { terms, user: req.user, errors: [] });
@@ -672,7 +671,7 @@ app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
 
 
 // ===================================================================
-// 12. NOTIFICATIONS
+// 17. NOTIFICATIONS
 // ===================================================================
 app.get("/notifications", mustBeLoggedIn, async (req, res) => {
   const me = req.user.id;
@@ -716,7 +715,7 @@ app.get("/notifications/unread-count", mustBeLoggedIn, async (req, res) => {
   res.json({ unread: row?.count || 0 });
 });
 
-//13. dream analyzer
+//18. dream analyzer
 
 // --------------------------------------
 // DREAM REALNESS CALCULATOR
@@ -757,10 +756,76 @@ app.post("/dream-realness", (req, res) => {
   res.render("dream-realness", { result });
 });
 
+// 19.CHAT ROUTES (NO REPLIES)
 
+// Optional redirect
+app.get("/chat", mustBeLoggedIn, (_, res) => {
+  res.redirect("/inbox");
+});
+
+// Chat with a specific user
+app.get("/chat/:id", mustBeLoggedIn, (req, res) => {
+  const me = Number(req.user.id);
+  const otherId = Number(req.params.id);
+
+  const otherUser = db.prepare("SELECT id, username FROM users WHERE id = ?").get(otherId);
+  if (!otherUser) return res.redirect("/inbox");
+
+  // Mark messages as read
+  db.prepare(`
+    UPDATE messages
+    SET is_read = 1
+    WHERE senderid = ? AND receiverid = ?
+  `).run(otherId, me);
+
+  const messages = db.prepare(`
+    SELECT m.*, u.username AS sendername
+    FROM messages m
+    JOIN users u ON u.id = m.senderid
+    WHERE (m.senderid = ? AND m.receiverid = ?)
+       OR (m.senderid = ? AND m.receiverid = ?)
+    ORDER BY datetime(m.createdAt) ASC
+  `).all(me, otherId, otherId, me);
+
+  res.render("chat", { otherUser, messages });
+});
+
+// Send message (no replies)
+// Send message (no replies) + realtime socket events
+app.post("/chat/:id/send", mustBeLoggedIn, (req, res) => {
+  const senderId = Number(req.user.id);
+  const receiverId = Number(req.params.id);
+  const messageText = (req.body.message || "").trim();
+
+  if (!messageText) return res.redirect(`/chat/${receiverId}`);
+
+  // Validate receiver exists
+  const receiver = db.prepare("SELECT id, username FROM users WHERE id = ?").get(receiverId);
+  if (!receiver) return res.redirect("/inbox");
+
+  try {
+    // Save message
+    const result = insertMessage.run(senderId, receiverId, messageText);
+    const messageId = result.lastInsertRowid;
+
+    // Fetch full message row including sender name
+    const msg = db.prepare(`
+      SELECT m.*, u.username AS sendername
+      FROM messages m
+      JOIN users u ON u.id = m.senderid
+      WHERE m.id = ?
+    `).get(messageId);
+
+    const io = req.app.get("io");
+
+    // ----------------------------------------------------------
+    // 🔥 REAL-TIME MESSAGE SENT TO BOTH USERS
+    // ----------------------------------------------------------
+    io.to(`user_${receiverId}`).emit("new_message", msg); // Receiver
+    io.to(`user_${senderId}`).emit("new_message", msg);    // Sender (mirror)
 
 // ===================================================================
-// 7. SOCKET.IO USERS ONLINE
+// 20. SOCKET.IO USERS ONLINE
 // ===================================================================
 const userSockets = new Map();
 const lastSeen = new Map();
@@ -817,7 +882,7 @@ io.on("connection", socket => {
 });
 
 // ===================================================================
-// 8. ADMIN AUTO-CREATE
+// 20. ADMIN AUTO-CREATE
 // ===================================================================
 async function ensureAdmin() {
   if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
@@ -840,7 +905,7 @@ async function ensureAdmin() {
 }
 
 // ===================================================================
-// 9. START SERVER
+// 21. START SERVER
 // ===================================================================
 (async () => {
   await createPoolOrExit();
@@ -850,6 +915,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
