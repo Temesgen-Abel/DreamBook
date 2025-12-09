@@ -881,6 +881,7 @@ io.on("connection", socket => {
 
 // ===================================================================
 // 20. ADMIN AUTO-CREATE
+//  20. ADMIN AUTO-CREATE
 // ===================================================================
 async function ensureAdmin() {
   if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
@@ -893,7 +894,7 @@ async function ensureAdmin() {
   if (!existing) {
     const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10);
     await dbRun(
-      "INSERT INTO users (username, password, role) VALUES ($1,$2, 'admin')",
+      "INSERT INTO users (username, password, role) VALUES ($1,$2,'admin')",
       [process.env.ADMIN_USERNAME, hash]
     );
     console.log("✔ Admin user created");
@@ -902,3 +903,14 @@ async function ensureAdmin() {
   }
 }
 
+// ===================================================================
+// 21. START SERVER
+
+(async () => {
+  await createPoolOrExit();
+  await initDb();
+  await ensureAdmin();
+
+  const PORT = process.env.PORT || 5733;
+  server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
+})();
