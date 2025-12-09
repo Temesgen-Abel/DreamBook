@@ -272,7 +272,6 @@ nav a {
   background: #f0f0f0;
   padding: 40px;
   display: flex;
-  align-items: center;
   justify-content: center;
 }
 
@@ -390,3 +389,4 @@ nav a {
   margin: 0;
   color: #333;
 }
+
