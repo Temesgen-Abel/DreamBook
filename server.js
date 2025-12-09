@@ -643,6 +643,34 @@ app.post("/inbox", mustBeLoggedIn, async (req, res) => {
 });
 
 
+//routes for dictionary
+app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
+  const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
+  res.render("dictionary", { terms, user: req.user, errors: [] });
+});
+
+app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
+  const term = req.body.term.trim();
+  const meaning = req.body.meaning.trim();
+  const errors = [];
+
+  if (!term) errors.push("Term is required.");
+  if (!meaning) errors.push("Meaning is required.");
+
+  if (errors.length) {
+    const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
+    return res.render("dictionary", { terms, user: req.user, errors });
+  }
+
+  await dbRun(
+    "INSERT INTO dictionary (term, meaning) VALUES ($1,$2)",
+    [term, meaning]
+  );
+
+  res.redirect("/dictionary");
+});
+
+
 // ===================================================================
 // 12. NOTIFICATIONS
 // ===================================================================
@@ -780,4 +808,5 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
