@@ -279,7 +279,7 @@ nav a {
         .offline-dot {
             width: 10px;
             height: 10px;
-            background: gray;
+            background: grey;
             border-radius: 50%;
             display: inline-block;
             margin-right: 5px;
@@ -287,4 +287,9 @@ nav a {
         .user-item {
             margin-bottom: 5px;
         }
-
+.log-box {
+  background: #63666a;
+  padding: 20px;
+  border-radius: 100px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
