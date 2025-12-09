@@ -716,8 +716,6 @@ app.get("/notifications/unread-count", mustBeLoggedIn, async (req, res) => {
 });
 
 //18. dream analyzer
-
-// --------------------------------------
 // DREAM REALNESS CALCULATOR
 // --------------------------------------
 const timingWeights = { evening: 5, midnight: 25, post_midnight: 20, morning: 15, day_dream: 0 };
@@ -914,8 +912,6 @@ async function ensureAdmin() {
 
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
-})();
-
-
+})()
 
 
