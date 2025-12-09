@@ -247,7 +247,7 @@ nav a {
 
 /* LINKS */
 .auth-links {
-  text-align: center;
+  text-align: centre;
   margin-top: 15px;
   font-size: 0.95rem;
 }
@@ -263,8 +263,8 @@ nav a {
 
 /* ERROR MESSAGE */
 .auth-error {
-  color: red;
-  text-align: center;
+  colour: red;
+  text-align: centre;
   margin-bottom: 12px;
 }
 
@@ -290,9 +290,11 @@ nav a {
 .log-box {
   background: #63666a;
   padding: 100px;
-  width: 50px 
+  width: 100px 
   border-radius: 100px;
+  text-align: centre 
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
+
 
 
