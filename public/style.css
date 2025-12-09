@@ -186,8 +186,8 @@ nav a {
 /* WRAPPER */
 .auth-wrapper {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  justify-content: centre;
+  align-items: centre;
   min-height: 100vh;
   padding: 20px;
   background: #f0f2f5; /* Facebook-light background */
@@ -290,7 +290,9 @@ nav a {
 .log-box {
   background: #63666a;
   padding: 100px;
+  width: 50px 
   border-radius: 100px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
+
 
