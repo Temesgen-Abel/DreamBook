@@ -755,41 +755,6 @@ app.post("/dream-realness", (req, res) => {
 });
 
 // 19.CHAT ROUTES (NO REPLIES)
-
-// Optional redirect
-app.get("/chat", mustBeLoggedIn, (_, res) => {
-  res.redirect("/inbox");
-});
-
-// Chat with a specific user
-app.get("/chat/:id", mustBeLoggedIn, (req, res) => {
-  const me = Number(req.user.id);
-  const otherId = Number(req.params.id);
-
-  const otherUser = db.prepare("SELECT id, username FROM users WHERE id = ?").get(otherId);
-  if (!otherUser) return res.redirect("/inbox");
-
-  // Mark messages as read
-  db.prepare(`
-    UPDATE messages
-    SET is_read = 1
-    WHERE senderid = ? AND receiverid = ?
-  `).run(otherId, me);
-
-  const messages = db.prepare(`
-    SELECT m.*, u.username AS sendername
-    FROM messages m
-    JOIN users u ON u.id = m.senderid
-    WHERE (m.senderid = ? AND m.receiverid = ?)
-       OR (m.senderid = ? AND m.receiverid = ?)
-    ORDER BY datetime(m.createdAt) ASC
-  `).all(me, otherId, otherId, me);
-
-  res.render("chat", { otherUser, messages });
-});
-
-// Send message (no replies)
-// Send message (no replies) + realtime socket events
 app.post("/chat/:id/send", mustBeLoggedIn, (req, res) => {
   const senderId = Number(req.user.id);
   const receiverId = Number(req.params.id);
@@ -816,11 +781,17 @@ app.post("/chat/:id/send", mustBeLoggedIn, (req, res) => {
 
     const io = req.app.get("io");
 
-    // ----------------------------------------------------------
-    // 🔥 REAL-TIME MESSAGE SENT TO BOTH USERS
-    // ----------------------------------------------------------
-    io.to(`user_${receiverId}`).emit("new_message", msg); // Receiver
-    io.to(`user_${senderId}`).emit("new_message", msg);    // Sender (mirror)
+    // Send realtime events
+    io.to(`user_${receiverId}`).emit("new_message", msg);
+    io.to(`user_${senderId}`).emit("new_message", msg);
+
+  } catch (err) {
+    console.error("Chat send error:", err);
+  }
+
+  res.redirect(`/chat/${receiverId}`);
+});
+
 
 // ===================================================================
 // 20. SOCKET.IO USERS ONLINE
@@ -914,3 +885,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
