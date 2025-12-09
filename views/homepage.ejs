@@ -1,32 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
-<%- include('includes/head') %>
+<head>
+  <meta charset="UTF-8" />
+  <title>DreamBook — Welcome</title>
+  <link rel="stylesheet" href="/css/main.css" />
+</head>
 
 <body>
-<%- include('includes/header') %>
 
-<div class="wrapper page-wrapper">
-  <main class="home-page" action="/">
-    <h1>Welcome to DreamBook!</h1>
-    <p>
-      Explore dreams, post your dreams, and connect with dream interpreters.
-    </p>
-    <p>
-      <a href="/dashboard" class="btn">View Public Posts</a>
-      <a href="/create-post" class="btn">Post Your Dream</a>
-    </p>
-
-    <section class="about-page">
-      <h2>About This Platform</h2>
-      <p>
-        DreamBook is a supportive platform to share and analyze dreams.
-        Users can post dreams publicly, comment, and use the dream dictionary.
-      </p>
-    </section>
-  </main>
+<!-- GALAXY BACKGROUND -->
+<div class="galaxy-bg">
+  <div class="galaxy-rotate">
+    <div class="stars"></div>
+    <div class="stars2"></div>
+    <div class="stars3"></div>
+    <div class="moon"></div>
+  </div>
 </div>
 
-<%- include('includes/footer') %>
+<nav>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <img class="DreamBook-logo" src="/img/logo.png" alt="DreamBook">
+    <a href="/">DreamBook</a>
+  </div>
+
+  <div>
+    <a href="/login" class="btn">Login</a>
+    <a href="/register" class="btn">Register</a>
+  </div>
+</nav>
+
+<div class="wrapper" style="text-align:center; margin-top:80px;">
+  <h1 style="font-size:2.5rem; color:#fff; text-shadow:0 0 10px rgba(255,255,255,0.4);">
+    A Galaxy of Stories Awaits
+  </h1>
+  <p style="color:#eee; margin-top:10px; font-size:1.1rem;">
+    Share your dreams, explore others', and connect across the universe.
+  </p>
+
+  <div style="margin-top:30px;">
+    <a href="/register" class="btn" style="padding:12px 20px; font-size:1.1rem;">Create Account</a>
+    <a href="/login" class="btn" style="padding:12px 20px; font-size:1.1rem; background:#4f76df;">Login</a>
+  </div>
+</div>
+
+<footer style="text-align:center; margin-top:120px; padding:20px; color:#ddd;">
+  © 2025 DreamBook — Explore the Universe Within
+</footer>
+
 </body>
 </html>
-
