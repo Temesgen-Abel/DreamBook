@@ -251,15 +251,17 @@ app.get("/", (req, res) => {
   res.render("homepage", { user: req.user, errors: [] });
 });
 
-app.get("/login", (_, res) => res.render("login", { errors: [], error: null }));
+//login Route
 
 app.post("/login", async (req, res) => {
   const username = req.body.username.trim();
   const password = req.body.password.trim();
 
   const user = await dbGet("SELECT * FROM users WHERE username=$1", [username]);
-  if (!user || !bcrypt.compareSync(password, user.password))
-    return res.render("login", { errors: [], error: "Invalid credentials" });
+
+  if (!user || !bcrypt.compareSync(password, user.password)) {
+    return res.render("login", { errors: ["Invalid credentials"] });
+  }
 
   res.cookie("DreamBookApp", signToken(user), {
     httpOnly: true,
@@ -268,12 +270,13 @@ app.post("/login", async (req, res) => {
   });
   res.redirect("/dashboard");
 });
-
+//logout Route
 app.get("/logout", (req, res) => {
   res.clearCookie("DreamBookApp");
   res.redirect("/login");
 });
 
+//Register Route
 app.get("/register", (_, res) => res.render("register", { errors: [] }));
 
 app.post("/register", async (req, res) => {
@@ -902,6 +905,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
