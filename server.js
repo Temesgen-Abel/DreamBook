@@ -218,21 +218,25 @@ async function unreadMiddleware(req, res, next) {
 // 5. EXPRESS + SOCKET.IO SETUP
 // ===================================================================
 const app = express();
+
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
+// Request logger
 app.use((req, _, next) => {
   console.log(`[REQ] ${req.method} ${req.path}`);
   next();
 });
+
+// ⭐ No session → always define user to avoid EJS errors
 app.use((req, res, next) => {
-  res.locals.user = req.session?.user || null;
+  res.locals.user = null; 
   next();
 });
-
 
 const server = http.createServer(app);
 const io = require("socket.io")(server, { cors: { origin: "*" } });
@@ -878,6 +882,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
