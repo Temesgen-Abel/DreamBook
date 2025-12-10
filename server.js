@@ -228,6 +228,11 @@ app.use((req, _, next) => {
   console.log(`[REQ] ${req.method} ${req.path}`);
   next();
 });
+app.use((req, res, next) => {
+  res.locals.user = req.session?.user || null;
+  next();
+});
+
 
 const server = http.createServer(app);
 const io = require("socket.io")(server, { cors: { origin: "*" } });
@@ -873,5 +878,6 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
