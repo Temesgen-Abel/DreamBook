@@ -599,88 +599,208 @@ app.post("/post/:id/reactions", mustBeLoggedIn, async (req, res) => {
 
 // ===================================================================
 // 15. MESSAGES (inbox)
-// ===================================================================
+===========================
+//      USER INBOX PAGE
+// ============================
 app.get("/inbox", mustBeLoggedIn, async (req, res) => {
-  const me = req.user.id;
+    const me = req.user.id;
 
-  const users = await dbQuery("SELECT id, username FROM users WHERE id != $1 ORDER BY username", [me]);
+    const users = await dbQuery(
+        "SELECT id, username FROM users WHERE id != $1 ORDER BY username",
+        [me]
+    );
 
-  const conversations = await dbQuery(`
-    SELECT u.id, u.username,
-      (SELECT m.message FROM messages m 
-       WHERE (m.senderid=u.id AND m.receiverid=$1)
-          OR (m.senderid=$1 AND m.receiverid=u.id)
-       ORDER BY m.createdAt DESC LIMIT 1) AS lastMessage,
-      (SELECT m.createdAt FROM messages m 
-       WHERE (m.senderid=u.id AND m.receiverid=$1)
-          OR (m.senderid=$1 AND m.receiverid=u.id)
-       ORDER BY m.createdAt DESC LIMIT 1) AS lastDate
-    FROM users u
-    WHERE u.id != $1
-      AND EXISTS (
-        SELECT 1 FROM messages m 
-        WHERE (m.senderid=u.id AND m.receiverid=$1)
-           OR (m.senderid=$1 AND m.receiverid=u.id)
-      )
-    ORDER BY lastDate DESC
-  `, [me]);
+    const conversations = await dbQuery(`
+        SELECT u.id, u.username,
+           (SELECT m.message FROM messages m
+            WHERE (m.senderid=u.id AND m.receiverid=$1)
+               OR (m.senderid=$1 AND m.receiverid=u.id)
+            ORDER BY m.createdAt DESC LIMIT 1) AS lastMessage,
+           (SELECT m.createdAt FROM messages m
+            WHERE (m.senderid=u.id AND m.receiverid=$1)
+               OR (m.senderid=$1 AND m.receiverid=u.id)
+            ORDER BY m.createdAt DESC LIMIT 1) AS lastDate
+        FROM users u
+        WHERE u.id != $1
+          AND EXISTS (
+               SELECT 1 FROM messages m
+               WHERE (m.senderid=u.id AND m.receiverid=$1)
+                  OR (m.senderid=$1 AND m.receiverid=u.id)
+          )
+        ORDER BY lastDate DESC
+    `, [me]);
 
-  const unreadRow = await dbGet(
-    "SELECT COUNT(*)::int AS unread FROM messages WHERE receiverid=$1 AND is_read=false",
-    [me]
-  );
+    const unreadRow = await dbGet(
+        "SELECT COUNT(*)::int AS unread FROM messages WHERE receiverid=$1 AND is_read=false",
+        [me]
+    );
 
-  res.render("inbox", {
-    conversations,
-    users,
-    unreadCount: unreadRow?.unread || 0,
-    user: req.user,
-    errors: []
-  });
+    res.render("inbox", {
+        conversations,
+        users,
+        unreadCount: unreadRow?.unread || 0,
+        user: req.user
+    });
 });
 
+// Send from inbox
 app.post("/inbox", mustBeLoggedIn, async (req, res) => {
-  const me = req.user.id;
-  const receiverId = Number(req.body.receiverId);
-  const message = req.body.message.trim();
-  const errors = [];
+    const me = req.user.id;
+    const receiverId = Number(req.body.receiverId);
+    const message = req.body.message.trim();
 
-  if (!receiverId) errors.push("Please select a receiver.");
-  if (!message) errors.push("Message cannot be empty.");
+    if (!receiverId || !message) return res.redirect("/inbox");
 
-  const receiver = await dbGet("SELECT id FROM users WHERE id=$1", [receiverId]);
-  if (!receiver) errors.push("Receiver not found.");
+    // Insert message
+    const inserted = await dbGet(`
+        INSERT INTO messages (senderid, receiverid, message)
+        VALUES ($1,$2,$3)
+        RETURNING id, createdAt
+    `, [me, receiverId, message]);
 
-  if (errors.length) {
-    return res.render("inbox", { conversations: [], users: [], unreadCount: 0, errors });
-  }
+    // Notify via Socket.io
+    const io = req.app.get("io");
 
-  const inserted = await dbGet(`
-    INSERT INTO messages (senderid, receiverid, message)
-    VALUES ($1,$2,$3)
-    RETURNING id, createdAt
-  `, [me, receiverId, message]);
+    io.to(`user_${receiverId}`).emit("new_message", {
+        id: inserted.id,
+        senderid: me,
+        receiverid: receiverId,
+        sendername: req.user.username,
+        message,
+        createdAt: inserted.createdat
+    });
 
-  const io = req.app.get("io");
+    io.to(`user_${receiverId}`).emit("notification", {
+        fromId: me,
+        fromName: req.user.username,
+        preview: message,
+        messageId: inserted.id,
+        timestamp: inserted.createdat
+    });
 
-  io.to(`user_${receiverId}`).emit("new_message", {
-    id: inserted.id,
-    senderid: me,
-    receiverid: receiverId,
-    message,
-    createdAt: inserted.createdat
-  });
-
-  io.to(`user_${receiverId}`).emit("notification", {
-    fromId: me,
-    fromName: req.user.username,
-    preview: message,
-    messageId: inserted.id,
-    timestamp: inserted.createdat
-  });
-
-  res.redirect("/inbox");
+    res.redirect("/inbox");
 });
+
+// ============================
+//      USER CHAT PAGE
+// ============================
+app.get("/chat/:id", mustBeLoggedIn, async (req, res) => {
+    const me = req.user.id;
+    const otherId = Number(req.params.id);
+
+    const otherUser = await dbGet(
+        "SELECT id, username FROM users WHERE id=$1",
+        [otherId]
+    );
+
+    const messages = await dbQuery(`
+        SELECT m.*, u.username AS sendername
+        FROM messages m
+        JOIN users u ON u.id = m.senderid
+        WHERE (m.senderid=$1 AND m.receiverid=$2)
+           OR (m.senderid=$2 AND m.receiverid=$1)
+        ORDER BY m.createdAt ASC
+    `, [me, otherId]);
+
+    res.render("chat", {
+        messages,
+        otherUser,
+        user: req.user
+    });
+});
+
+app.post("/chat/:id/send", mustBeLoggedIn, async (req, res) => {
+    const senderId = req.user.id;
+    const receiverId = Number(req.params.id);
+    const message = req.body.message.trim();
+
+    if (!message) return res.redirect(`/chat/${receiverId}`);
+
+    const inserted = await dbGet(`
+        INSERT INTO messages (senderid, receiverid, message)
+        VALUES ($1,$2,$3)
+        RETURNING id, createdAt
+    `, [senderId, receiverId, message]);
+
+    const io = req.app.get("io");
+    io.to(`user_${receiverId}`).emit("new_message", {
+        id: inserted.id,
+        senderid: senderId,
+        receiverid: receiverId,
+        sendername: req.user.username,
+        message,
+        createdAt: inserted.createdat
+    });
+
+    res.redirect(`/chat/${receiverId}`);
+});
+
+// ============================
+//      ADMIN CHAT PANEL
+// ============================
+app.get("/chat-admin", mustBeAdmin, async (req, res) => {
+    const userId = Number(req.query.user);
+
+    const users = await dbQuery(`
+        SELECT id, username 
+        FROM users 
+        WHERE id != $1 
+        ORDER BY username
+    `, [req.user.id]);
+
+    let messages = [];
+    let otherUser = null;
+
+    if (userId) {
+        otherUser = await dbGet(
+            "SELECT id, username FROM users WHERE id=$1", 
+            [userId]
+        );
+
+        messages = await dbQuery(`
+            SELECT m.*, u.username AS sendername
+            FROM messages m
+            JOIN users u ON u.id = m.senderid
+            WHERE (m.senderid=$1 AND m.receiverid=$2)
+               OR (m.senderid=$2 AND m.receiverid=$1)
+            ORDER BY m.createdAt ASC
+        `, [req.user.id, userId]);
+    }
+
+    res.render("chat-admin", {
+        users,
+        user: req.user,
+        messages,
+        otherUser
+    });
+});
+
+app.post("/chat-admin/:id", mustBeAdmin, async (req, res) => {
+    const adminId = req.user.id;
+    const userId = Number(req.params.id);
+    const message = req.body.message.trim();
+
+    if (!message) return res.redirect(`/chat-admin?user=${userId}`);
+
+    const inserted = await dbGet(`
+        INSERT INTO messages (senderid, receiverid, message)
+        VALUES ($1,$2,$3)
+        RETURNING id, createdAt
+    `, [adminId, userId, message]);
+
+    const io = req.app.get("io");
+    io.to(`user_${userId}`).emit("new_message", {
+        id: inserted.id,
+        senderid: adminId,
+        receiverid: userId,
+        sendername: "Admin",
+        message,
+        createdAt: inserted.createdat
+    });
+
+    res.redirect(`/chat-admin?user=${userId}`);
+});
+
 
 
 //16. routes for the dictionary
@@ -755,7 +875,6 @@ app.get("/notifications/unread-count", mustBeLoggedIn, async (req, res) => {
 });
 
 //18. dream analyzer
-// DREAM REALNESS CALCULATOR
 // --------------------------------------
 const timingWeights = { evening: 5, midnight: 25, post_midnight: 20, morning: 15, day_dream: 0 };
 const memoryWeights = { vivid: 20, not_memorable: 14.5 };
@@ -793,53 +912,6 @@ app.post("/dream-realness", (req, res) => {
   res.render("dream-realness", { result });
 });
 
-// 19. CHAT ROUTES (NO REPLIES)
-app.post("/chat/:id/send", mustBeLoggedIn, async (req, res) => {
-  const senderId = Number(req.user.id);
-  const receiverId = Number(req.params.id);
-  const messageText = (req.body.message || "").trim();
-
-  if (!messageText) return res.redirect(`/chat/${receiverId}`);
-
-  // Validate receiver exists
-  const receiver = await dbGet("SELECT id, username FROM users WHERE id=$1", [receiverId]);
-  if (!receiver) return res.redirect("/inbox");
-
-  // Save message
-  const inserted = await dbGet(
-    `
-      INSERT INTO messages (senderid, receiverid, message)
-      VALUES ($1,$2,$3)
-      RETURNING id, createdAt
-    `,
-    [senderId, receiverId, messageText]
-  );
-
-  app.get("/chat-admin", mustBeAdmin, async (req, res) => {
-  const messages = await dbQuery(`
-    SELECT m.*, u1.username AS sendername, u2.username AS receivername
-    FROM messages m
-    JOIN users u1 ON u1.id = m.senderid
-    JOIN users u2 ON u2.id = m.receiverid
-    ORDER BY m.createdAt DESC
-  `);
-
-  res.render("chat-admin", { messages, user: req.user });
-});
-
-
-  // Send live notification through Socket.io
-  const io = req.app.get("io");
-  io.to(`user_${receiverId}`).emit("new_message", {
-    id: inserted.id,
-    senderid: senderId,
-    receiverid: receiverId,
-    message: messageText,
-    createdAt: inserted.createdat
-  });
-
-  res.redirect(`/chat/${receiverId}`);
-});
 
 
 // ===================================================================
@@ -932,6 +1004,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
