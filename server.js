@@ -304,19 +304,6 @@ app.post("/register", async (req, res) => {
   res.redirect("/dashboard");
 });
 
-
-//dashboard
-app.get("/dashboard", async (req, res) => {
-  const posts = await getPosts(); 
-  const countReactions = await getReactionCounts(); // <-- whatever your function is
-
-  res.render("dashboard", {
-    posts,
-    countReactions: countReactions || new Map()
-  });
-});
-
-
 // ===================================================================
 // 7. PASSWORD RESET
 // ===================================================================
@@ -895,6 +882,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
