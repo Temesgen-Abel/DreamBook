@@ -450,7 +450,6 @@ app.get("/post/:id", mustBeLoggedIn, async (req, res) => {
   });
 });
 
-
 // 12.  Edit post -------------------
 app.post("/edit-post/:id", mustBeLoggedIn, async (req, res) => {
   const id = req.params.id;
@@ -754,8 +753,8 @@ app.post("/dream-realness", (req, res) => {
   res.render("dream-realness", { result });
 });
 
-// 19.CHAT ROUTES (NO REPLIES)
-app.post("/chat/:id/send", mustBeLoggedIn, (req, res) => {
+// 19. CHAT ROUTES (NO REPLIES)
+app.post("/chat/:id/send", mustBeLoggedIn, async (req, res) => {
   const senderId = Number(req.user.id);
   const receiverId = Number(req.params.id);
   const messageText = (req.body.message || "").trim();
@@ -763,31 +762,28 @@ app.post("/chat/:id/send", mustBeLoggedIn, (req, res) => {
   if (!messageText) return res.redirect(`/chat/${receiverId}`);
 
   // Validate receiver exists
-  const receiver = db.prepare("SELECT id, username FROM users WHERE id = ?").get(receiverId);
+  const receiver = await dbGet("SELECT id, username FROM users WHERE id=$1", [receiverId]);
   if (!receiver) return res.redirect("/inbox");
 
-  try {
-    // Save message
-    const result = insertMessage.run(senderId, receiverId, messageText);
-    const messageId = result.lastInsertRowid;
+  // Save message
+  const inserted = await dbGet(
+    `
+      INSERT INTO messages (senderid, receiverid, message)
+      VALUES ($1,$2,$3)
+      RETURNING id, createdAt
+    `,
+    [senderId, receiverId, messageText]
+  );
 
-    // Fetch full message row including sender name
-    const msg = db.prepare(`
-      SELECT m.*, u.username AS sendername
-      FROM messages m
-      JOIN users u ON u.id = m.senderid
-      WHERE m.id = ?
-    `).get(messageId);
-
-    const io = req.app.get("io");
-
-    // Send realtime events
-    io.to(`user_${receiverId}`).emit("new_message", msg);
-    io.to(`user_${senderId}`).emit("new_message", msg);
-
-  } catch (err) {
-    console.error("Chat send error:", err);
-  }
+  // Send live notification through Socket.io
+  const io = req.app.get("io");
+  io.to(`user_${receiverId}`).emit("new_message", {
+    id: inserted.id,
+    senderid: senderId,
+    receiverid: receiverId,
+    message: messageText,
+    createdAt: inserted.createdat
+  });
 
   res.redirect(`/chat/${receiverId}`);
 });
@@ -850,8 +846,6 @@ io.on("connection", socket => {
   });
 });
 
-// ===================================================================
-// 20. ADMIN AUTO-CREATE
 //  20. ADMIN AUTO-CREATE
 // ===================================================================
 async function ensureAdmin() {
@@ -885,4 +879,5 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
