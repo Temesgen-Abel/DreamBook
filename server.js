@@ -365,7 +365,7 @@ app.use(authMiddleware);
 app.use(unreadMiddleware);
 
 
-// 9.  Dashboard -------------------
+// 9. Dashboard -------------------
 app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
   const page = Math.max(1, Number(req.query.page) || 1);
   const pageSize = 10;
@@ -378,14 +378,34 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
     [pageSize, (page - 1) * pageSize]
   );
 
+  // === FIX: load reaction counts for posts ===
+  const reactions = await dbQuery(`
+    SELECT postId, 
+           SUM(CASE WHEN type = 'like' THEN 1 ELSE 0 END) AS likes,
+           SUM(CASE WHEN type = 'dislike' THEN 1 ELSE 0 END) AS dislikes
+    FROM reactions
+    WHERE postId = ANY($1)
+    GROUP BY postId
+  `, [posts.map(p => p.id)]);
+
+  const countReactions = new Map();
+  reactions.forEach(r => {
+    countReactions.set(r.postid, {
+      likes: Number(r.likes) || 0,
+      dislikes: Number(r.dislikes) || 0
+    });
+  });
+
   res.render("dashboard", {
     user: req.user,
     posts,
     currentPage: page,
     totalPages,
-    sanitizeBody
+    sanitizeBody,
+    countReactions // ← THIS FIXES THE ERROR
   });
 });
+
 
 
 // 10. Create post -------------------
@@ -882,6 +902,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
