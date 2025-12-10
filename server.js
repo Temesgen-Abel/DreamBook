@@ -276,6 +276,28 @@ app.get("/logout", (req, res) => {
   res.redirect("/login");
 });
 
+//admin login route
+app.get("/admin-login", (_, res) => res.render("admin-login", { errors: [], error: null }));
+
+app.post("/admin-login", async (req, res) => {
+  const username = req.body.username.trim();
+  const password = req.body.password.trim();
+
+  if (username !== process.env.ADMIN_USERNAME || password !== process.env.ADMIN_PASSWORD) {
+    return res.render("admin-login", { errors: [], error: "Invalid admin credentials" });
+  }
+
+  const adminUser = await dbGet("SELECT * FROM users WHERE username=$1", [username]);
+
+  res.cookie("DreamBookApp", signToken(adminUser), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict"
+  });
+  res.redirect("/dashboard");
+});
+
+
 //Register Route
 app.get("/register", (_, res) => res.render("register", { errors: [] }));
 
@@ -905,6 +927,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
