@@ -229,11 +229,6 @@ app.use((req, _, next) => {
   next();
 });
 
-app.use((req, res, next) => {
-  res.locals.user = req.session?.user || null;
-  next();
-});
-
 const server = http.createServer(app);
 const io = require("socket.io")(server, { cors: { origin: "*" } });
 app.set("io", io);
@@ -407,7 +402,7 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
     authorid: post.authorid,
     username: post.username,
     body: sanitizeBody(post.body),
-    createdDate: post.createddate
+    createdDate: post.createdDate
   });
 
   res.redirect("/dashboard");
@@ -595,7 +590,6 @@ app.get("/inbox", mustBeLoggedIn, async (req, res) => {
     errors: []
   });
 });
-
 
 app.post("/inbox", mustBeLoggedIn, async (req, res) => {
   const me = req.user.id;
@@ -879,5 +873,6 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
