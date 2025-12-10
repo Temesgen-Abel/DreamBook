@@ -309,9 +309,7 @@ app.post("/register", async (req, res) => {
 
   if (!username) errors.push("Username required");
   if (!password) errors.push("Password required");
-  if (!email) { errors.push("email required")
-
-    
+  if (!email) { errors.push("email required")  
   }
 
   if (await dbGet("SELECT id FROM users WHERE username=$1", [username]))
@@ -382,8 +380,6 @@ app.post("/reset-password/:token", async (req, res) => {
   res.send(`<h2>Password reset successful!</h2><a href="/login">Login</a>`);
 });
 
-
-// ===================================================================
 // 8. MAIN APP ROUTES
 // ===================================================================
 app.use(authMiddleware);
@@ -430,8 +426,6 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
     countReactions // ← THIS FIXES THE ERROR
   });
 });
-
-
 
 // 10. Create post -------------------
 app.get("/create-post", mustBeLoggedIn, (_, res) => res.render("create-post", { errors: [] }));
@@ -689,7 +683,7 @@ app.post("/inbox", mustBeLoggedIn, async (req, res) => {
 });
 
 
-//16. routes for dictionary
+//16. routes for the dictionary
 app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
   const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
   res.render("dictionary", { terms, user: req.user, errors: [] });
@@ -716,8 +710,6 @@ app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
   res.redirect("/dictionary");
 });
 
-
-// ===================================================================
 // 17. NOTIFICATIONS
 // ===================================================================
 app.get("/notifications", mustBeLoggedIn, async (req, res) => {
@@ -823,6 +815,19 @@ app.post("/chat/:id/send", mustBeLoggedIn, async (req, res) => {
     [senderId, receiverId, messageText]
   );
 
+  app.get("/chat-admin", mustBeAdmin, async (req, res) => {
+  const messages = await dbQuery(`
+    SELECT m.*, u1.username AS sendername, u2.username AS receivername
+    FROM messages m
+    JOIN users u1 ON u1.id = m.senderid
+    JOIN users u2 ON u2.id = m.receiverid
+    ORDER BY m.createdAt DESC
+  `);
+
+  res.render("chat-admin", { messages, user: req.user });
+});
+
+
   // Send live notification through Socket.io
   const io = req.app.get("io");
   io.to(`user_${receiverId}`).emit("new_message", {
@@ -927,6 +932,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
