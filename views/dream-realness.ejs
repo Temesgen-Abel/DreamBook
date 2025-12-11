@@ -5,7 +5,7 @@
 </head>
 <%- include('includes/head') %>
 <body>
-  <%- include('includes/header') %>
+ <%- include('includes/header', { user, notifications: notifications || [] }) %>
 
   <h4>Dream Reality Probability Checker</h4>
   <% if (result) { %>
@@ -45,3 +45,4 @@ please please click <a href="/inbox">here</a> </p>
 </body>
     <%- include('includes/footer') %>
 </html>
+
