@@ -315,10 +315,10 @@ app.post("/register", async (req, res) => {
     "SELECT id FROM users WHERE email=$1",
     [email]
   );
-   if (existingEmail) errors.push(`Email already registered. <a href=\"/password-reset\">reset password</a>`);
-
-  if (errors.length) return res.render("register", { errors });
-
+  if (existingEmail) {
+  errors.push(`Email already registered. <a href="/password-reset">Reset password</a>`);
+  return res.render("register", { errors });
+}
   const hash = bcrypt.hashSync(password, 10);
 
   const newUser = await dbGet(
@@ -1005,5 +1005,6 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
