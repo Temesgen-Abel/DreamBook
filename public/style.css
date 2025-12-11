@@ -1,41 +1,55 @@
-/* galaxy*/
+/* -------------------- GALAXY -------------------- */
 .DreamBook-logo { margin: 0; padding: 0; width: 30px; display: flex; }
 
-/* Background galaxy blocks left intact if used */
-.galaxy-bg { position: fixed; inset: 0; overflow: hidden; z-index: -1; pointer-events: none; background: radial-gradient(#bcb5b5 0%, #0f0fc9 70%); }
-.galaxy-rotate { position: absolute; width: 2000px; height: 2000px; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: 50% 50%; animation: galaxySpin 120s linear infinite; will-change: transform; }
+/* Background galaxy */
+.galaxy-bg {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(#bcb5b5 0%, #0f0fc9 70%);
+}
 
-/* star layers — use repeating radial-gradients to draw many small dots */
+.galaxy-rotate {
+  position: absolute;
+  width: 2000px;
+  height: 2000px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transform-origin: 50% 50%;
+  animation: galaxySpin 120s linear infinite;
+  will-change: transform;
+}
+
+/* star layers — shared rules */
 .stars, .stars2, .stars3 {
   position: absolute;
   inset: 0;
   background-repeat: repeat;
-  background-size: 600px 600px;
   opacity: 0.9;
-  animation: starDrift 60s linear infinite;
+  animation: starDrift linear infinite;
   will-change: transform;
 }
-/* different textures/speeds for parallax */
-.stars  { background-image: radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 2px); animation-duration: 120s; opacity: 0.85; }
-.stars2 { background-image: radial-gradient(circle, rgba(255,255,255,0.7) 1px, transparent 2px); background-size: 400px 400px; animation-duration: 90s; opacity: 0.6; transform: translateZ(0); }
-.stars3 { background-image: radial-gradient(circle, rgba(255,255,255,0.55) 1px, transparent 2px); background-size: 260px 260px; animation-duration: 70s; opacity: 0.45; }
 
-/* drift and spin */
+/* individual textures */
+.stars  { background-size: 600px 600px; background-image: radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 2px); animation-duration: 120s; opacity: 0.85; }
+.stars2 { background-size: 400px 400px; background-image: radial-gradient(circle, rgba(255,255,255,0.7) 1px, transparent 2px); animation-duration: 90s; opacity: 0.6; }
+.stars3 { background-size: 260px 260px; background-image: radial-gradient(circle, rgba(255,255,255,0.55) 1px, transparent 2px); animation-duration: 70s; opacity: 0.45; }
+
 @keyframes starDrift {
-  from { transform: translate3d(0,0,0) }
-  to   { transform: translate3d(-1500px,1500px,0) }
+  from { transform: translate3d(0,0,0); }
+  to   { transform: translate3d(-1500px,1500px,0); }
 }
 @keyframes galaxySpin {
   from { transform: translate(-50%, -50%) rotate(0deg); }
   to   { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
-/* debug helper: temporarily make stars obvious while testing */
-.galaxy-bg.debug { background: rgba(0,0,0,0.2); outline: 2px dashed rgba(255,255,255,0.06); }
-
-/* moonlight effect */
+/* moon */
 .moon {
-  position: absolute; /* place inside .galaxy-rotate */
+  position: absolute;
   right: 10%;
   top: 15%;
   width: 80px;
@@ -44,69 +58,24 @@
   box-shadow: 0 0 60px rgba(255,255,255,0.5), 0 0 120px rgba(180,180,255,0.25);
   background: radial-gradient(circle at 30% 30%, #f5f5f5, #d0d0d0, #888);
   pointer-events: none;
-  z-index: 0;
 }
 
-/* RESET */
-*{margin:0;padding:0;box-sizing:border-box;}
-body {font-family: "Inter", sans-serif; background:#f6f8fb; color:#1f2d3d; line-height:1.6;}
-a {text-decoration:none; color:#007bff;}
-button {cursor:pointer;}
 
-/* WRAPPER */
-.wrapper{max-width:1000px;margin:0 auto;padding:20px;}
+/* -------------------- RESET -------------------- */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "Inter", sans-serif;
+  background: #f6f8fb;
+  color: #1f2d3d;
+  line-height: 1.6;
+}
+a { text-decoration: none; color: #007bff; }
+button { cursor: pointer; }
 
-/* HEADER */
-nav {display:flex; justify-content:space-between; align-items:center; background:#292b29; padding:12px 20px;}
-nav a {color:#fff;margin:0 10px;}
-nav .DreamBook-logo {width:40px;}
-.dropdown {position:relative;}
-.dropdown .dropbtn {background:#292b29;color:#fff;border:none;padding:6px 12px;border-radius:6px;}
-.dropdown-content {display:none; position:absolute; right:0; background:#fff; min-width:150px; border-radius:6px; overflow:hidden;}
-.dropdown:hover .dropdown-content {display:block;}
-.dropdown-content a {color:#333; display:block; padding:8px;}
+.wrapper { max-width: 1000px; margin: 0 auto; padding: 20px; }
 
-/* BUTTONS */
-.btn {padding:6px 12px; background:#6ea8fe; color:#fff; border:none; border-radius:6px; margin:4px;}
-.btn.danger {background:#ff6b6b;}
 
-/* POST CARD */
-.post-card, .comment {background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:15px;}
-.post-card h1,h4 {margin-bottom:8px;}
-.post-card .post-body {margin-bottom:12px;}
-.reactions {font-size:0.9rem; color:#555; margin-top:6px;}
-
-/* DASHBOARD POSTS */
-.posts-list {display:grid; grid-template-columns:1fr; gap:15px;}
-.pagination {margin:20px 0;text-align:center;}
-.pagination a, .pagination strong {margin:0 5px;}
-
-/* SINGLE POST */
-.single-post-page textarea {width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;}
-
-/* COMMENT FORM */
-.comment-form textarea {width:100%; padding:6px; margin-bottom:6px; border-radius:6px; border:1px solid #ccc;}
-.comment-form button {margin-right:6px;}
-
-/* ADMIN CHAT LAYOUT */
-.chat-layout {display:grid; grid-template-columns:280px 1fr; gap:10px; height:80vh;}
-.sidebar {background:#fff; border-right:1px solid #ddd; overflow-y:auto;}
-.sidebar h2 {background:#075E54; color:#fff; padding:10px;}
-.user-item {padding:10px; border-bottom:1px solid #eee;}
-.user-item.active {background:#f0f0f0;}
-.chat-area {display:flex; flex-direction:column; background:#ece5dd; overflow:hidden;}
-.messages {flex:1; padding:10px; overflow-y:auto;}
-.bubble {padding:8px 12px; border-radius:12px; margin-bottom:6px; max-width:70%;}
-.me {background:#d9fdd3; align-self:flex-end; border-bottom-right-radius:0;}
-.them {background:#fff; border-bottom-left-radius:0;}
-.send-box {display:flex; padding:10px; background:#fff; border-top:1px solid #ccc;}
-.send-box textarea {flex:1; border-radius:8px; padding:6px;}
-.send-box button {padding:6px 12px; background:#25d366; color:#fff; border:none; border-radius:8px; margin-left:6px;}
-
-/* RESPONSIVE */
-@media(max-width:768px){.chat-layout{grid-template-columns:1fr; height:auto;}.send-box{flex-direction:column;}.send-box button{margin-left:0;margin-top:6px;}}
-
-/* NAVBAR */
+/* -------------------- NAVBAR -------------------- */
 nav {
   display: flex;
   justify-content: space-between;
@@ -116,12 +85,10 @@ nav {
   position: relative;
 }
 
-nav a {
-  color: #fff;
-  margin: 0 10px;
-}
+nav a { color: #fff; margin: 0 10px; }
+nav .DreamBook-logo { width: 40px; }
 
-/* MOBILE MENU BUTTON */
+/* mobile menu button */
 .menu-btn {
   display: none;
   font-size: 26px;
@@ -130,23 +97,37 @@ nav a {
   border: none;
 }
 
-/* NAV LINKS WRAPPER */
+/* nav links */
 .nav-links {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-/* MOBILE DROPDOWN FIX */
-.dropdown:hover .dropdown-content {
-  display: block;
+/* dropdown */
+.dropdown { position: relative; }
+.dropdown .dropbtn {
+  background: #292b29;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
 }
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  background: #fff;
+  min-width: 150px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.dropdown:hover .dropdown-content { display: block; }
+.dropdown-content a { color: #333; padding: 8px; display: block; }
 
-/* MOBILE RESPONSIVE */
+/* mobile responsive */
 @media (max-width: 768px) {
-  .menu-btn {
-    display: block;
-  }
+  .menu-btn { display: block; }
 
   .nav-links {
     position: absolute;
@@ -155,43 +136,150 @@ nav a {
     background: #292b29;
     width: 100%;
     flex-direction: column;
-    display: none;
     padding: 15px 0;
+    display: none;
   }
+  .nav-links.active { display: flex; }
+  .nav-links a { margin: 10px 0; }
 
-  .nav-links a {
-    margin: 10px 0;
-  }
-
-  /* Show menu when active */
-  .nav-links.active {
-    display: flex;
-  }
-
-  /* Mobile dropdown fix */
   .dropdown-content {
     position: static;
     background: #444;
     width: 100%;
   }
-
-  .dropdown-content a {
-    color: #fff;
-  }
+  .dropdown-content a { color: #fff; }
 }
 
-/* AUTH FORMS (small + clean) */
-/* WRAPPER */
+
+/* -------------------- BUTTONS -------------------- */
+.btn {
+  padding: 6px 12px;
+  background: #6ea8fe;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  margin: 4px;
+}
+.btn.danger { background: #ff6b6b; }
+
+
+/* -------------------- POST CARD -------------------- */
+.post-card, .comment {
+  background: #fff;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 15px;
+}
+.post-card h1, .post-card h4 { margin-bottom: 8px; }
+.post-card .post-body { margin-bottom: 12px; }
+.reactions { font-size: 0.9rem; color: #555; margin-top: 6px; }
+
+.posts-list { display: grid; grid-template-columns: 1fr; gap: 15px; }
+.pagination { margin: 20px 0; text-align: center; }
+.pagination a, .pagination strong { margin: 0 5px; }
+
+
+/* -------------------- SINGLE POST -------------------- */
+.single-post-page textarea {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+
+/* -------------------- COMMENT FORM -------------------- */
+.comment-form textarea {
+  width: 100%;
+  padding: 6px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+.comment-form button { margin-right: 6px; }
+
+
+/* -------------------- CHAT LAYOUT -------------------- */
+.chat-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 10px;
+  height: 80vh;
+}
+
+.sidebar {
+  background: #fff;
+  border-right: 1px solid #ddd;
+  overflow-y: auto;
+}
+.sidebar h2 {
+  background: #075E54;
+  color: #fff;
+  padding: 10px;
+}
+
+.user-item {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.user-item.active { background: #f0f0f0; }
+.online-dot { width: 8px; height: 8px; background: green; border-radius: 50%; display: inline-block; margin-right: 5px; }
+.offline-dot { width: 10px; height: 10px; background: gray; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+.chat-area {
+  display: flex;
+  flex-direction: column;
+  background: #ece5dd;
+  overflow: hidden;
+}
+
+.messages { flex: 1; padding: 10px; overflow-y: auto; }
+
+.bubble {
+  padding: 8px 12px;
+  border-radius: 12px;
+  margin-bottom: 6px;
+  max-width: 70%;
+}
+
+.me { background: #d9fdd3; align-self: flex-end; border-bottom-right-radius: 0; }
+.them { background: #fff; border-bottom-left-radius: 0; }
+
+.send-box {
+  display: flex;
+  padding: 10px;
+  background: #fff;
+  border-top: 1px solid #ccc;
+}
+.send-box textarea { flex: 1; border-radius: 8px; padding: 6px; }
+.send-box button {
+  padding: 6px 12px;
+  background: #25d366;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  margin-left: 6px;
+}
+
+@media(max-width:768px){
+  .chat-layout { grid-template-columns: 1fr; height: auto; }
+  .send-box { flex-direction: column; }
+  .send-box button { margin-left: 0; margin-top: 6px; }
+}
+
+
+/* -------------------- AUTH FORMS -------------------- */
 .auth-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   padding: 20px;
-  background: #f0f2f5; /* Facebook-light background */
+  background: #f0f2f5;
 }
 
-/* FORM BOX */
 .auth-form {
   width: 100%;
   max-width: 380px;
@@ -201,7 +289,6 @@ nav a {
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-/* LEGEND / TITLE */
 .auth-form legend {
   font-weight: bold;
   font-size: 1.4rem;
@@ -209,7 +296,6 @@ nav a {
   margin-bottom: 20px;
 }
 
-/* INPUTS */
 .auth-form input {
   width: 100%;
   padding: 14px;
@@ -219,13 +305,11 @@ nav a {
   font-size: 1rem;
   transition: border 0.2s;
 }
-
 .auth-form input:focus {
-  border-color: #1877f2; /* Facebook blue */
+  border-color: #1877f2;
   outline: none;
 }
 
-/* BUTTON */
 .auth-form button {
   width: 100%;
   padding: 14px;
@@ -238,107 +322,24 @@ nav a {
   cursor: pointer;
   transition: background 0.2s;
 }
+.auth-form button:hover { background: #166fe5; }
 
-.auth-form button:hover {
-  background: #166fe5;
-}
-
-/* LINKS */
 .auth-links {
   text-align: center;
   margin-top: 15px;
   font-size: 0.95rem;
 }
+.auth-links a { color: #1877f2; }
+.auth-links a:hover { text-decoration: underline; }
 
-.auth-links a {
-  color: #1877f2;
-  text-decoration: none;
-}
-
-.auth-links a:hover {
-  text-decoration: underline;
-}
-
-/* ERROR MESSAGE */
 .auth-error {
   color: red;
   text-align: center;
   margin-bottom: 12px;
 }
 
-.auth-form input {
-  width: 100%;
-  padding: 12px;
-  margin: 8px 0 16px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
 
-.outh-form button {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  background: #007bff;
-  color: white;
-  font-size: 16px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-
-.online-dot {
-            width: 8px;
-            height: 8px;
-            background: green;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 5px;
-        }
-        .offline-dot {
-            width: 10px;
-            height: 10px;
-            background: gray;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 5px;
-        }
-        .user-item {
-            margin-bottom: 5px;
-        }
-
-.subtitle {
-  font-size: 20px;
-  margin-bottom: 20px;
-  color: #555;
-  line-height: 1.5;
-}
-
-.features {
-  list-style: none;
-  padding: 0;
-  margin-bottom: 30px;
-}
-
-.features li {
-  margin-bottom: 10px;
-  font-size: 18px;
-  color: #444;
-}
-
-.illustration-box {
-  margin-top: 30px;
-  padding: 25px;
-  border-radius: 10px;
-  background: #f3f6ff;
-  border-left: 5px solid #007bff;
-}
-
-.illustration-box p {
-  font-size: 18px;
-  margin: 0;
-  color: #333;
-}
-/* TWO-COLUMN LOGIN LAYOUT */
+/* -------------------- 2-COLUMN AUTH -------------------- */
 .auth-two-column {
   display: grid;
   grid-template-columns: 380px 1fr;
@@ -349,25 +350,15 @@ nav a {
   background: #f0f2f5;
 }
 
-/* LEFT COLUMN (login) */
-.left-column {
-  display: flex;
-  justify-content: center;
-}
-
-/* RIGHT COLUMN (landing text) */
-.right-column {
-  padding: 20px;
-}
+.left-column { display: flex; justify-content: center; }
+.right-column { padding: 20px; }
 
 .landing-content h1 {
   font-size: 40px;
   margin-bottom: 20px;
 }
 
-.landing-content .brand {
-  color: #1877f2;
-}
+.landing-content .brand { color: #1877f2; }
 
 .landing-content .subtitle {
   font-size: 18px;
@@ -376,22 +367,26 @@ nav a {
   max-width: 600px;
 }
 
+.features { list-style: none; padding: 0; margin-bottom: 30px; }
 .features li {
   font-size: 18px;
   margin-bottom: 10px;
   color: #333;
 }
 
-/* RESPONSIVE — STACK FOR MOBILE */
+.illustration-box {
+  margin-top: 30px;
+  padding: 25px;
+  border-radius: 10px;
+  background: #f3f6ff;
+  border-left: 5px solid #007bff;
+}
+.illustration-box p { font-size: 18px; color: #333; }
+
 @media (max-width: 900px) {
   .auth-two-column {
     grid-template-columns: 1fr;
     text-align: center;
   }
-  .right-column {
-    margin-top: 20px;
-  }
+  .right-column { margin-top: 20px; }
 }
-
-
-
