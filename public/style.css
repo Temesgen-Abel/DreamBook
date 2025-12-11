@@ -76,17 +76,55 @@ button { cursor: pointer; }
 
 
 /* -------------------- NAVBAR -------------------- */
-nav {
+/* Make .nav behave exactly like <nav> */
+.nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: #292b29;
   padding: 12px 20px;
-  position: relative;
 }
 
-nav a { color: #fff; margin: 0 10px; }
-nav .DreamBook-logo { width: 40px; }
+/* Left section (logo) */
+.logo-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+/* Fix logo size & prevent stretching */
+.logo-wrapper .DreamBook-logo {
+  width: 40px;
+  height: auto;
+}
+
+/* Make notification dropdown align correctly */
+.notif-dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.notif-panel {
+  position: absolute;
+  right: 0;
+  top: 40px;
+  background: #fff;
+  border-radius: 8px;
+  width: 250px;
+  display: none;
+  flex-direction: column;
+}
+
+.notif-panel.open {
+  display: flex;
+}
+
+/* Make nav-links align horizontally (desktop) */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 
 /* mobile menu button */
 .menu-btn {
@@ -390,3 +428,4 @@ nav .DreamBook-logo { width: 40px; }
   }
   .right-column { margin-top: 20px; }
 }
+
