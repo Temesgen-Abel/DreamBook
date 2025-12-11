@@ -6,7 +6,8 @@
   <link rel="stylesheet" href="/css/main.css" />
 <%- include('includes/head') %>
 </head>
- <%- include('includes/header') %>
+ <%- include('includes/header', { notifications: notifications || [] }) %>
+
 <body>
 
 <!-- GALAXY BACKGROUND -->
@@ -51,4 +52,5 @@
 
 </body>
 </html>
+
 
