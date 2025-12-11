@@ -2,8 +2,7 @@
 <html lang="en">
 <%- include('includes/head') %>
 <body>
- <%- include('includes/header') %>
-
+<%- include('includes/header', { user, notifications: notifications || [] }) %>
 <main>
     <form action="/admin-login" method="POST">
         <% if (errors && errors.length) { %>
@@ -28,4 +27,5 @@
 </body>
 
 <%- include('includes/footer') %>
+
 </html>
