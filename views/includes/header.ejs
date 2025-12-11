@@ -7,11 +7,12 @@
   <title>DreamBook</title>
 </head>
 <body>
+
 <header>
   <nav class="nav">
 
-    <!-- LOGO -->
-    <a href="/" aria-label="DreamBook Home">
+    <!-- LOGO (Only one) -->
+    <a href="/" aria-label="DreamBook Home" class="logo-wrapper">
       <img src="/images/DreamBook.png" alt="DreamBook logo" class="DreamBook-logo" />
     </a>
 
@@ -20,10 +21,9 @@
       ☰
     </button>
 
-    <!-- NAV LINKS WRAPPER -->
+    <!-- NAV LINKS -->
     <div class="nav-links" id="navLinks">
 
-      <!-- Always visible links -->
       <a href="/dictionary">Dream Dictionary</a>
       <a href="/dream-realness">Dream Analyzer</a>
       <a href="/dashboard">Public Posts</a>
@@ -31,14 +31,15 @@
       <a href="/inbox" class="highlight">Inbox</a>
       <a href="/notifications">Notifications</a>
 
-      <!-- Notification bell -->
       <button id="notif-bell" aria-label="Notifications">
         🔔 <span id="notif-count">0</span>
       </button>
 
-      <!-- Dropdown for account -->
+      <!-- Account dropdown -->
       <div class="dropdown">
-        <button class="dropbtn" aria-haspopup="true" aria-expanded="false">Account ▼</button>
+        <button class="dropbtn" aria-haspopup="true" aria-expanded="false">
+          Account ▼
+        </button>
         <div class="dropdown-content">
           <% if (user) { %>
             <a href="/logout"><%= user.username %> Logout</a>
@@ -58,8 +59,7 @@ function toggleMenu() {
   const navLinks = document.getElementById("navLinks");
   const menuBtn = document.querySelector(".menu-btn");
   navLinks.classList.toggle("active");
-  const expanded = navLinks.classList.contains("active");
-  menuBtn.setAttribute("aria-expanded", expanded);
+  menuBtn.setAttribute("aria-expanded", navLinks.classList.contains("active"));
 }
 </script>
 
