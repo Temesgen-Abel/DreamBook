@@ -234,7 +234,8 @@ app.use((req, _, next) => {
 
 // ⭐ No session → always define user to avoid EJS errors
 app.use((req, res, next) => {
-  res.locals.user = null; 
+  res.locals.user = req.session.user || null;
+  res.locals.notifications = [];  // default empty array
   next();
 });
 
@@ -1003,6 +1004,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
