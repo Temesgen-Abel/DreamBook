@@ -252,7 +252,7 @@ app.get("/", (req, res) => {
   res.render("homepage", { user: req.user, errors: [] });
 });
 
-//login Route
+//6.1 login Route
 app.get("/login", (_, res) => res.render("login", { errors: [] }));
 app.post("/login", async (req, res) => {
   const username = req.body.username.trim();
@@ -271,13 +271,13 @@ app.post("/login", async (req, res) => {
   });
   res.redirect("/dashboard");
 });
-//logout Route
+//6.2 logout Route
 app.get("/logout", (req, res) => {
   res.clearCookie("DreamBookApp");
   res.redirect("/login");
 });
 
-//admin login route
+//6.3 admin login route
 app.get("/admin-login", (_, res) => res.render("admin-login", { errors: [], error: null }));
 
 app.post("/admin-login", async (req, res) => {
@@ -299,7 +299,7 @@ app.post("/admin-login", async (req, res) => {
 });
 
 
-//Register Route
+//6.4 Register Route
 app.get("/register", (_, res) => res.render("register", { errors: [] }));
 
 app.post("/register", async (req, res) => {
@@ -329,7 +329,7 @@ app.post("/register", async (req, res) => {
 });
 
 // ===================================================================
-// 7. PASSWORD RESET
+// 6.5. PASSWORD RESET
 // ===================================================================
 app.get("/password-reset", (_, res) => res.render("password-reset", { errors: [] }));
 
@@ -381,13 +381,13 @@ app.post("/reset-password/:token", async (req, res) => {
   res.send(`<h2>Password reset successful!</h2><a href="/login">Login</a>`);
 });
 
-// 8. MAIN APP ROUTES
+// 6.6. MAIN APP ROUTES
 // ===================================================================
 app.use(authMiddleware);
 app.use(unreadMiddleware);
 
 
-// 9. Dashboard -------------------
+// 6.7. Dashboard -------------------
 app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
   const page = Math.max(1, Number(req.query.page) || 1);
   const pageSize = 10;
@@ -428,7 +428,7 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
   });
 });
 
-// 10. Create post -------------------
+// 6.8. Create post -------------------
 app.get("/create-post", mustBeLoggedIn, (_, res) => res.render("create-post", { errors: [] }));
 
 app.post("/create-post", mustBeLoggedIn, async (req, res) => {
@@ -458,7 +458,7 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
 });
 
 
-// 11. Single post -------------------
+// 6.9 Single post -------------------
 app.get("/post/:id", mustBeLoggedIn, async (req, res) => {
   const postId = Number(req.params.id);
 
@@ -494,12 +494,12 @@ app.get("/post/:id", mustBeLoggedIn, async (req, res) => {
   });
 });
 
-// 12.  Edit post -------------------
+// 6.10  Edit post -------------------
 app.post("/edit-post/:id", mustBeLoggedIn, async (req, res) => {
   const id = req.params.id;
   const post = await dbGet("SELECT * FROM posts WHERE id=$1", [id]);
 
-  if (!post || post.authorid !== req.user.id) return res.redirect("/");
+  if (!post || post.authorid !== req.user.id) return res.redirect("/dashboard");
 
   const text = req.body.body.trim();
   if (!text) return res.redirect(`/post/${id}`);
@@ -512,17 +512,17 @@ app.post("/edit-post/:id", mustBeLoggedIn, async (req, res) => {
   res.redirect(`/post/${id}`);
 });
 
-// ------------------- Delete post -------------------
+//6.11 Delete post -------------------
 app.post("/delete-post/:id", mustBeLoggedIn, async (req, res) => {
   const post = await dbGet("SELECT * FROM posts WHERE id=$1", [req.params.id]);
-  if (!post || post.authorid !== req.user.id) return res.redirect("/");
+  if (!post || post.authorid !== req.user.id) return res.redirect("/dashboard");
   await dbRun("DELETE FROM posts WHERE id=$1", [req.params.id]);
-  res.redirect("/");
+  res.redirect("/dashboard", "Post deleted" );
 });
 
 
 // ===================================================================
-// 13. COMMENTS
+//6.12 COMMENTS
 // ===================================================================
 app.post("/post/:id/comment", mustBeLoggedIn, async (req, res) => {
   const postId = Number(req.params.id);
@@ -574,7 +574,7 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 
 // ===================================================================
-// 14. REACTIONS
+// 6.13. REACTIONS
 // ===================================================================
 app.post("/post/:id/reactions", mustBeLoggedIn, async (req, res) => {
   const postId = Number(req.params.id);
@@ -599,7 +599,7 @@ app.post("/post/:id/reactions", mustBeLoggedIn, async (req, res) => {
 
 
 // ===================================================================
-// 15. MESSAGES (inbox)
+// 6.14. MESSAGES (inbox)
 //      USER INBOX PAGE
 // ============================
 app.get("/inbox", mustBeLoggedIn, async (req, res) => {
@@ -643,7 +643,7 @@ app.get("/inbox", mustBeLoggedIn, async (req, res) => {
     });
 });
 
-// Send from inbox
+// 6.15. Send from inbox
 app.post("/inbox", mustBeLoggedIn, async (req, res) => {
     const me = req.user.id;
     const receiverId = Number(req.body.receiverId);
@@ -682,7 +682,7 @@ app.post("/inbox", mustBeLoggedIn, async (req, res) => {
 });
 
 // ============================
-//      USER CHAT PAGE
+// 6.16. USER CHAT PAGE
 // ============================
 app.get("/chat/:id", mustBeLoggedIn, async (req, res) => {
     const me = req.user.id;
@@ -736,7 +736,7 @@ app.post("/chat/:id/send", mustBeLoggedIn, async (req, res) => {
 });
 
 // ============================
-//      ADMIN CHAT PANEL
+// 6.17. ADMIN CHAT PANEL
 // ============================
 app.get("/chat-admin", mustBeAdmin, async (req, res) => {
     const userId = Number(req.query.user);
@@ -803,7 +803,7 @@ app.post("/chat-admin/:id", mustBeAdmin, async (req, res) => {
 
 
 
-//16. routes for the dictionary
+//6.18. routes for the dictionary
 app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
   const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
   res.render("dictionary", { terms, user: req.user, errors: [] });
@@ -830,7 +830,7 @@ app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
   res.redirect("/dictionary");
 });
 
-// 17. NOTIFICATIONS
+// 6.19. NOTIFICATIONS
 // ===================================================================
 app.get("/notifications", mustBeLoggedIn, async (req, res) => {
   const me = req.user.id;
@@ -874,7 +874,7 @@ app.get("/notifications/unread-count", mustBeLoggedIn, async (req, res) => {
   res.json({ unread: row?.count || 0 });
 });
 
-//18. dream analyzer
+//6.20. dream analyzer
 // --------------------------------------
 const timingWeights = { evening: 5, midnight: 25, post_midnight: 20, morning: 15, day_dream: 0 };
 const memoryWeights = { vivid: 20, not_memorable: 14.5 };
@@ -915,7 +915,7 @@ app.post("/dream-realness", (req, res) => {
 
 
 // ===================================================================
-// 20. SOCKET.IO USERS ONLINE
+// 7. SOCKET.IO USERS ONLINE
 // ===================================================================
 const userSockets = new Map();
 const lastSeen = new Map();
@@ -994,7 +994,7 @@ async function ensureAdmin() {
 }
 
 // ===================================================================
-// 21. START SERVER
+// 8. START SERVER
 
 (async () => {
   await createPoolOrExit();
@@ -1004,17 +1004,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
