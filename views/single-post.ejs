@@ -3,7 +3,7 @@
 <%- include('includes/head') %>
 
 <body class="single-post-page">
-<%- include('includes/header') %>
+<%- include('includes/header', { user, notifications: notifications || [] }) %>
 
 <div class="wrapper page-wrapper">
   <div class="post-card">
@@ -45,3 +45,4 @@
 <%- include('includes/footer') %>
 </body>
 </html>
+
