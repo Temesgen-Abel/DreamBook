@@ -300,8 +300,6 @@ app.post("/admin-login", async (req, res) => {
 
 
 //6.4 Register Route
-app.get("/register", (_, res) => res.render("register", { errors: [] }));
-
 app.post("/register", async (req, res) => {
   const username = req.body.username.trim();
   const password = req.body.password.trim();
@@ -310,22 +308,26 @@ app.post("/register", async (req, res) => {
 
   if (!username) errors.push("Username required");
   if (!password) errors.push("Password required");
-  if (!email) { errors.push("email required")  
-  }
+  if (!email) errors.push("Email required");
 
-  if (await dbGet("SELECT id FROM users WHERE username=$1", [username]))
-    errors.push("Username exists");
+  // ✅ ADD email uniqueness check
+  const existingEmail = await dbGet(
+    "SELECT id FROM users WHERE email=$1",
+    [email]
+  );
+  if (existingEmail) errors.push("Email already registered", "<a href=\"/password-reset\">reset password</a>");
 
   if (errors.length) return res.render("register", { errors });
 
   const hash = bcrypt.hashSync(password, 10);
+
   const newUser = await dbGet(
     "INSERT INTO users (username, password, email) VALUES ($1,$2,$3) RETURNING id, username",
     [username, hash, email]
   );
 
   res.cookie("DreamBookApp", signToken(newUser));
-  res.redirect("/dashboard");
+  res.redirect("/dashboard", "registered_successfully!");
 });
 
 // ===================================================================
@@ -1004,3 +1006,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
