@@ -3,7 +3,7 @@
 <html lang="en">
   <%- include('includes/head') %>
   <body>
-    <%- include('includes/header') %>
+ <%- include('includes/header', { user, notifications: notifications || [] }) %>
 
     <main>
       <h6>Dream Dictionary</h6>
@@ -97,5 +97,6 @@
   </body>
 </html>
 =======
+
 
 
