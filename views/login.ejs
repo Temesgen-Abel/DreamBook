@@ -6,7 +6,7 @@
 </head>
 
 <body>
-<%- include('includes/header') %>
+<%- include('includes/header', { user, notifications: notifications || [] }) %>
 
 <main class="auth-two-column">
 
@@ -63,3 +63,4 @@
 
 </body>
 </html>
+
