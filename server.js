@@ -315,7 +315,7 @@ app.post("/register", async (req, res) => {
     "SELECT id FROM users WHERE email=$1",
     [email]
   );
-  if (existingEmail) errors.push("Email already registered", "<a href=\"/password-reset\">reset password</a>");
+   if (existingEmail) errors.push(`Email already registered. <a href=\"/password-reset\">reset password</a>`);
 
   if (errors.length) return res.render("register", { errors });
 
@@ -330,7 +330,6 @@ app.post("/register", async (req, res) => {
   res.redirect("/dashboard", "registered_successfully!");
 });
 
-// ===================================================================
 // 6.5. PASSWORD RESET
 // ===================================================================
 app.get("/password-reset", (_, res) => res.render("password-reset", { errors: [] }));
@@ -1006,4 +1005,5 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
