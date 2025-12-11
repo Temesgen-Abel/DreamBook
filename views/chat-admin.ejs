@@ -9,7 +9,7 @@
 
 <body>
 
-<%- include('includes/header') %>
+<%- include('includes/header', { user, notifications: notifications || [] }) %>
 
 <div class="chat-layout">
 
@@ -55,3 +55,4 @@
 
 </body>
 </html>
+
