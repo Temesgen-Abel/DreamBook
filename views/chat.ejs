@@ -13,7 +13,7 @@
 
 <main>
 
-  <h1>Chat with <%= otherUser.username %></h1>
+  <%- include('includes/header', { user, notifications: notifications || [] }) %>
 
   <ul class="chat-messages" id="chat-list">
     <% if (messages.length === 0) { %>
@@ -104,3 +104,4 @@ input.addEventListener("input", () => {
 
 </body>
 </html>
+
