@@ -227,6 +227,7 @@ app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static("public"));
 app.use(cookieParser());
+app.set("trust proxy", 1);
 
 // Request logger
 app.use((req, _, next) => {
@@ -1067,6 +1068,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
