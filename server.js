@@ -61,14 +61,15 @@ async function dbRun(text, params = []) {
 // ===================================================================
 async function initDb() {
   await dbRun(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      username TEXT UNIQUE,
-      password TEXT NOT NULL,
-      email TEXT UNIQUE,
-      role TEXT DEFAULT 'user',
-      reset_token TEXT,
-      reset_expires BIGINT
+  CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  username TEXT UNIQUE,
+  password TEXT NOT NULL,
+  email TEXT UNIQUE,
+  phone TEXT UNIQUE,
+  role TEXT DEFAULT 'user',
+  reset_token TEXT,
+  reset_expires BIGINT
     )
   `);
 
@@ -117,7 +118,7 @@ async function initDb() {
   await dbRun(`
     CREATE TABLE IF NOT EXISTS password_resets (
       id SERIAL PRIMARY KEY,
-      userid INTEGER REFERENCES users(id),
+      email INTEGER REFERENCES users(id),
       token TEXT,
       expiresAt BIGINT
     )
@@ -300,50 +301,78 @@ app.post("/admin-login", async (req, res) => {
 
 
 //6.4 Register Route
-app.get("/register", (_, res) => res.render("register", { errors: [] }));
+
 app.post("/register", async (req, res) => {
-  const username = req.body.username.trim();
-  const password = req.body.password.trim();
-  const email = req.body.email?.trim() || null;
+  const username = req.body.username?.trim();
+  const password = req.body.password?.trim();
+  const contact = req.body.contact?.trim(); // email OR phone
+
   const errors = [];
 
   if (!username) errors.push("Username required");
   if (!password) errors.push("Password required");
-  if (!email) errors.push("Email required");
+  if (!contact) errors.push("Please provide email or phone number");
 
-  // ✅ ADD email uniqueness check
-  const existingEmail = await dbGet(
-    "SELECT id FROM users WHERE email=$1",
-    [email]
-  );
-  if (existingEmail) {
-  errors.push("Email already registered", );
-  return res.render("password-reset", { errors });
-}
+  let email = null;
+  let phone = null;
+
+  const emailRegex = /\S+@\S+\.\S+/;
+
+  // Detect email vs phone
+  if (emailRegex.test(contact)) {
+    email = contact;
+  } else {
+    phone = contact;
+  }
+
+  // Uniqueness checks
+  if (email) {
+    const existingEmail = await dbGet(
+      "SELECT id FROM users WHERE email=?",
+      [email]
+    );
+    if (existingEmail) errors.push(`Email already registered: ${email}`);
+  }
+
+  if (phone) {
+    const existingPhone = await dbGet(
+      "SELECT id FROM users WHERE phone=?",
+      [phone]
+    );
+    if (existingPhone) errors.push(`Phone already registered: ${phone}`);
+  }
+
+  if (errors.length) return res.render("register", { errors });
+
   const hash = bcrypt.hashSync(password, 10);
 
   const newUser = await dbGet(
-    "INSERT INTO users (username, password, email) VALUES ($1,$2,$3) RETURNING id, username",
-    [username, hash, email]
+    `INSERT INTO users (username, password, email, phone)
+     VALUES (?, ?, ?, ?)
+     RETURNING id, username`,
+    [username, hash, email, phone]
   );
 
   res.cookie("DreamBookApp", signToken(newUser));
-  res.redirect("/dashboard", "registered_successfully!");
+  res.redirect("/dashboard");
 });
 
-// 6.5. PASSWORD RESET
-// ===================================================================
-app.get("/password-reset", (_, res) => res.render("password-reset", { errors: [] }));
+//6.5 Password reset route
 
 app.post("/password-reset", async (req, res) => {
-  const username = req.body.username.trim();
-  const user = await dbGet("SELECT id FROM users WHERE username=$1", [username]);
+  const id = req.body.identifier?.trim();
+
+  const user = await dbGet(
+    `SELECT id FROM users WHERE email=? OR phone=?`,
+    [id, id]
+  );
+
   const token = newResetToken();
   const expires = Date.now() + 3600_000;
 
   if (user) {
     await dbRun(
-      "UPDATE users SET reset_token=$1, reset_expires=$2 WHERE id=$3",
+      "UPDATE users SET reset_token=?, reset_expires=? WHERE id=?",
       [token, expires, user.id]
     );
   }
@@ -352,35 +381,24 @@ app.post("/password-reset", async (req, res) => {
 
   res.render("password-reset", {
     errors: [
-      `If account exists, reset link created:`,
+      "If an account exists, a reset link has been generated.",
       `<a href="${link}" target="_blank">${link}</a>`
     ]
   });
 });
 
 app.get("/reset-password/:token", async (req, res) => {
+  const token = req.params.token;
   const user = await dbGet(
-    "SELECT * FROM users WHERE reset_token=$1 AND reset_expires>$2",
-    [req.params.token, Date.now()]
+    "SELECT * FROM users WHERE reset_token=$1 AND reset_expires > $2",
+    [token, Date.now()]
   );
-  if (!user) return res.send("Invalid or expired link");
-  res.render("reset-password", { token: req.params.token });
-});
+  if (!user) {
+    return res.render("reset-password", { errors: ["Invalid or expired token"], token: null });
+  }
 
-app.post("/reset-password/:token", async (req, res) => {
-  const user = await dbGet(
-    "SELECT * FROM users WHERE reset_token=$1 AND reset_expires>$2",
-    [req.params.token, Date.now()]
-  );
-  if (!user) return res.send("Invalid or expired link");
+  res.render("reset-password", { errors: [], token });
 
-  const hash = bcrypt.hashSync(req.body.password, 10);
-  await dbRun(
-    "UPDATE users SET password=$1, reset_token=NULL, reset_expires=NULL WHERE id=$2",
-    [hash, user.id]
-  );
-
-  res.send(`<h2>Password reset successful!</h2><a href="/login">Login</a>`);
 });
 
 // 6.6. MAIN APP ROUTES
@@ -1006,10 +1024,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
-
-
-
-
-
-
