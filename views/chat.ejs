@@ -9,11 +9,8 @@
 
 <body>
 
-<%- include('includes/header') %>
-
-<main>
-
   <%- include('includes/header', { user, notifications: notifications || [] }) %>
+<main>
 
   <ul class="chat-messages" id="chat-list">
     <% if (messages.length === 0) { %>
@@ -104,4 +101,5 @@ input.addEventListener("input", () => {
 
 </body>
 </html>
+
 
