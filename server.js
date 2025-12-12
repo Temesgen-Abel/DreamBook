@@ -271,7 +271,7 @@ app.post("/login", async (req, res) => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict"
   });
-  res.redirect("/dashboard");
+  res.redirect("/password-reset");
 });
 //6.2 logout Route
 app.get("/logout", (req, res) => {
@@ -405,17 +405,17 @@ app.post("/password-reset", async (req, res) => {
   });
 });
 
-app.get("/reset-password/:token", async (req, res) => {
+app.get("/password-reset/:token", async (req, res) => {
   const token = req.params.token;
   const user = await dbGet(
     "SELECT * FROM users WHERE reset_token=$1 AND reset_expires > $2",
     [token, Date.now()]
   );
   if (!user) {
-    return res.render("reset-password", { errors: ["Invalid or expired token"], token: null });
+    return res.render("password-reset", { errors: ["Invalid or expired token"], token: null });
   }
 
-  res.render("reset-password", { errors: [], token });
+  res.render("password-reset", { errors: [], token });
 
 });
 
@@ -1042,5 +1042,6 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
