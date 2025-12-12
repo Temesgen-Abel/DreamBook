@@ -241,6 +241,9 @@ button { cursor: pointer; }
 
 
 /* -------------------- CHAT LAYOUT -------------------- */
+.me { align-self: flex-end; }
+.them { align-self: flex-start; }
+
 .chat-layout {
   display: grid;
   grid-template-columns: 280px 1fr;
@@ -430,5 +433,6 @@ button { cursor: pointer; }
   }
   .right-column { margin-top: 20px; }
 }
+
 
 
