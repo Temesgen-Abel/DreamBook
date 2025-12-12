@@ -318,7 +318,7 @@ app.post("/register", async (req, res) => {
   );
   if (existingEmail) {
   errors.push("Email already registered", );
-  return res.render("reset-password", { errors });
+  return res.render("password-reset", { errors });
 }
   const hash = bcrypt.hashSync(password, 10);
 
@@ -1006,6 +1006,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
