@@ -344,7 +344,7 @@ app.post("/register", async (req, res) => {
 
   if (errors.length) return res.render("register", { errors });
 
-  const hash = bcrypt.hashSync(password, 10);
+  const hash = bcrypt.hashSync(password, 6);
 
   // Build the columns & values dynamically to avoid inserting NULLs unnecessarily
   const columns = ["username", "password"];
@@ -1041,4 +1041,5 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
