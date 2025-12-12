@@ -9,39 +9,53 @@
 
 <body>
 
-  <%- include('includes/header', { user, notifications: notifications || [] }) %>
-<main>
+<%- include('includes/header', { user, notifications: notifications || [] }) %>
 
-  <ul class="chat-area" id="chat-list">
-    <% if (messages.length === 0) { %>
-      <li>No messages yet. Start the conversation!</li>
-    <% } else { %>
-      <% messages.forEach(m => { %>
-        <li class="chat-area" data-message-id="<%= m.id %>">
-          <strong><%= m.sendername %>:</strong>
-          <div class="body"><%- m.message %></div>
-          <small><%= m.createdAt %></small>
-        </li>
-      <% }) %>
-    <% } %>
-  </ul>
+<div class="chat-layout" style="grid-template-columns: 1fr;"> 
 
-  <div id="typing-indicator" style="display:none;margin-top:10px;">
-    <%= otherUser.username %> is typing...
+  <!-- CHAT AREA (same style as admin) -->
+  <div class="chat-area">
+
+    <h2 style="padding:10px;">Chat with <%= otherUser.username %></h2>
+
+    <!-- Messages Container -->
+    <div class="messages" id="chat-list">
+
+      <% if (messages.length === 0) { %>
+        <p>No messages yet. Start the conversation!</p>
+      <% } else { %>
+        <% messages.forEach(m => { %>
+
+          <div class="bubble <%= m.senderid == user.id ? 'me' : 'them' %>" data-message-id="<%= m.id %>">
+            <strong><%= m.sendername %></strong><br>
+            <%- m.message %>
+            <br>
+            <small><%= m.createdAt %></small>
+          </div>
+
+        <% }) %>
+      <% } %>
+
+    </div>
+
+    <!-- Typing Indicator -->
+    <div id="typing-indicator" style="display:none; padding: 5px 10px;">
+      <%= otherUser.username %> is typing...
+    </div>
+
+    <!-- Send Box (aligned exactly like admin chat) -->
+    <form class="send-box" id="msgForm" action="/chat/<%= otherUser.id %>/send" method="POST">
+      <textarea 
+        name="message" 
+        id="messageInput" 
+        rows="2" 
+        placeholder="Type a message..." 
+        required></textarea>
+      <button type="submit">Send</button>
+    </form>
+
   </div>
-
-  <hr>
-
-  <form action="/chat/<%= otherUser.id %>/send" method="POST" class="chat-area">
-    <input type="text" 
-           name="message" 
-           required 
-           id="messageInput" 
-           placeholder="Type your message...">
-    <button type="submit">Send</button>
-  </form>
-
-</main>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 
@@ -52,7 +66,7 @@ socket.emit("join_room", "<%= user.id %>");
 const input = document.getElementById("messageInput");
 const form  = document.getElementById("msgForm");
 
-// Send local echo
+// Echo locally
 form.addEventListener("submit", () => {
   socket.emit("send_local_message", {
     senderId: "<%= user.id %>",
@@ -62,23 +76,25 @@ form.addEventListener("submit", () => {
   });
 });
 
+// Incoming messages
 socket.on("new_message", msg => {
-  const list = document.getElementById("chat-list");
+  const container = document.getElementById("chat-list");
 
-  const li = document.createElement("li");
-  li.className = "chat-message";
-  li.innerHTML = `
-    <strong>${msg.sendername}:</strong>
-    <div class="body">${msg.message}</div>
-    <small>${msg.createdAt}</small>
+  const div = document.createElement("div");
+  div.className = `bubble ${msg.senderid == "<%= user.id %>" ? 'me' : 'them'}`;
+  div.innerHTML = `
+      <strong>${msg.sendername}</strong><br>
+      ${msg.message}<br>
+      <small>${msg.createdAt}</small>
   `;
 
-  list.appendChild(li);
-  window.scrollTo(0, document.body.scrollHeight);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
 });
 
 // TYPING
 let typingTimeout;
+
 socket.on("typing", data => {
     if (Number(data.senderId) === Number("<%= otherUser.id %>"))
         document.getElementById("typing-indicator").style.display = "block";
@@ -101,6 +117,3 @@ input.addEventListener("input", () => {
 
 </body>
 </html>
-
-
-
