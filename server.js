@@ -1,3 +1,4 @@
+
 /********************************************************************
  * DreamBook – Fully Integrated Node.js Server
  ********************************************************************/
@@ -63,7 +64,7 @@ async function initDb() {
   await dbRun(`
   CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
-  username TEXT UNIQUE,
+  username TEXT,
   password TEXT NOT NULL,
   email TEXT UNIQUE,
   phone TEXT UNIQUE,
@@ -380,7 +381,7 @@ app.post("/password-reset", async (req, res) => {
   const id = req.body.identifier?.trim();
 
   const user = await dbGet(
-    `SELECT id FROM users WHERE email=? OR phone=?`,
+    `SELECT id FROM users WHERE email=$1 OR phone=$2`,
     [id, id]
   );
 
@@ -389,7 +390,7 @@ app.post("/password-reset", async (req, res) => {
 
   if (user) {
     await dbRun(
-      "UPDATE users SET reset_token=?, reset_expires=? WHERE id=?",
+      "UPDATE users SET reset_token=$1, reset_expires=$2 WHERE id=$3",
       [token, expires, user.id]
     );
   }
