@@ -34,6 +34,8 @@
 }
 
 /* individual textures */
+.moon + .stars,  .moon + .stars2,
+  .moon + .stars3 { filter: drop-shadow(0 0 4px rgba(0,0,0,0.2)); }
 .stars  { background-size: 600px 600px; background-image: radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 2px); animation-duration: 120s; opacity: 0.85; }
 .stars2 { background-size: 400px 400px; background-image: radial-gradient(circle, rgba(255,255,255,0.7) 1px, transparent 2px); animation-duration: 90s; opacity: 0.6; }
 .stars3 { background-size: 260px 260px; background-image: radial-gradient(circle, rgba(255,255,255,0.55) 1px, transparent 2px); animation-duration: 70s; opacity: 0.45; }
@@ -428,4 +430,5 @@ button { cursor: pointer; }
   }
   .right-column { margin-top: 20px; }
 }
+
 
