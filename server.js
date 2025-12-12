@@ -412,12 +412,37 @@ app.get("/password-reset/:token", async (req, res) => {
     [token, Date.now()]
   );
   if (!user) {
-    return res.render("password-reset", { errors: ["Invalid or expired token"], token: null });
+    return res.render("reset-password", { errors: ["Invalid or expired token"], token: null });
   }
 
   res.render("password-reset", { errors: [], token });
 
 });
+
+
+app.post("/password-reset/:token", async (req, res) => {
+  const token = req.params.token;
+  const newPassword = req.body.password?.trim();
+
+  const user = await dbGet(
+    "SELECT * FROM users WHERE reset_token=$1 AND reset_expires > $2",
+    [token, Date.now()]
+  );
+
+  if (!user) {
+    return res.render("password-reset", { errors: ["Invalid or expired token"], token: null });
+  }
+
+  const hash = bcrypt.hashSync(newPassword, 6);
+
+  await dbRun(
+    "UPDATE users SET password=$1, reset_token=NULL, reset_expires=NULL WHERE id=$2",
+    [hash, user.id]
+  );
+
+  res.render("password-reset", { errors: ["Password has been reset successfully."] });
+});
+
 
 // 6.6. MAIN APP ROUTES
 // ===================================================================
@@ -1042,6 +1067,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
