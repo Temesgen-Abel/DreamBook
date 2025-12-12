@@ -300,9 +300,8 @@ app.post("/admin-login", async (req, res) => {
 });
 
 
-//6.4 Register Route
+//6.4 register route
 app.get("/register", (_, res) => res.render("register", { errors: [] }));
-
 
 app.post("/register", async (req, res) => {
   const username = req.body.username?.trim();
@@ -317,7 +316,6 @@ app.post("/register", async (req, res) => {
 
   let email = null;
   let phone = null;
-
   const emailRegex = /\S+@\S+\.\S+/;
 
   // Detect email vs phone
@@ -330,7 +328,7 @@ app.post("/register", async (req, res) => {
   // Uniqueness checks
   if (email) {
     const existingEmail = await dbGet(
-      "SELECT id FROM users WHERE email=?",
+      "SELECT id FROM users WHERE email=$1",
       [email]
     );
     if (existingEmail) errors.push(`Email already registered: ${email}`);
@@ -348,11 +346,28 @@ app.post("/register", async (req, res) => {
 
   const hash = bcrypt.hashSync(password, 10);
 
+  // Build the columns & values dynamically to avoid inserting NULLs unnecessarily
+  const columns = ["username", "password"];
+  const placeholders = ["$1", "$2"];
+  const values = [username, hash];
+  let idx = 3;
+
+  if (email) {
+    columns.push("email");
+    placeholders.push(`$${idx++}`);
+    values.push(email);
+  }
+  if (phone) {
+    columns.push("phone");
+    placeholders.push(`$${idx++}`);
+    values.push(phone);
+  }
+
   const newUser = await dbGet(
-    `INSERT INTO users (username, password, email, phone)
-     VALUES (?, ?, ?, ?)
+    `INSERT INTO users (${columns.join(", ")})
+     VALUES (${placeholders.join(", ")})
      RETURNING id, username`,
-    [username, hash, email, phone]
+    values
   );
 
   res.cookie("DreamBookApp", signToken(newUser));
@@ -1026,3 +1041,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
