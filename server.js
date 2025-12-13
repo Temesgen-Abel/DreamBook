@@ -373,30 +373,39 @@ app.post("/register", async (req, res) => {
 });
 
 // ================================
-// 6.5 PASSWORD RESET (ALL LOGIC)
+// // ================================
+// PASSWORD RESET WITH EMAIL & SMS
 // ================================
-async function sendResetEmail(email, link) {
-  console.log(`EMAIL → ${email}`);
-  console.log(`LINK → ${link}`);
-}
-async function sendResetSMS(phone, link) {
-  console.log(`SMS → ${phone}`);
-  console.log(`LINK → ${link}`);
-}
 
 const RESET_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
-const RESEND_COOLDOWN_MS = 60000; // 1 minute
+const RESEND_COOLDOWN_MS = 60_000; // 1 minute
 
+// NodeMailer transporter
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: Number(process.env.EMAIL_PORT) || 587,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
+// Twilio client
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+
+// ----------------
+// GET: show reset page
+// ----------------
 app.get("/password-reset", (req, res) => {
-  res.render("password-reset", {
-    errors: [],
-    token: null
-  });
+  res.render("password-reset", { errors: [], token: null });
 });
 
 // ----------------
-// POST: Generate reset token (Email OR Phone)
+// POST: request reset
 // ----------------
 app.post("/password-reset", async (req, res) => {
   try {
@@ -424,17 +433,15 @@ app.post("/password-reset", async (req, res) => {
       });
     }
 
-    // ⏱️ Resend cooldown
-    if (
-      user.reset_last_sent &&
-      Date.now() - user.reset_last_sent < RESEND_COOLDOWN_MS
-    ) {
+    // Cooldown check
+    if (user.reset_last_sent && Date.now() - user.reset_last_sent < RESEND_COOLDOWN_MS) {
       return res.render("password-reset", {
         errors: ["Please wait before requesting another reset"],
         token: null
       });
     }
 
+    // Generate reset token
     const token = crypto.randomBytes(32).toString("hex");
     const expires = Date.now() + RESET_EXPIRY_MS;
 
@@ -449,14 +456,24 @@ app.post("/password-reset", async (req, res) => {
 
     const resetLink = `${process.env.APP_URL}/password-reset/${token}`;
 
-    // 🔍 DEBUG LOG (remove later if you want)
-    console.log("PASSWORD RESET LINK:", resetLink);
-
-    // 📩 Send via Email or Phone
+    // Send email
     if (user.email && user.email === identifier) {
-      await sendResetEmail(user.email, resetLink);
-    } else if (user.phone) {
-      await sendResetSMS(user.phone, resetLink);
+      await transporter.sendMail({
+        from: `"DreamBook" <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: "Password Reset",
+        html: `<p>Click the link to reset your password:</p>
+               <a href="${resetLink}">${resetLink}</a>
+               <p>This link expires in 30 minutes.</p>`
+      });
+    } 
+    // Send SMS
+    else if (user.phone && user.phone === identifier) {
+      await twilioClient.messages.create({
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: user.phone,
+        body: `Reset your password: ${resetLink} (expires in 30 minutes)`
+      });
     }
 
     res.render("password-reset", {
@@ -473,18 +490,15 @@ app.post("/password-reset", async (req, res) => {
   }
 });
 
-
 // ----------------
-// GET: Validate token & show new password form
+// GET: show form with token
 // ----------------
 app.get("/password-reset/:token", async (req, res) => {
   const token = req.params.token;
 
   const user = await dbGet(
-    `SELECT id
-     FROM users
-     WHERE reset_token=$1
-       AND reset_expires > $2`,
+    `SELECT id FROM users
+     WHERE reset_token=$1 AND reset_expires > $2`,
     [token, Date.now()]
   );
 
@@ -495,15 +509,11 @@ app.get("/password-reset/:token", async (req, res) => {
     });
   }
 
-  res.render("password-reset", {
-    errors: [],
-    token
-  });
+  res.render("password-reset", { errors: [], token });
 });
 
-
 // ----------------
-// POST: Save new password
+// POST: save new password
 // ----------------
 app.post("/password-reset/:token", async (req, res) => {
   const token = req.params.token;
@@ -517,10 +527,8 @@ app.post("/password-reset/:token", async (req, res) => {
   }
 
   const user = await dbGet(
-    `SELECT id
-     FROM users
-     WHERE reset_token=$1
-       AND reset_expires > $2`,
+    `SELECT id FROM users
+     WHERE reset_token=$1 AND reset_expires > $2`,
     [token, Date.now()]
   );
 
@@ -533,7 +541,6 @@ app.post("/password-reset/:token", async (req, res) => {
 
   const hash = await bcrypt.hash(password, 10);
 
-  // 🔒 Token is INVALIDATED here (cannot be reused)
   await dbRun(
     `UPDATE users
      SET password=$1,
