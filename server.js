@@ -382,6 +382,11 @@ app.post("/register", async (req, res) => {
 // 6.5 PASSWORD RESET (ALL LOGIC)
 // ================================
 
+
+// ================================
+// 6.5 PASSWORD RESET (ALL LOGIC)
+// ================================
+
 app.get("/password-reset", (req, res) => {
   res.render("password-reset", {
     errors: [],
@@ -1131,3 +1136,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
