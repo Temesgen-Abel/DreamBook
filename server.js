@@ -376,79 +376,57 @@ app.post("/register", async (req, res) => {
   res.redirect("/dashboard");
 });
 
-//6.5 Password reset route
-
-// GET route for password reset page
-app.get("/password-reset", (req, res) => {
-  res.render("password-reset", { errors: [] }); // <--- define errors
-});
-
-app.post("/password-reset", async (req, res) => {
-  const id = req.body.identifier?.trim();
-
-  const user = await dbGet(
-    `SELECT id FROM users WHERE email=$1 OR phone=$2`,
-    [id, id]
-  );
-
-  const token = newResetToken();
-  const expires = Date.now() + 3600_000;
-
-  if (user) {
-    await dbRun(
-      "UPDATE users SET reset_token=$1, reset_expires=$2 WHERE id=$3",
-      [token, expires, user.id]
-    );
-  }
-
-  const link = `${req.protocol}://${req.get("host")}/reset-password/${token}`;
-
-  res.render("password-reset", {
-    errors: [
-      "If an account exists, a reset link has been generated.",
-      `<a href="${link}" target="_blank">${link}</a>`
-    ]
-  });
-});
+//6.5 Password-reset route
 
 app.get("/password-reset/:token", async (req, res) => {
   const token = req.params.token;
+
   const user = await dbGet(
-    "SELECT * FROM users WHERE reset_token=$1 AND reset_expires > $2",
+    "SELECT id FROM users WHERE reset_token=$1 AND reset_expires > $2",
     [token, Date.now()]
   );
+
   if (!user) {
-    return res.render("reset-password", { errors: ["Invalid or expired token"], token: null });
+    return res.render("password-reset", {
+      errors: ["Invalid or expired token"],
+      token: null
+    });
   }
 
   res.render("password-reset", { errors: [], token });
-
 });
-
 
 app.post("/password-reset/:token", async (req, res) => {
   const token = req.params.token;
   const newPassword = req.body.password?.trim();
 
+  if (!newPassword || newPassword.length < 6) {
+    return res.render("password-reset", {
+      errors: ["Password must be at least 6 characters"],
+      token
+    });
+  }
+
   const user = await dbGet(
-    "SELECT * FROM users WHERE reset_token=$1 AND reset_expires > $2",
+    "SELECT id FROM users WHERE reset_token=$1 AND reset_expires > $2",
     [token, Date.now()]
   );
 
   if (!user) {
-    return res.render("password-reset", { errors: ["Invalid or expired token"], token: null });
+    return res.render("password-reset", {
+      errors: ["Invalid or expired token"],
+      token: null
+    });
   }
 
-  const hash = bcrypt.hashSync(newPassword, 6);
+  const hash = await bcrypt.hash(newPassword, 10);
 
   await dbRun(
     "UPDATE users SET password=$1, reset_token=NULL, reset_expires=NULL WHERE id=$2",
     [hash, user.id]
   );
-
-  res.render("password-reset", { errors: ["Password has been reset successfully."] });
+  return res.redirect("/login?reset=success");
 });
-
 
 // 6.6. MAIN APP ROUTES
 // ===================================================================
@@ -1073,6 +1051,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
