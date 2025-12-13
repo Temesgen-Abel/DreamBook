@@ -376,8 +376,80 @@ app.post("/register", async (req, res) => {
   res.redirect("/dashboard");
 });
 
-//6.5 Password-reset route
 
+
+// ================================
+// 6.5 PASSWORD RESET (ALL LOGIC)
+// ================================
+
+app.get("/password-reset", (req, res) => {
+  res.render("password-reset", {
+    errors: [],
+    token: null
+  });
+});
+
+// ----------------
+// POST: Generate reset token (Email OR Phone)
+// ----------------
+app.post("/password-reset", async (req, res) => {
+  try {
+    const identifier = req.body.username?.trim();
+
+    if (!identifier) {
+      return res.render("password-reset", {
+        errors: ["Enter your email or phone number"],
+        token: null
+      });
+    }
+
+    const user = await dbGet(
+      "SELECT id, email, phone FROM users WHERE email=$1 OR phone=$1",
+      [identifier]
+    );
+
+    // Security: do not reveal user existence
+    if (!user) {
+      return res.render("password-reset", {
+        errors: ["If the account exists, a reset link has been sent"],
+        token: null
+      });
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = Date.now() + (30 * 60 * 1000); // 30 minutes
+
+    await dbRun(
+      "UPDATE users SET reset_token=$1, reset_expires=$2 WHERE id=$3",
+      [token, expires, user.id]
+    );
+
+    const resetLink = `${process.env.APP_URL}/password-reset/${token}`;
+
+    // Send reset link
+    if (user.email && user.email === identifier) {
+      await sendResetEmail(user.email, resetLink);
+    } else if (user.phone) {
+      await sendResetSMS(user.phone, resetLink);
+    }
+
+    res.render("password-reset", {
+      errors: ["Reset link sent. Check your email or phone."],
+      token: null
+    });
+
+  } catch (err) {
+    console.error("Password reset error:", err);
+    res.render("password-reset", {
+      errors: ["Something went wrong. Try again later."],
+      token: null
+    });
+  }
+});
+
+// ----------------
+// GET: Validate token & show new password form
+// ----------------
 app.get("/password-reset/:token", async (req, res) => {
   const token = req.params.token;
 
@@ -388,19 +460,25 @@ app.get("/password-reset/:token", async (req, res) => {
 
   if (!user) {
     return res.render("password-reset", {
-      errors: ["Invalid or expired token"],
+      errors: ["Invalid or expired reset link"],
       token: null
     });
   }
 
-  res.render("password-reset", { errors: [], token });
+  res.render("password-reset", {
+    errors: [],
+    token
+  });
 });
 
+// ----------------
+// POST: Save new password
+// ----------------
 app.post("/password-reset/:token", async (req, res) => {
   const token = req.params.token;
-  const newPassword = req.body.password?.trim();
+  const password = req.body.password?.trim();
 
-  if (!newPassword || newPassword.length < 6) {
+  if (!password || password.length < 6) {
     return res.render("password-reset", {
       errors: ["Password must be at least 6 characters"],
       token
@@ -414,19 +492,21 @@ app.post("/password-reset/:token", async (req, res) => {
 
   if (!user) {
     return res.render("password-reset", {
-      errors: ["Invalid or expired token"],
+      errors: ["Invalid or expired reset link"],
       token: null
     });
   }
 
-  const hash = await bcrypt.hash(newPassword, 10);
+  const hash = await bcrypt.hash(password, 10);
 
   await dbRun(
     "UPDATE users SET password=$1, reset_token=NULL, reset_expires=NULL WHERE id=$2",
     [hash, user.id]
   );
-  return res.redirect("/login?reset=success");
+
+  res.redirect("/login?reset=success");
 });
+
 
 // 6.6. MAIN APP ROUTES
 // ===================================================================
@@ -1051,11 +1131,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
-
-
-
-
-
-
-
