@@ -14,6 +14,7 @@ const crypto = require("crypto");
 const { marked } = require("marked");
 const sanitizeHTML = require("sanitize-html");
 const nodemailer = require("nodemailer");
+const twilio = require("twilio");
 const path = require("path");
 const http = require("http");
 const fs = require("fs");
@@ -62,17 +63,21 @@ async function dbRun(text, params = []) {
 // ===================================================================
 async function initDb() {
   await dbRun(`
-  CREATE TABLE IF NOT EXISTS users (
-  id SERIAL PRIMARY KEY,
-  username TEXT,
-  password TEXT NOT NULL,
-  email TEXT UNIQUE,
-  phone TEXT UNIQUE,
-  role TEXT DEFAULT 'user',
-  reset_token TEXT,
-  reset_expires BIGINT
-    )
-  `);
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    email TEXT UNIQUE,
+    phone TEXT UNIQUE,
+    role TEXT DEFAULT 'user',
+    reset_token TEXT,
+    reset_expires BIGINT,
+    reset_last_sent BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`);
+
 
   await dbRun(`
     CREATE TABLE IF NOT EXISTS posts (
@@ -113,15 +118,6 @@ async function initDb() {
       message TEXT,
       is_read BOOLEAN DEFAULT FALSE,
       createdAt TIMESTAMPTZ DEFAULT NOW()
-    )
-  `);
-
-  await dbRun(`
-    CREATE TABLE IF NOT EXISTS password_resets (
-      id SERIAL PRIMARY KEY,
-      email INTEGER REFERENCES users(id),
-      token TEXT,
-      expiresAt BIGINT
     )
   `);
 
@@ -376,16 +372,21 @@ app.post("/register", async (req, res) => {
   res.redirect("/dashboard");
 });
 
-
-
 // ================================
 // 6.5 PASSWORD RESET (ALL LOGIC)
 // ================================
+async function sendResetEmail(email, link) {
+  console.log(`EMAIL → ${email}`);
+  console.log(`LINK → ${link}`);
+}
+async function sendResetSMS(phone, link) {
+  console.log(`SMS → ${phone}`);
+  console.log(`LINK → ${link}`);
+}
 
+const RESET_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
+const RESEND_COOLDOWN_MS = 60000; // 1 minute
 
-// ================================
-// 6.5 PASSWORD RESET (ALL LOGIC)
-// ================================
 
 app.get("/password-reset", (req, res) => {
   res.render("password-reset", {
@@ -409,29 +410,49 @@ app.post("/password-reset", async (req, res) => {
     }
 
     const user = await dbGet(
-      "SELECT id, email, phone FROM users WHERE email=$1 OR phone=$1",
+      `SELECT id, email, phone, reset_last_sent
+       FROM users
+       WHERE email=$1 OR phone=$1`,
       [identifier]
     );
 
-    // Security: do not reveal user existence
+    // SECURITY: do not reveal existence
     if (!user) {
       return res.render("password-reset", {
-        errors: ["If the account exists, a reset link has been sent"],
+        errors: ["If the account exists, a reset link was sent"],
+        token: null
+      });
+    }
+
+    // ⏱️ Resend cooldown
+    if (
+      user.reset_last_sent &&
+      Date.now() - user.reset_last_sent < RESEND_COOLDOWN_MS
+    ) {
+      return res.render("password-reset", {
+        errors: ["Please wait before requesting another reset"],
         token: null
       });
     }
 
     const token = crypto.randomBytes(32).toString("hex");
-    const expires = Date.now() + (30 * 60 * 1000); // 30 minutes
+    const expires = Date.now() + RESET_EXPIRY_MS;
 
     await dbRun(
-      "UPDATE users SET reset_token=$1, reset_expires=$2 WHERE id=$3",
-      [token, expires, user.id]
+      `UPDATE users
+       SET reset_token=$1,
+           reset_expires=$2,
+           reset_last_sent=$3
+       WHERE id=$4`,
+      [token, expires, Date.now(), user.id]
     );
 
     const resetLink = `${process.env.APP_URL}/password-reset/${token}`;
 
-    // Send reset link
+    // 🔍 DEBUG LOG (remove later if you want)
+    console.log("PASSWORD RESET LINK:", resetLink);
+
+    // 📩 Send via Email or Phone
     if (user.email && user.email === identifier) {
       await sendResetEmail(user.email, resetLink);
     } else if (user.phone) {
@@ -452,6 +473,7 @@ app.post("/password-reset", async (req, res) => {
   }
 });
 
+
 // ----------------
 // GET: Validate token & show new password form
 // ----------------
@@ -459,7 +481,10 @@ app.get("/password-reset/:token", async (req, res) => {
   const token = req.params.token;
 
   const user = await dbGet(
-    "SELECT id FROM users WHERE reset_token=$1 AND reset_expires > $2",
+    `SELECT id
+     FROM users
+     WHERE reset_token=$1
+       AND reset_expires > $2`,
     [token, Date.now()]
   );
 
@@ -476,6 +501,7 @@ app.get("/password-reset/:token", async (req, res) => {
   });
 });
 
+
 // ----------------
 // POST: Save new password
 // ----------------
@@ -491,7 +517,10 @@ app.post("/password-reset/:token", async (req, res) => {
   }
 
   const user = await dbGet(
-    "SELECT id FROM users WHERE reset_token=$1 AND reset_expires > $2",
+    `SELECT id
+     FROM users
+     WHERE reset_token=$1
+       AND reset_expires > $2`,
     [token, Date.now()]
   );
 
@@ -504,14 +533,19 @@ app.post("/password-reset/:token", async (req, res) => {
 
   const hash = await bcrypt.hash(password, 10);
 
+  // 🔒 Token is INVALIDATED here (cannot be reused)
   await dbRun(
-    "UPDATE users SET password=$1, reset_token=NULL, reset_expires=NULL WHERE id=$2",
+    `UPDATE users
+     SET password=$1,
+         reset_token=NULL,
+         reset_expires=NULL,
+         reset_last_sent=NULL
+     WHERE id=$2`,
     [hash, user.id]
   );
 
   res.redirect("/login?reset=success");
 });
-
 
 // 6.6. MAIN APP ROUTES
 // ===================================================================
@@ -961,6 +995,19 @@ app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
 
   res.redirect("/dictionary");
 });
+//searching for a term
+
+app.get("/dictionary/search", mustBeLoggedIn, async (req, res) => {
+  const query = req.query.q?.trim() || "";
+  let terms = [];
+  if (query) {
+    terms = await dbQuery(
+      "SELECT * FROM dictionary WHERE term ILIKE $1 OR meaning ILIKE $1 ORDER BY term ASC",
+      [`%${query}%`]
+    );
+  }
+  res.render("dictionary-search", { terms, user: req.user, query });
+});
 
 // 6.19. NOTIFICATIONS
 // ===================================================================
@@ -1136,4 +1183,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
