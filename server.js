@@ -348,11 +348,14 @@ app.post("/register", async (req, res) => {
 // ================================
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // MUST be false for port 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000,
 });
 
 const RESET_EXPIRY_MS = parseInt(process.env.RESET_EXPIRY_MS, 10);
@@ -415,7 +418,7 @@ app.post("/password-reset", async (req, res) => {
     );
 
     // Build reset link
-    const resetLink = `${frontendURL}/reset-password?token=${token}`;
+    const resetLink = `${frontendURL}/password-reset?token=${token}`;
 
     // Send email
     await transporter.sendMail({
@@ -1140,4 +1143,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
