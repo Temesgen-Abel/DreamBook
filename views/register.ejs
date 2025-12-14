@@ -15,15 +15,19 @@
                 <p class="notice"><%= error %></p>
             <% }) %>
         <% } %>
-        
 
         <fieldset class="auth-form">
             <legend>Create an account</legend>
-            <input type="text" id="username" name="username" autocomplete="off">
+
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" autocomplete="off" required>
+
             <label for="password">Password</label>
-            <input type="password" id="password" name="password" autocomplete="off">
-            <label email="email">Email/phone number</label>
-            <input name="contact" placeholder="Email or Phone Number" required />
+            <input type="password" id="password" name="password" autocomplete="off" required>
+
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="Enter your email" required />
+
             <br>
             <button class="auth-form input" type="submit">Sign up</button>
         </fieldset>
@@ -32,7 +36,4 @@
 
 </body>
  <%- include('includes/footer') %>
-
 </html>
-
-
