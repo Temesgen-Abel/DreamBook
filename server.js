@@ -13,8 +13,9 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const { marked } = require("marked");
 const sanitizeHTML = require("sanitize-html");
-const nodemailer = require("nodemailer");
-const twilio = require("twilio");
+const emailUser = process.env.EMAIL_USER;
+const emailPass = process.env.EMAIL_PASS;
+const frontendURL = process.env.FRONTEND_URL;
 const path = require("path");
 const http = require("http");
 const fs = require("fs");
@@ -299,137 +300,97 @@ app.post("/admin-login", async (req, res) => {
 
 
 //6.4 register route
+// GET: show register page
 app.get("/register", (_, res) => res.render("register", { errors: [] }));
 
+// POST: create new user
 app.post("/register", async (req, res) => {
-  const username = req.body.username?.trim();
-  const password = req.body.password?.trim();
-  const contact = req.body.contact?.trim(); // email OR phone
+  let { username, password, email } = req.body;
+  username = username?.trim();
+  password = password?.trim();
+  email = email?.trim();
 
   const errors = [];
 
   if (!username) errors.push("Username required");
   if (!password) errors.push("Password required");
-  if (!contact) errors.push("Please provide email or phone number");
+  if (!email) errors.push("Please provide your email account");
 
-  let email = null;
-  let phone = null;
-  const emailRegex = /\S+@\S+\.\S+/;
+  // Email format check
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) errors.push("Invalid email address");
 
-  // Detect email vs phone
-  if (emailRegex.test(contact)) {
-    email = contact;
-  } else {
-    phone = contact;
-  }
-
-  // Uniqueness checks
-  if (email) {
-    const existingEmail = await dbGet(
-      "SELECT id FROM users WHERE email=$1",
-      [email]
-    );
-    if (existingEmail) errors.push(`Email already registered: ${email}`);
-  }
-
-  if (phone) {
-    const existingPhone = await dbGet(
-      "SELECT id FROM users WHERE phone=$1",
-      [phone]
-    );
-    if (existingPhone) errors.push(`Phone already registered: ${phone}`);
-  }
+  // Uniqueness check
+  const existingEmail = await dbGet("SELECT id FROM users WHERE email=$1", [email]);
+  if (existingEmail) errors.push(`Email already registered: ${email}`);
 
   if (errors.length) return res.render("register", { errors });
 
-  const hash = bcrypt.hashSync(password, 6);
+  const hash = bcrypt.hashSync(password, 10);
 
-  // Build the columns & values dynamically to avoid inserting NULLs unnecessarily
-  const columns = ["username", "password"];
-  const placeholders = ["$1", "$2"];
-  const values = [username, hash];
-  let idx = 3;
-
-  if (email) {
-    columns.push("email");
-    placeholders.push(`$${idx++}`);
-    values.push(email);
-  }
-  if (phone) {
-    columns.push("phone");
-    placeholders.push(`$${idx++}`);
-    values.push(phone);
-  }
-
+  // Insert user into DB
   const newUser = await dbGet(
-    `INSERT INTO users (${columns.join(", ")})
-     VALUES (${placeholders.join(", ")})
+    `INSERT INTO users (username, password, email)
+     VALUES ($1, $2, $3)
      RETURNING id, username`,
-    values
+    [username, hash, email]
   );
 
+  // Log user in (cookie with token)
   res.cookie("DreamBookApp", signToken(newUser));
   res.redirect("/dashboard");
 });
 
-// ================================
+
 // // ================================
 // PASSWORD RESET WITH EMAIL & SMS
 // ================================
 
-const RESET_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
-const RESEND_COOLDOWN_MS = 60_000; // 1 minute
-
-// NodeMailer transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT) || 587,
-  secure: false,
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
-// Twilio client
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+const RESET_EXPIRY_MS = parseInt(process.env.RESET_EXPIRY_MS, 10);
+const RESEND_COOLDOWN_MS = 60 * 1000; // 1 minute
 
-// ----------------
 // GET: show reset page
 // ----------------
 app.get("/password-reset", (req, res) => {
   res.render("password-reset", { errors: [], token: null });
 });
 
+
 // ----------------
 // POST: request reset
 // ----------------
 app.post("/password-reset", async (req, res) => {
   try {
-    const identifier = req.body.username?.trim();
+    const email = req.body.email?.trim();
 
-    if (!identifier) {
+    if (!email) {
       return res.render("password-reset", {
-        errors: ["Enter your email or phone number"],
+        errors: ["Enter your email address"],
         token: null
       });
     }
 
     const user = await dbGet(
-      `SELECT id, email, phone, reset_last_sent
+      `SELECT id, email, reset_last_sent
        FROM users
-       WHERE email=$1 OR phone=$1`,
-      [identifier]
+       WHERE email=$1`,
+      [email]
     );
 
-    // SECURITY: do not reveal existence
+    // SECURITY: do not reveal if the email exists
     if (!user) {
       return res.render("password-reset", {
-        errors: ["If the account exists, a reset link was sent"],
-        token: null
+        errors: [],
+        token: null,
+        success: "If the account exists, a reset link has been sent to your email."
       });
     }
 
@@ -447,38 +408,31 @@ app.post("/password-reset", async (req, res) => {
 
     await dbRun(
       `UPDATE users
-       SET reset_token=$1,
-           reset_expires=$2,
-           reset_last_sent=$3
+       SET reset_token=$1, reset_expires=$2, reset_last_sent=$3
        WHERE id=$4`,
       [token, expires, Date.now(), user.id]
     );
 
-    const resetLink = `${process.env.APP_URL}/password-reset/${token}`;
+    // Build reset link
+    const resetLink = `${frontendURL}/reset-password?token=${token}`;
 
     // Send email
-    if (user.email && user.email === identifier) {
-      await transporter.sendMail({
-        from: `"DreamBook" <${process.env.EMAIL_USER}>`,
-        to: user.email,
-        subject: "Password Reset",
-        html: `<p>Click the link to reset your password:</p>
-               <a href="${resetLink}">${resetLink}</a>
-               <p>This link expires in 30 minutes.</p>`
-      });
-    } 
-    // Send SMS
-    else if (user.phone && user.phone === identifier) {
-      await twilioClient.messages.create({
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: user.phone,
-        body: `Reset your password: ${resetLink} (expires in 30 minutes)`
-      });
-    }
+    await transporter.sendMail({
+      from: `"DreamBook" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: "Password Reset",
+      html: `
+        <p>Click the link below to reset your password:</p>
+        <a href="${resetLink}">${resetLink}</a>
+        <p>This link expires in 30 minutes.</p>
+      `
+    });
 
+    // Render template with success message
     res.render("password-reset", {
-      errors: ["Reset link sent. Check your email or phone."],
-      token: null
+      errors: [],
+      token: null,
+      success: "If the account exists, a reset link has been sent to your email."
     });
 
   } catch (err) {
@@ -515,9 +469,8 @@ app.get("/password-reset/:token", async (req, res) => {
 // ----------------
 // POST: save new password
 // ----------------
-app.post("/password-reset/:token", async (req, res) => {
-  const token = req.params.token;
-  const password = req.body.password?.trim();
+app.post("/password-reset/confirm", async (req, res) => {
+  const { token, password } = req.body;
 
   if (!password || password.length < 6) {
     return res.render("password-reset", {
@@ -527,8 +480,7 @@ app.post("/password-reset/:token", async (req, res) => {
   }
 
   const user = await dbGet(
-    `SELECT id FROM users
-     WHERE reset_token=$1 AND reset_expires > $2`,
+    `SELECT id FROM users WHERE reset_token=$1 AND reset_expires > $2`,
     [token, Date.now()]
   );
 
@@ -543,10 +495,7 @@ app.post("/password-reset/:token", async (req, res) => {
 
   await dbRun(
     `UPDATE users
-     SET password=$1,
-         reset_token=NULL,
-         reset_expires=NULL,
-         reset_last_sent=NULL
+     SET password=$1, reset_token=NULL, reset_expires=NULL, reset_last_sent=NULL
      WHERE id=$2`,
     [hash, user.id]
   );
