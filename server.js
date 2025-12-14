@@ -11,6 +11,7 @@ const { Pool } = require("pg");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const { marked } = require("marked");
 const sanitizeHTML = require("sanitize-html");
 const emailUser = process.env.EMAIL_USER;
@@ -1139,3 +1140,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
