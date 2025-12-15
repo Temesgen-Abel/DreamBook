@@ -349,17 +349,19 @@ app.post("/register", async (req, res) => {
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false, // MUST be false for 587
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    pass: process.env.EMAIL_PASS, // Gmail App Password
   },
   connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
-const RESET_EXPIRY_MS = parseInt(process.env.RESET_EXPIRY_MS, 10);
-const RESEND_COOLDOWN_MS = 60 * 1000; // 1 minute
+console.log("EMAIL_USER:", !!process.env.EMAIL_USER);
+console.log("EMAIL_PASS:", !!process.env.EMAIL_PASS);
 
 // GET: show reset page
 // ----------------
@@ -1143,4 +1145,5 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
