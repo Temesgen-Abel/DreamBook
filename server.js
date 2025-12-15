@@ -438,8 +438,7 @@ app.post("/password-reset", async (req, res) => {
 
 
     // Render template with success message
-    res.render("password-reset, {
-      success: "If the account exists, a reset link has been sent to your email."
+     res.render("password-reset", { error: null });
     });
 
   } catch (err) {
@@ -1146,4 +1145,5 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
