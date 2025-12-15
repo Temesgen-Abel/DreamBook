@@ -361,14 +361,16 @@ app.post("/register", async (req, res) => {
   res.redirect("/dashboard");
 });
 
-
 // // ================================
 // PASSWORD RESET WITH EMAIL & SMS
 // ================================
 
 const frontendURL = process.env.FRONTEND_URL;
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 
-// ----------------
 // ----------------
 // GET: password reset request page
 // ----------------
@@ -1112,6 +1114,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
