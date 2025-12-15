@@ -369,9 +369,6 @@ app.get("/password-reset", (req, res) => {
 });
 
 
-// ----------------
-// POST: request reset
-// ----------------
 app.post("/password-reset", async (req, res) => {
   try {
     const email = req.body.email?.trim();
@@ -384,13 +381,10 @@ app.post("/password-reset", async (req, res) => {
     }
 
     const user = await dbGet(
-      `SELECT id, email, reset_last_sent
-       FROM users
-       WHERE email=$1`,
+      `SELECT id, email, reset_last_sent FROM users WHERE email=$1`,
       [email]
     );
 
-    // SECURITY: do not reveal if the email exists
     if (!user) {
       return res.render("password-reset", {
         errors: [],
@@ -399,7 +393,6 @@ app.post("/password-reset", async (req, res) => {
       });
     }
 
-    // Cooldown check
     if (user.reset_last_sent && Date.now() - user.reset_last_sent < RESEND_COOLDOWN_MS) {
       return res.render("password-reset", {
         errors: ["Please wait before requesting another reset"],
@@ -407,38 +400,35 @@ app.post("/password-reset", async (req, res) => {
       });
     }
 
-    // Generate reset token
     const token = crypto.randomBytes(32).toString("hex");
     const expires = Date.now() + RESET_EXPIRY_MS;
 
     await dbRun(
-      `UPDATE users
-       SET reset_token=$1, reset_expires=$2, reset_last_sent=$3
-       WHERE id=$4`,
+      `UPDATE users SET reset_token=$1, reset_expires=$2, reset_last_sent=$3 WHERE id=$4`,
       [token, expires, Date.now(), user.id]
     );
 
-    // Build reset link
     const resetLink = `${frontendURL}/password-reset/${token}`;
 
+    try {
+      await transporter.sendMail({
+        from: `"DreamBook" <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: "Password Reset",
+        html: `
+          <p>Click the link below to reset your password:</p>
+          <a href="${resetLink}">${resetLink}</a>
+          <p>This link expires in 30 minutes.</p>
+        `
+      });
+    } catch (err) {
+      console.error("Email send failed:", err);
+    }
 
-    // Send email
-    transporter.sendMail({
-  from: `"DreamBook" <${process.env.EMAIL_USER}>`,
-  to: user.email,
-  subject: "Password Reset",
-  html: `
-    <p>Click the link below to reset your password:</p>
-    <a href="${resetLink}">${resetLink}</a>
-    <p>This link expires in 30 minutes.</p>
-  `
-}).catch(err => {
-  console.error("Email send failed:", err);
-});
-
-
-    // Render template with success message
-     res.render("password-reset", { error: null });
+    res.render("password-reset", {
+      errors: [],
+      token: null,
+      success: "If the account exists, a reset link has been sent."
     });
 
   } catch (err) {
@@ -449,7 +439,6 @@ app.post("/password-reset", async (req, res) => {
     });
   }
 });
-
 // ----------------
 // GET: show form with token
 // ----------------
@@ -1145,5 +1134,6 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
