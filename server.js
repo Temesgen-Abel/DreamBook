@@ -359,6 +359,9 @@ const transporter = nodemailer.createTransport({
   greetingTimeout: 10000,
   socketTimeout: 10000,
 });
+const RESEND_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+const RESET_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
+
 // GET: show reset page
 // ----------------
 app.get("/password-reset", (req, res) => {
@@ -1139,6 +1142,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
