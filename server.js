@@ -359,17 +359,11 @@ const transporter = nodemailer.createTransport({
   greetingTimeout: 10000,
   socketTimeout: 10000,
 });
-
-console.log("EMAIL_USER:", !!process.env.EMAIL_USER);
-console.log("EMAIL_PASS:", !!process.env.EMAIL_PASS);
-
 // GET: show reset page
 // ----------------
 app.get("/password-reset", (req, res) => {
   res.render("password-reset", { errors: [], token: null });
 });
-
-
 // ----------------
 // POST: request reset
 // ----------------
@@ -1145,5 +1139,6 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
