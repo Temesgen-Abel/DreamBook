@@ -5,77 +5,70 @@
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-
 <%- include('includes/header') %>
 
-<h3 style="text-align:center; margin-top:20px;">Reset your DreamBook password</h3>
+<h3 style="text-align:center; margin-top:20px;">Welcome to DreamBook</h3>
 
 <main class="auth-wrapper">
 
-    <form class="auth-form"
-          action="<%= token ? '/password-reset/confirm' : '/password-reset' %>"
-          method="POST">
+    <% if (error) { %>
+        <p class="auth-error">
+            <%= error %> 
+            You can reset your password 
+            <a href="/password-reset">here</a>.
+        </p>
+    <% } %>
+
+    <left-side>
+  <div class="landing-image">
+    <form action="/login" method="POST" class="auth-form">
+
+        <% if (errors && errors.length) { %>
+            <% errors.forEach(function(error) { %>
+                <p class="auth-error"><%= error %></p>
+            <% }) %>
+        <% } %>
 
         <fieldset class="login-form">
-            <legend>Password Reset</legend>
+            <legend>Login</legend>
 
-            <% if (errors && errors.length) { %>
-                <% errors.forEach(function(error) { %>
-                    <p class="auth-error"><%= error %></p>
-                <% }) %>
-            <% } %>
+            <label class="input" for="username"><small>Username</small></label>
+            <input type="text" id="username" name="username" autocomplete="off" required>
 
-            <% if (success) { %>
-                <p class="auth-success"><%= success %></p>
-            <% } %>
+            <label class="input" for="password"><small>Password</small></label>
+            <input type="password" id="password" name="password" autocomplete="off" required>
 
-            <% if (!token) { %>
-                <!-- STEP 1: Request reset link -->
+            <button type="submit">Login</button>
 
-                <label class="input" for="email">
-                    <small>Email</small>
-                </label>
-                <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    placeholder="Enter your email"
-                    required
-                    autofocus
-                >
-
-                <button type="submit">Send Reset Link</button>
-
-                <p class="auth-links">
-                    Remember your password?
-                    <a href="/login">Back to login</a>
-                </p>
-
-            <% } else { %>
-                <!-- STEP 2: Enter new password -->
-
-                <input type="hidden" name="token" value="<%= token %>">
-
-                <label class="input" for="password">
-                    <small>New Password</small>
-                </label>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    placeholder="Enter new password"
-                    required
-                    autofocus
-                >
-
-                <button type="submit">Reset Password</button>
-
-            <% } %>
+            <p class="auth-links">Don't have an account? <a href="/register">Sign up</a></p>
+            <p class="auth-links">Admin? <a href="/admin-login">Login here</a></p>
 
         </fieldset>
     </form>
 
-</main>
+    <div class="right-side">
+  <div class="landing-content">
 
+    <h1>Welcome to <span>DreamBook</span></h1>
+
+    <p class="subtitle">
+      Discover the meaning behind your dreams and explore our rich library of dream interpretations.
+    </p>
+
+    <ul class="features">
+      <li>✓ Search thousands of dream meanings</li>
+      <li>✓ Learn spiritual and psychological interpretations</li>
+      <li>✓ Save your dream history</li>
+      <li>✓ Access dream dictionary anytime</li>
+    </ul>
+
+    <div class="illustration-box">
+      <p>Your dreams have meaning — unlock them with DreamBook.</p>
+    </div>
+
+  </div>
+</div>
+
+</main>
 </body>
 </html>
