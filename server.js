@@ -359,14 +359,16 @@ const transporter = nodemailer.createTransport({
   greetingTimeout: 10000,
   socketTimeout: 10000,
 });
+
 const RESEND_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 const RESET_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
-
 // GET: show reset page
 // ----------------
 app.get("/password-reset", (req, res) => {
   res.render("password-reset", { errors: [], token: null });
 });
+
+
 // ----------------
 // POST: request reset
 // ----------------
@@ -417,24 +419,26 @@ app.post("/password-reset", async (req, res) => {
     );
 
     // Build reset link
-    const resetLink = `${frontendURL}/password-reset?token=${token}`;
+    const resetLink = `${frontendURL}/password-reset/${token}`;
+
 
     // Send email
-    await transporter.sendMail({
-      from: `"DreamBook" <${process.env.EMAIL_USER}>`,
-      to: user.email,
-      subject: "Password Reset",
-      html: `
-        <p>Click the link below to reset your password:</p>
-        <a href="${resetLink}">${resetLink}</a>
-        <p>This link expires in 30 minutes.</p>
-      `
-    });
+    transporter.sendMail({
+  from: `"DreamBook" <${process.env.EMAIL_USER}>`,
+  to: user.email,
+  subject: "Password Reset",
+  html: `
+    <p>Click the link below to reset your password:</p>
+    <a href="${resetLink}">${resetLink}</a>
+    <p>This link expires in 30 minutes.</p>
+  `
+}).catch(err => {
+  console.error("Email send failed:", err);
+});
+
 
     // Render template with success message
-    res.render("password-reset", {
-      errors: [],
-      token: null,
+    res.render("password-reset<|fim_middle|><|fim_middle|><|fim_middle|>", {
       success: "If the account exists, a reset link has been sent to your email."
     });
 
@@ -1142,7 +1146,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
-
-
-
