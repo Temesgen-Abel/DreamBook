@@ -11,12 +11,9 @@ const { Pool } = require("pg");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
+const { createClient } = require("@supabase/supabase-js");
 const { marked } = require("marked");
 const sanitizeHTML = require("sanitize-html");
-const emailUser = process.env.EMAIL_USER;
-const emailPass = process.env.EMAIL_PASS;
-const frontendURL = process.env.FRONTEND_URL;
 const path = require("path");
 const http = require("http");
 const fs = require("fs");
@@ -347,122 +344,78 @@ app.post("/register", async (req, res) => {
 // PASSWORD RESET WITH EMAIL & SMS
 // ================================
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // MUST be false for 587
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // Gmail App Password
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-});
+const frontendURL = process.env.FRONTEND_URL;
 
-const RESEND_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
-const RESET_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
-// GET: show reset page
+// ----------------
+// ----------------
+// GET: password reset request page
 // ----------------
 app.get("/password-reset", (req, res) => {
-  res.render("password-reset", { errors: [], token: null });
+  res.render("password-reset", { errors: [], token: null, success: null });
 });
 
-
+// ----------------
+// POST: request password reset
+// ----------------
 app.post("/password-reset", async (req, res) => {
+  const email = req.body.email?.trim();
+
+  if (!email) {
+    return res.render("password-reset", {
+      errors: ["Enter your email address"],
+      token: null,
+      success: null
+    });
+  }
+
   try {
-    const email = req.body.email?.trim();
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${frontendURL}/password-reset/confirm`
+    });
 
-    if (!email) {
+    if (error) {
+      console.error("Supabase reset error:", error.message);
       return res.render("password-reset", {
-        errors: ["Enter your email address"],
-        token: null
-      });
-    }
-
-    const user = await dbGet(
-      `SELECT id, email, reset_last_sent FROM users WHERE email=$1`,
-      [email]
-    );
-
-    if (!user) {
-      return res.render("password-reset", {
-        errors: [],
+        errors: ["Unable to send reset email. Try again later."],
         token: null,
-        success: "If the account exists, a reset link has been sent to your email."
+        success: null
       });
-    }
-
-    if (user.reset_last_sent && Date.now() - user.reset_last_sent < RESEND_COOLDOWN_MS) {
-      return res.render("password-reset", {
-        errors: ["Please wait before requesting another reset"],
-        token: null
-      });
-    }
-
-    const token = crypto.randomBytes(32).toString("hex");
-    const expires = Date.now() + RESET_EXPIRY_MS;
-
-    await dbRun(
-      `UPDATE users SET reset_token=$1, reset_expires=$2, reset_last_sent=$3 WHERE id=$4`,
-      [token, expires, Date.now(), user.id]
-    );
-
-    const resetLink = `${frontendURL}/password-reset/${token}`;
-
-    try {
-      await transporter.sendMail({
-        from: `"DreamBook" <${process.env.EMAIL_USER}>`,
-        to: user.email,
-        subject: "Password Reset",
-        html: `
-          <p>Click the link below to reset your password:</p>
-          <a href="${resetLink}">${resetLink}</a>
-          <p>This link expires in 30 minutes.</p>
-        `
-      });
-    } catch (err) {
-      console.error("Email send failed:", err);
     }
 
     res.render("password-reset", {
       errors: [],
       token: null,
-      success: "If the account exists, a reset link has been sent."
+      success: "If the account exists, a reset link has been sent to your email."
     });
-
   } catch (err) {
-    console.error("Password reset error:", err);
+    console.error(err);
     res.render("password-reset", {
       errors: ["Something went wrong. Try again later."],
-      token: null
+      token: null,
+      success: null
     });
   }
 });
-// ----------------
-// GET: show form with token
-// ----------------
-app.get("/password-reset/:token", async (req, res) => {
-  const token = req.params.token;
 
-  const user = await dbGet(
-    `SELECT id FROM users
-     WHERE reset_token=$1 AND reset_expires > $2`,
-    [token, Date.now()]
-  );
+// ----------------
+// GET: show page for setting new password
+// ----------------
+app.get("/password-reset/confirm", (req, res) => {
+  const token = req.query.access_token || null;
 
-  if (!user) {
+  if (!token) {
     return res.render("password-reset", {
       errors: ["Invalid or expired reset link"],
-      token: null
+      token: null,
+      success: null
     });
   }
 
-  res.render("password-reset", { errors: [], token });
+  res.render("password-reset", { errors: [], token, success: null });
 });
 
 // ----------------
-// POST: save new password
+// POST: set new password
 // ----------------
 app.post("/password-reset/confirm", async (req, res) => {
   const { token, password } = req.body;
@@ -470,33 +423,36 @@ app.post("/password-reset/confirm", async (req, res) => {
   if (!password || password.length < 6) {
     return res.render("password-reset", {
       errors: ["Password must be at least 6 characters"],
-      token
+      token,
+      success: null
     });
   }
 
-  const user = await dbGet(
-    `SELECT id FROM users WHERE reset_token=$1 AND reset_expires > $2`,
-    [token, Date.now()]
-  );
+  try {
+    const { data, error } = await supabase.auth.updateUser(token, { password });
 
-  if (!user) {
-    return res.render("password-reset", {
-      errors: ["Invalid or expired reset link"],
-      token: null
+    if (error) {
+      console.error("Supabase update password error:", error.message);
+      return res.render("password-reset", {
+        errors: ["Failed to update password. Try again."],
+        token,
+        success: null
+      });
+    }
+
+    // Redirect to login page with success message
+    return res.redirect("/login?reset=success");
+  } catch (err) {
+    console.error(err);
+    res.render("password-reset", {
+      errors: ["Something went wrong. Try again later."],
+      token,
+      success: null
     });
   }
-
-  const hash = await bcrypt.hash(password, 10);
-
-  await dbRun(
-    `UPDATE users
-     SET password=$1, reset_token=NULL, reset_expires=NULL, reset_last_sent=NULL
-     WHERE id=$2`,
-    [hash, user.id]
-  );
-
-  res.redirect("/login?reset=success");
 });
+
+
 
 // 6.6. MAIN APP ROUTES
 // ===================================================================
@@ -1134,6 +1090,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
-
-
