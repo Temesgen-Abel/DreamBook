@@ -12,11 +12,12 @@
     "node": ">=18.0.0"  
   },
   
-  "keywords": [],
+ "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@supabase/supabase-js": "^2.87.1",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
