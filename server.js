@@ -251,16 +251,35 @@ app.get("/", (req, res) => {
 });
 
 //6.1 login Route
-app.get("/login", (req, res) => {res.render("login", { error: null });});
+app.get("/", (req, res) => {
+  if (req.user) return res.redirect("/dashboard");
+  res.render("homepage", { user: req.user, errors: [] });
+});
+
+// 6.1 Login Route
+app.get("/login", (_, res) => {
+  res.render("login", { errors: [] });
+});
 
 app.post("/login", async (req, res) => {
-  const username = req.body.username.trim();
-  const password = req.body.password.trim();
+  const username = req.body.username?.trim();
+  const password = req.body.password?.trim();
 
-  const user = await dbGet("SELECT * FROM users WHERE username=$1", [username]);
+  if (!username || !password) {
+    return res.render("login", {
+      errors: ["Username and password are required"]
+    });
+  }
+
+  const user = await dbGet(
+    "SELECT * FROM users WHERE username=$1",
+    [username]
+  );
 
   if (!user || !bcrypt.compareSync(password, user.password)) {
-    return res.render("login", { errors: ["Invalid credentials"] });
+    return res.render("login", {
+      errors: ["Invalid credentials"]
+    });
   }
 
   res.cookie("DreamBookApp", signToken(user), {
@@ -268,9 +287,11 @@ app.post("/login", async (req, res) => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict"
   });
+
   res.redirect("/password-reset");
 });
-//6.2 logout Route
+
+// 6.2 Logout Route
 app.get("/logout", (req, res) => {
   res.clearCookie("DreamBookApp");
   res.redirect("/login");
@@ -1091,6 +1112,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
