@@ -247,7 +247,7 @@ app.set("io", io);
 
 app.get("/", (req, res) => {
   if (req.user) return res.redirect("/dashboard");
-  res.render("homepage", { user: req.user, errors: [] });
+  res.render("homepage", { user: req.user, error: [] });
 });
 
 //6.1 login Route
@@ -1090,3 +1090,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
