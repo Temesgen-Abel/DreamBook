@@ -12,7 +12,7 @@
 }
 
 .galaxy-rotate {
-  position: absolute;
+  position: relative;
   width: 2000px;
   height: 2000px;
   top: 50%;
@@ -433,6 +433,7 @@ button { cursor: pointer; }
   }
   .right-column { margin-top: 20px; }
 }
+
 
 
 
