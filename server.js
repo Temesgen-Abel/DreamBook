@@ -392,7 +392,7 @@ app.post("/password-reset", async (req, res) => {
 
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.SITE_URL}/password-reset/confirm`
+       redirectTo: `${process.env.APP_URL}/password-reset`
     });
 
     if (error) {
@@ -1058,3 +1058,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
