@@ -1,16 +1,23 @@
 
 <!DOCTYPE html>
 <html lang="en">
+  <title>Dream Dictionary</title>
+<meta name="description" content=" A platform enabling to add dream meanings and search dream meanings">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/css/main.css" />
+
   <%- include('includes/head') %>
   <body>
- <%- include('includes/header', { user, notifications: notifications || [] }) %>
+    <%- include('includes/header') %>
 
     <main>
-      <h6>Dream Dictionary</h6>
+      <h1>Dream Dictionary</h1>
+
+      <h3>Discover the meanings behind your dreams and contribute by adding dream meaning into the dream dictionary</h3>
       <p>
-        Explore the meanings of various words in your dreams.  
-        Choose whether to add a new entry or search existing ones.  
-        If you want to see the collection of dream posts, press <a href="/dashboard">here</a>.
+  Add your own dream interpretations or search through our existing collection of dream symbols and meanings.
+  Browse our complete library of dream posts to gain deeper insights into your subconscious mind.
+  Start your dream interpretation journey today - search for symbols, contribute new entries, or explore our full collection of publicly posted dreams <a href="/dashboard">here</a>.
       </p>
 
       <% if (typeof errors !== 'undefined' && errors.length) { %>
@@ -25,22 +32,21 @@
 
       <!-- Radio buttons to choose action -->
       <fieldset>
-        <legend class="auth-form">Choose Action</legend>
+        <legend>Choose Action</legend>
         <label>
           <input type="radio" name="action" value="add">
-          Add Dream Meaning to dream dictionary
+          <h3>Add Dream Meaning to dream dictionary</h3>
         </label>
-<br>
         <label>
           <input type="radio" name="action" value="search">
-          Search Dream Meaning
+          <h3>Search Dream Meaning</h3>
         </label>
       </fieldset>
 
       <!-- Add Dream Meaning Form -->
       <form id="addForm" action="/dictionary/add" method="POST" style="display:none;">
         <fieldset>
-          <legend>Post Dream Meaning</legend>
+          <legend>add Dream Meaning</legend>
           <input type="text" name="term" placeholder="Enter a word" required>
           <input type="text" name="meaning" placeholder="Enter the meaning" required>
           <button type="submit" name="action" value="add">Add</button>
@@ -97,6 +103,3 @@
   </body>
 </html>
 =======
-
-
-
