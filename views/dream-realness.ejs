@@ -1,16 +1,20 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-  <title>To know the Dream Reality Probability</title>
+  <title>Dream Analyzer</title>
+  <meta name="description" content="Discover If Your Dream Could Come True">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/css/main.css" />
 </head>
 <%- include('includes/head') %>
 <body>
  <%- include('includes/header', { user, notifications: notifications || [] }) %>
 
-  <h4>Dream Reality Probability Checker</h4>
+  <h1>Discover If Your Dream Could Come True</h1>
   <% if (result) { %>
-  <p>The Dream Analysis Result shows that <strong><%= result.category %>.</strong>
-  If you want to post your dream for public interpretation press <a href="/create-post">here</a> , or if you want your dream to be interpreted privatly
+  <h2>The Dream Analysis Result shows that your dream Probability to be real is <strong><%= result.category %>.</strong></h2>
+  <p>If you want to post your dream for public interpretation press <a href="/create-post">here</a> , or if you want your dream to be interpreted privatly
 please please click <a href="/inbox">here</a> </p>
 <% } %> 
 
@@ -35,7 +39,7 @@ please please click <a href="/inbox">here</a> </p>
     <label><input type="radio" name="health" value="patient"> Patient Dreamer</label><br>
 
     <!-- Emotional State -->
-    <h3>Emotional State</h3>
+    <h3>Emotional Staten of Dreamer</h3>
     <label><input type="radio" name="emotion" value="not_emotional" required> Not Result of Emotion</label><br>
     <label><input type="radio" name="emotion" value="emotional"> Result of Emotion</label><br>
 
@@ -45,4 +49,3 @@ please please click <a href="/inbox">here</a> </p>
 </body>
     <%- include('includes/footer') %>
 </html>
-
