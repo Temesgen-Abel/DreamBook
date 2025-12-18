@@ -1,38 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
-<meta charset="UTF-8">
-<link rel="stylesheet" href="/style.css">
 
-<%- include('includes/head') %>
+<head>
+  <%- include("includes/head") %>
 
+  <!-- SEO essentials -->
+  <meta name="robots" content="index, follow">
+</head>
 <body class="single-post-page">
-<%- include('includes/header', { user, notifications: notifications || [] }) %>
 
-<div class="wrapper page-wrapper">
-  <div class="post-card">
+<%- include("includes/header") %>
+
+<main class="wrapper page-wrapper">
+
+  <article class="post-card">
+
+    <!-- H1: Primary SEO keyword -->
     <h1><%= post.title %></h1>
-    <p class="post-date">Posted by <strong><%= post.username %></strong> on <%= new Date(post.createdDate).toLocaleString() %></p>
-    <div class="post-body"><%- post.body %></div>
 
+    <p class="post-date">
+      Dream shared by <strong><%= post.username %></strong>
+      on <time datetime="<%= post.createdDate.toISOString() %>">
+        <%= new Date(post.createdDate).toLocaleDateString() %>
+      </time>
+    </p>
+
+    <!-- Main content -->
+    <div class="post-body">
+      <%- post.body %>
+    </div>
+
+    <!-- Engagement -->
     <form action="/post/<%= post.id %>/reactions" method="POST">
       <button name="reaction" value="like">👍 Like</button>
       <button name="reaction" value="dislike">👎 Dislike</button>
-      <button type="button" onclick="document.getElementById('new-comment-form').classList.toggle('hidden')">💬 Comment</button>
+      <button type="button" onclick="document.getElementById('new-comment-form').classList.toggle('hidden')">
+        💬 Comment
+      </button>
     </form>
 
     <div class="reactions">
       👍 <%= reactions.likes %> • 👎 <%= reactions.dislikes %> • 💬 <%= comments.length %> comments
     </div>
-  </div>
 
+  </article>
+
+  <!-- Comments -->
   <section id="comment-section">
-    <h2>Comments</h2>
+    <h2>Dream Interpretations & Comments</h2>
 
     <% if (user) { %>
-      <form id="new-comment-form" class="comment-form hidden" action="/post/<%= post.id %>/comment" method="POST">
-        <textarea name="body" required placeholder="Write a comment..."></textarea>
-        <button type="submit">Comment</button>
-        <button type="button" onclick="document.getElementById('new-comment-form').classList.add('hidden')">Cancel</button>
+      <form id="new-comment-form" class="comment-form hidden"
+            action="/post/<%= post.id %>/comment" method="POST">
+        <textarea name="body" required placeholder="Share your interpretation..."></textarea>
+        <button type="submit">Post Comment</button>
+        <button type="button"
+                onclick="document.getElementById('new-comment-form').classList.add('hidden')">
+          Cancel
+        </button>
       </form>
     <% } %>
 
@@ -43,11 +68,8 @@
       </div>
     <% }) %>
   </section>
-</div>
+
+</main>
 </body>
-
-<%- include('includes/footer') %>
+<%- include("includes/footer") %>
 </html>
-
-
-
