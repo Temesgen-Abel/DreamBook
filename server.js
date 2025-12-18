@@ -2,6 +2,8 @@
 /********************************************************************
  * DreamBook – Fully Integrated Node.js Server
  ********************************************************************/
+
+// -----------------------------
 require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
@@ -242,11 +244,15 @@ app.set("io", io);
 // ===================================================================
 // 6. ROUTES
 // ===================================================================
-
-app.get("/", (req, res) => {
+router.get("/", (req, res) => {
   if (req.user) return res.redirect("/dashboard");
-  res.render("homepage", { user: req.user, errors: [] });
+  res.render("homepage", {
+    title: "DreamBook | Dream Dictionary, Dream Meanings & Interpretation",
+    description: "Explore dream meanings, search the dream dictionary, and share your dreams on DreamBook.",
+    canonical: "https://dreambook.com.et/"
+  });
 });
+
 
 // 6.1 Login Route
 app.get("/login", (_, res) => {
@@ -392,7 +398,7 @@ app.post("/password-reset", async (req, res) => {
 
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-       redirectTo: `${process.env.APP_URL}/password-reset`
+      redirectTo: `${process.env.APP_URL}/password-reset`
     });
 
     if (error) {
@@ -943,9 +949,10 @@ function calculateDreamProbability(timing, memory, health, emotion) {
     (emotionWeights[emotion] || 0);
 
   let category =
-    totalScore >= 80 ? "High Probability of Dream Realness"
-    : totalScore >= 63 ? "Moderate Probability"
-    : totalScore >= 53 ? "Low Probability"
+    totalScore >= 80 ? "Highest"
+    : totalScore >= 73 ? "Higher"
+    : totalScore >= 63 ? "Moderate"
+    : totalScore >= 53 ? "Low"
     : "Nightmare";
 
   return { totalScore, category };
@@ -1058,4 +1065,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
