@@ -1,51 +1,78 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-  <title>Dream Analyzer</title>
-  <meta name="description" content="Discover If Your Dream Could Come True">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/css/main.css" />
+  <%- include("includes/head") %>
+
+  <title><%= title || "Dream Analyzer | DreamBook" %></title>
+  <meta name="description" content="<%= description || 'Discover if your dream could come true using DreamBook analyzer.' %>">
+  <link rel="canonical" href="https://dreambook.com.et/dream-analysis">
+
+  <!-- Open Graph / Social Sharing -->
+  <meta property="og:title" content="<%= title || 'Dream Analyzer | DreamBook' %>">
+  <meta property="og:description" content="<%= description || 'Discover if your dream could come true using DreamBook analyzer.' %>">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://dreambook.com.et/dream-analysis">
+  <meta property="og:image" content="https://dreambook.com.et/img/og-dream.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="<%= title || 'Dream Analyzer | DreamBook' %>">
+  <meta name="twitter:description" content="<%= description || 'Discover if your dream could come true using DreamBook analyzer.' %>">
+  <meta name="twitter:image" content="https://dreambook.com.et/img/og-dream.png">
+
+  <!-- Robots -->
+  <% if (noindex) { %>
+    <meta name="robots" content="noindex, follow">
+  <% } %>
 </head>
-<%- include('includes/head') %>
+
 <body>
- <%- include('includes/header', { user, notifications: notifications || [] }) %>
+  <%- include('includes/header', { user, notifications: notifications || [] }) %>
 
-  <h1>Discover If Your Dream Could Come True</h1>
-  <% if (result) { %>
-  <h2>The Dream Analysis Result shows that your dream Probability to be real is <strong><%= result.category %>.</strong></h2>
-  <p>If you want to post your dream for public interpretation press <a href="/create-post">here</a> , or if you want your dream to be interpreted privatly
-please please click <a href="/inbox">here</a> </p>
-<% } %> 
+  <main class="wrapper page-wrapper">
+    <h1>Dream Analyzer</h1>
 
-  <form action="/dream-realness" method="POST">
+    <% if (result) { %>
+      <h2>Analysis Result: Your dream probability is <strong><%= result.category %></strong></h2>
+      <p>
+        Share your dream publicly: <a href="/create-post">Post here</a>  
+        or privately: <a href="/inbox">Send privately</a>
+      </p>
+    <% } %>
 
-    <!-- Timing of Dream -->
-    <h3>Timing of Dream</h3>
-    <label><input type="radio" name="timing" value="evening" required> Evening</label><br>
-    <label><input type="radio" name="timing" value="midnight"> Midnight</label><br>
-    <label><input type="radio" name="timing" value="post_midnight"> Post-Midnight</label><br>
-    <label><input type="radio" name="timing" value="morning"> Morning</label><br>
-    <label><input type="radio" name="timing" value="day_dream"> Day Dream</label><br>
+    <form action="/dream-realness" method="POST">
+      <section>
+        <h2>Timing of Dream</h2>
+        <label><input type="radio" name="timing" value="evening" required> Evening</label><br>
+        <label><input type="radio" name="timing" value="midnight"> Midnight</label><br>
+        <label><input type="radio" name="timing" value="post_midnight"> Post-Midnight</label><br>
+        <label><input type="radio" name="timing" value="morning"> Morning</label><br>
+        <label><input type="radio" name="timing" value="day_dream"> Day Dream</label><br>
+      </section>
 
-    <!-- Memory of Dream -->
-    <h3>Dream Memorability</h3>
-    <label><input type="radio" name="memory" value="vivid" required> Vivid Dream</label><br>
-    <label><input type="radio" name="memory" value="not_memorable"> Not Memorable Dream</label><br>
+      <section>
+        <h2>Dream Memorability</h2>
+        <label><input type="radio" name="memory" value="vivid" required> Vivid Dream</label><br>
+        <label><input type="radio" name="memory" value="not_memorable"> Not Memorable</label><br>
+      </section>
 
-    <!-- Health of Dreamer -->
-    <h3>Health of Dreamer</h3>
-    <label><input type="radio" name="health" value="healthy" required> Healthy Dreamer</label><br>
-    <label><input type="radio" name="health" value="patient"> Patient Dreamer</label><br>
+      <section>
+        <h2>Health of Dreamer</h2>
+        <label><input type="radio" name="health" value="healthy" required> Healthy</label><br>
+        <label><input type="radio" name="health" value="patient"> Patient</label><br>
+      </section>
 
-    <!-- Emotional State -->
-    <h3>Emotional Staten of Dreamer</h3>
-    <label><input type="radio" name="emotion" value="not_emotional" required> Not Result of Emotion</label><br>
-    <label><input type="radio" name="emotion" value="emotional"> Result of Emotion</label><br>
+      <section>
+        <h2>Emotional State of Dreamer</h2>
+        <label><input type="radio" name="emotion" value="not_emotional" required> Not Result of Emotion</label><br>
+        <label><input type="radio" name="emotion" value="emotional"> Result of Emotion</label><br>
+      </section>
 
-    <br>
-    <button type="submit">Check Dream Probability</button>
-  </form>
+      <br>
+      <button type="submit">Check Dream Probability</button>
+    </form>
+  </main>
+
 </body>
-    <%- include('includes/footer') %>
+<%- include('includes/footer') %>
 </html>
