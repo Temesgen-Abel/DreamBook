@@ -1,69 +1,68 @@
-
 <!DOCTYPE html>
 <html lang="en">
-<meta charset="UTF-8" />
-<title>DreamBook Dashboard</title>
-<meta name="description" content=" Dream interpretation, dream meaning, and dream sharing platform">
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="stylesheet" href="/css/main.css" />
-<%- include('includes/head') %>
+<head>
+  <%- include("includes/head") %>
+
+  <!-- Prevent indexing -->
+  <meta name="robots" content="noindex, follow">
+</head>
 
 <body>
-<%- include('includes/header') %>
 
-<div class="wrapper page-wrapper dashboard-page">
-  <h2>Publicly Posted Dreams</h2>
+  <%- include("includes/header") %>
 
-  <div class="posts-list">
-    <% if (posts.length) { %>
-      <% posts.forEach(post => { %>
-        <div class="post-card">
-          <h4><%= post.username %></h4>
-          <p><%- post.body %></p>
-          <div class="reactions">
-            👍 <%= countReactions.get(post.id)?.likes || 0 %>
-            👎 <%= countReactions.get(post.id)?.dislikes || 0 %>
-          </div>
-          <small>Created: <%= new Date(post.createdDate).toLocaleString() %></small>
-          <a href="/post/<%= post.id %>" class="btn">View</a>
-          <% if (user && Number(post.authorid) === Number(user.id)) { %>
-            <form action="/delete-post/<%= post.id %>" method="POST" style="display:inline;">
-              <button type="submit" class="btn danger">Delete</button>
-            </form>
-          <% } %>
-        </div>
-      <% }) %>
-    <% } else { %>
-      <p>No posts yet.</p>
-    <% } %>
-  </div>
+  <main class="wrapper page-wrapper dashboard-page">
+    <h1>Community Dream Posts</h1>
 
-  <nav class="pagination">
-    <% if (currentPage > 1) { %>
-      <a href="/dashboard?page=<%= currentPage - 1 %>">Previous</a>
-    <% } %>
-    <% for (let i = 1; i <= totalPages; i++) { %>
-      <% if (i === currentPage) { %>
-        <strong><%= i %></strong>
+    <div class="posts-list">
+      <% if (posts.length) { %>
+        <% posts.forEach(post => { %>
+          <article class="post-card">
+            <h2><%= post.username %></h2>
+            <p><%- post.body %></p>
+
+            <div class="reactions">
+              👍 <%= countReactions.get(post.id)?.likes || 0 %>
+              👎 <%= countReactions.get(post.id)?.dislikes || 0 %>
+            </div>
+
+            <small>
+              Posted on <%= new Date(post.createdDate).toLocaleDateString() %>
+            </small>
+
+            <a href="/post/<%= post.id %>" class="btn">Read Interpretation</a>
+
+            <% if (user && Number(post.authorid) === Number(user.id)) { %>
+              <form action="/delete-post/<%= post.id %>" method="POST" style="display:inline;">
+                <button type="submit" class="btn danger">Delete</button>
+              </form>
+            <% } %>
+          </article>
+        <% }) %>
       <% } else { %>
-        <a href="/dashboard?page=<%= i %>"><%= i %></a>
+        <p>No dreams have been shared yet.</p>
       <% } %>
-    <% } %>
-    <% if (currentPage < totalPages) { %>
-      <a href="/dashboard?page=<%= currentPage + 1 %>">Next</a>
-    <% } %>
-  </nav>
-</div>
-<!-- GALAXY BACKGROUND -->
-<div class="galaxy-bg">
-  <div class="galaxy-rotate">
-    <div class="stars"></div>
-    <div class="stars2"></div>
-    <div class="stars3"></div>
-    <div class="moon"></div>
-  </div>
-</div>
+    </div>
 
-<%- include('includes/footer') %>
+    <nav class="pagination">
+      <% if (currentPage > 1) { %>
+        <a href="/dashboard?page=<%= currentPage - 1 %>">Previous</a>
+      <% } %>
+
+      <% for (let i = 1; i <= totalPages; i++) { %>
+        <% if (i === currentPage) { %>
+          <strong><%= i %></strong>
+        <% } else { %>
+          <a href="/dashboard?page=<%= i %>"><%= i %></a>
+        <% } %>
+      <% } %>
+
+      <% if (currentPage < totalPages) { %>
+        <a href="/dashboard?page=<%= currentPage + 1 %>">Next</a>
+      <% } %>
+    </nav>
+  </main>
+
 </body>
+  <%- include("includes/footer") %>
 </html>
