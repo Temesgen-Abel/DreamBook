@@ -1,53 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>DreamBook</title>
-<meta name="description" content="A platform for sharing and exploring dreams">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-   <link rel="stylesheet" href="/style.css">
+  <%- include("partials/head") %>
 </head>
 
 <body>
 
-<!-- GALAXY BACKGROUND -->
-<div class="galaxy-bg">
-  <div class="galaxy-rotate">
-    <div class="stars"></div>
-    <div class="stars2"></div>
-    <div class="stars3"></div>
-    <div class="moon"></div>
-  </div>
-</div>
+  <%- include("includes/header") %>
 
-<nav>
-  <div style="display:flex;align-items:center;gap:10px;">
-    <img class="DreamBook-logo" src="/img/logo.png" alt="DreamBook">
-    <a href="/">DreamBook</a>
+  <!-- GALAXY BACKGROUND -->
+  <div class="galaxy-bg">
+    <div class="galaxy-rotate">
+      <div class="stars"></div>
+      <div class="stars2"></div>
+      <div class="stars3"></div>
+      <div class="moon"></div>
+    </div>
   </div>
 
-  <div>
-    <a href="/login" class="btn">Login</a>
-    <a href="/register" class="btn">Register</a>
-  </div>
-</nav>
+  <main class="wrapper" style="text-align:center; margin-top:80px;">
+    <h1>Dream Dictionary & Dream Interpretation Platform</h1>
 
-<div class="wrapper" style="text-align:center; margin-top:80px;">
-  <h1>Dream interpreting site</h1> 
-  <p style="color:#eee; margin-top:10px; font-size:1.1rem;">
-    Share your dreams, explore others', and connect across the universe.
-  </p>
+    <p style="color:#eee; margin-top:10px; font-size:1.1rem;">
+      Explore dream meanings, search the dream dictionary, and share your dreams with the DreamBook community.
+    </p>
 
-  <div style="margin-top:30px;">
-    <a href="/register" class="btn" style="padding:12px 20px; font-size:1.1rem;">Create Account</a>
-    <a href="/login" class="btn" style="padding:12px 20px; font-size:1.1rem; background:#4f76df;">Login</a>
-  </div>
-</div>
-
-<footer style="text-align:center; margin-top:120px; padding:20px; color:#ddd;">
-  © 2025 DreamBook. All rights reserved.
-</footer>
-
+    <div style="margin-top:30px;">
+      <a href="/register" class="btn">Create Account</a>
+      <a href="/login" class="btn" style="background:#4f76df;">Login</a>
+    </div>
+  </main>
+  <%- include("includes/footer") %>
 </body>
 </html>
-
