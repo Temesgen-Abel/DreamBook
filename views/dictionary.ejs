@@ -1,105 +1,60 @@
-
 <!DOCTYPE html>
 <html lang="en">
-  <title>Dream Dictionary</title>
-<meta name="description" content=" A platform enabling to add dream meanings and search dream meanings">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/css/main.css" />
+<head>
+  <%- include("includes/head") %>
+</head>
 
-  <%- include('includes/head') %>
-  <body>
-    <%- include('includes/header') %>
+<body>
 
-    <main>
-      <h1>Dream Dictionary</h1>
+  <%- include("includes/header") %>
 
-      <h3>Discover the meanings behind your dreams and contribute by adding dream meaning into the dream dictionary</h3>
+  <main>
+    <h1>Dream Dictionary A–Z</h1>
+
+    <p>
+      Explore our dream dictionary to discover the meanings behind common dream symbols.
+      Search for dream meanings such as <strong>snake</strong>, <strong>water</strong>,
+      <strong>flying</strong>, and more to better understand your subconscious mind.
+    </p>
+
+    <section>
+      <h2>Search Dream Meanings</h2>
+
+      <form id="searchForm" action="/dictionary" method="POST">
+        <label for="search">Enter a dream symbol:</label>
+        <input type="text" id="search" name="term" placeholder="e.g. snake, water, flying" required>
+        <button type="submit">Search</button>
+      </form>
+
+      <% if (typeof results !== 'undefined' && results.length) { %>
+        <h3>Search Results</h3>
+        <ul>
+          <% results.forEach(function(result) { %>
+            <li>
+              <strong>
+                <a href="/dream-dictionary/<%= result.term.toLowerCase() %>">
+                  <%= result.term %> Dream Meaning
+                </a>
+              </strong>
+            </li>
+          <% }) %>
+        </ul>
+      <% } %>
+    </section>
+
+    <section>
+      <h2>Contribute to the Dream Dictionary</h2>
       <p>
-  Add your own dream interpretations or search through our existing collection of dream symbols and meanings.
-  Browse our complete library of dream posts to gain deeper insights into your subconscious mind.
-  Start your dream interpretation journey today - search for symbols, contribute new entries, or explore our full collection of publicly posted dreams <a href="/dashboard">here</a>.
+        Registered users can add new dream meanings and help expand the DreamBook dictionary.
       </p>
+      <a href="/login" class="btn">Login to Contribute</a>
+    </section>
 
-      <% if (typeof errors !== 'undefined' && errors.length) { %>
-        <% errors.forEach(function(error) { %>
-          <p class="notice"><%= error %></p>
-        <% }) %>
-      <% } %>
+  </main>
 
-      <% if (typeof success !== 'undefined' && success) { %>
-        <p class="notice"><%= success %></p>
-      <% } %>
+  <%- include("includes/footer") %>
 
-      <!-- Radio buttons to choose action -->
-      <fieldset>
-        <legend>Choose Action</legend>
-        <label>
-          <input type="radio" name="action" value="add">
-          <h3>Add Dream Meaning to dream dictionary</h3>
-        </label>
-        <label>
-          <input type="radio" name="action" value="search">
-          <h3>Search Dream Meaning</h3>
-        </label>
-      </fieldset>
-
-      <!-- Add Dream Meaning Form -->
-      <form id="addForm" action="/dictionary/add" method="POST" style="display:none;">
-        <fieldset>
-          <legend>add Dream Meaning</legend>
-          <input type="text" name="term" placeholder="Enter a word" required>
-          <input type="text" name="meaning" placeholder="Enter the meaning" required>
-          <button type="submit" name="action" value="add">Add</button>
-        </fieldset>
-      </form>
-
-      <!-- Search Dream Meaning Form -->
-      <form id="searchForm" action="/dictionary" method="POST" style="display:none;">
-        <fieldset>
-          <legend>Search Dream Meaning</legend>
-          <div class="form-group">
-            <label for="search">Enter a word to find dream meanings:</label>
-            <input type="text" id="search" name="term" placeholder="e.g. snake, water, flying" required>
-          </div>
-          <button type="submit" name="action" value="search">Search</button>
-
-          <% if (typeof results !== 'undefined' && results.length) { %>
-            <h4>Search Results:</h4>
-            <ul>
-              <% results.forEach(function(result) { %>
-                <li><strong><%= result.term %>:</strong> <%= result.meaning %></li>
-              <% }) %>  
-            </ul>
-          <% } %>
-        </fieldset>
-      </form>
-    </main>
-
-    <%- include('includes/footer') %>
-
-    <script>
-      // Get references
-      const actionRadios = document.querySelectorAll('input[name="action"]');
-      const addForm = document.getElementById('addForm');
-      const searchForm = document.getElementById('searchForm');
-
-      // Hide both initially
-      addForm.style.display = 'none';
-      searchForm.style.display = 'none';
-
-      // Listen for radio changes
-      actionRadios.forEach(radio => {
-        radio.addEventListener('change', () => {
-          if (radio.value === 'add') {
-            addForm.style.display = 'block';
-            searchForm.style.display = 'none';
-          } else if (radio.value === 'search') {
-            searchForm.style.display = 'block';
-            addForm.style.display = 'none';
-          }
-        });
-      });
-    </script>
-  </body>
+</body>
+<%footer>
+    <small>&copy; DreamBook_2025</small>
 </html>
-=======
