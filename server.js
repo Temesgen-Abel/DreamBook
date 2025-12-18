@@ -567,7 +567,7 @@ app.get("/post/:id", async (req, res) => {
 
       // SEO variables
       title: `${post.title} – Dream Meaning, analysis & Interpretation | DreamBook`,
-      description: post.body.replace(/<[^>]*>/g, "").substring(0, 160),
+      description: post.body.replace(/<[^>]*>/g, "").substring(0, 160).trim() + "…"
       canonical: `https://dreambook.com.et/post/${post.id}`
     });
 
@@ -1111,3 +1111,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
