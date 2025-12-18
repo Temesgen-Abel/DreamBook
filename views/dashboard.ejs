@@ -1,14 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <%- include("includes/head") %>
 
-  <!-- Prevent indexing -->
+  <title><%= title || "DreamBook Community Dashboard" %></title>
+  <meta name="description" content="<%= description || 'Browse dreams shared by the DreamBook community. Explore, like, and comment on dreams from users around the world.' %>">
+  <link rel="canonical" href="https://dreambook.com.et/dashboard">
+
+  <!-- Social / Open Graph -->
+  <meta property="og:title" content="<%= title || 'DreamBook Community Dashboard' %>">
+  <meta property="og:description" content="<%= description || 'Browse dreams shared by the DreamBook community. Explore, like, and comment on dreams from users around the world.' %>">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://dreambook.com.et/dashboard">
+  <meta property="og:image" content="https://dreambook.com.et/img/og-dashboard.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="<%= title || 'DreamBook Community Dashboard' %>">
+  <meta name="twitter:description" content="<%= description || 'Browse dreams shared by the DreamBook community. Explore, like, and comment on dreams from users around the world.' %>">
+  <meta name="twitter:image" content="https://dreambook.com.et/img/og-dashboard.png">
+
+  <!-- Prevent indexing for private content -->
   <meta name="robots" content="noindex, follow">
 </head>
 
 <body>
-
   <%- include("includes/header") %>
 
   <main class="wrapper page-wrapper dashboard-page">
@@ -18,16 +34,17 @@
       <% if (posts.length) { %>
         <% posts.forEach(post => { %>
           <article class="post-card">
-            <h2><%= post.username %></h2>
+            <h2><a href="/post/<%= post.id %>"><%= post.username %>'s Dream</a></h2>
             <p><%- post.body %></p>
 
             <div class="reactions">
-              👍 <%= countReactions.get(post.id)?.likes || 0 %>
-              👎 <%= countReactions.get(post.id)?.dislikes || 0 %>
+              👍 <%= countReactions.get(post.id)?.likes || 0 %> • 👎 <%= countReactions.get(post.id)?.dislikes || 0 %>
             </div>
 
             <small>
-              Posted on <%= new Date(post.createdDate).toLocaleDateString() %>
+              Posted on <time datetime="<%= new Date(post.createdDate).toISOString() %>">
+                <%= new Date(post.createdDate).toLocaleDateString() %>
+              </time>
             </small>
 
             <a href="/post/<%= post.id %>" class="btn">Read Interpretation</a>
@@ -40,7 +57,7 @@
           </article>
         <% }) %>
       <% } else { %>
-        <p>No dreams have been shared yet.</p>
+        <p>No dreams have been shared yet. <a href="/create-post">Be the first to share your dream!</a></p>
       <% } %>
     </div>
 
@@ -62,7 +79,6 @@
       <% } %>
     </nav>
   </main>
-
 </body>
   <%- include("includes/footer") %>
 </html>
