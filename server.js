@@ -435,17 +435,35 @@ app.use(unreadMiddleware);
 
 
 // 6.7. Dashboard -------------------
+// 6.7 Dashboard -------------------
 app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
-  const page = Math.max(1, Number(req.query.page) || 1);
-  const pageSize = 10;
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const pageSize = 10;
 
-  const total = await dbGet("SELECT COUNT(*)::int AS c FROM posts");
-  const totalPages = Math.ceil((total?.c || 0) / pageSize);
+    const total = await dbGet("SELECT COUNT(*)::int AS c FROM posts");
+    const totalPages = Math.ceil((total?.c || 0) / pageSize);
 
-  const posts = await dbQuery(
-    "SELECT * FROM posts ORDER BY createdDate DESC LIMIT $1 OFFSET $2",
-    [pageSize, (page - 1) * pageSize]
-  );
+    const posts = await dbQuery(
+      "SELECT * FROM posts ORDER BY createdDate DESC LIMIT $1 OFFSET $2",
+      [pageSize, (page - 1) * pageSize]
+    );
+
+    res.render("dashboard", {
+      posts,
+      currentPage: page,
+      totalPages,
+
+      // SEO (dashboard should be NOINDEX)
+      title: "DreamBook Community Dashboard",
+      description: "Browse dreams shared by the DreamBook community.",
+      canonical: "https://dreambook.com.et/dashboard"
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
 
   // === FIX: load reaction counts for posts ===
   const reactions = await dbQuery(`
@@ -473,10 +491,14 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
     sanitizeBody,
     countReactions // ← THIS FIXES THE ERROR
   });
-});
 
 // 6.8. Create post -------------------
-app.get("/create-post", mustBeLoggedIn, (_, res) => res.render("create-post", { errors: [] }));
+app.get("/create-post", mustBeLoggedIn, (_, res) => res.render("create-post", {
+  title: "Post a Dream | DreamBook",
+  description: "Share your dream experience with the DreamBook community.",
+  canonical: "https://dreambook.com.et/create-post"
+}));
+
 
 app.post("/create-post", mustBeLoggedIn, async (req, res) => {
   const text = req.body.body.trim();
@@ -506,40 +528,55 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
 
 
 // 6.9 Single post -------------------
-app.get("/post/:id", mustBeLoggedIn, async (req, res) => {
-  const postId = Number(req.params.id);
+app.get("/post/:id", async (req, res) => {
+  try {
+    const postId = Number(req.params.id);
 
-  const post = await dbGet(
-    "SELECT posts.*, u.username AS authorUsername FROM posts JOIN users u ON u.id = posts.authorid WHERE posts.id=$1",
-    [postId]
-  );
+    const post = await dbGet(
+      "SELECT posts.*, u.username AS authorUsername FROM posts JOIN users u ON u.id = posts.authorid WHERE posts.id=$1",
+      [postId]
+    );
 
-  if (!post) return res.redirect("/dashboard");
+    if (!post) return res.redirect("/dashboard");
 
-  const comments = await dbQuery(`
-    SELECT c.*, u.username AS authorUsername
-    FROM comments c
-    JOIN users u ON u.id = c.authorid
-    WHERE c.postid = $1
-    ORDER BY c.createdDate ASC
-  `, [postId]);
+    const comments = await dbQuery(
+      `SELECT c.*, u.username AS authorUsername
+       FROM comments c
+       JOIN users u ON u.id = c.authorid
+       WHERE c.postid = $1
+       ORDER BY c.createdDate ASC`,
+      [postId]
+    );
 
-  const reactions = await dbGet(`
-    SELECT
-      COALESCE(SUM(CASE WHEN type='like' THEN 1 ELSE 0 END),0) AS likes,
-      COALESCE(SUM(CASE WHEN type='dislike' THEN 1 ELSE 0 END),0) AS dislikes
-    FROM reactions WHERE postid=$1
-  `, [postId]);
+    const reactions = await dbGet(
+      `SELECT
+         COALESCE(SUM(CASE WHEN type='like' THEN 1 ELSE 0 END),0) AS likes,
+         COALESCE(SUM(CASE WHEN type='dislike' THEN 1 ELSE 0 END),0) AS dislikes
+       FROM reactions
+       WHERE postid=$1`,
+      [postId]
+    );
 
-  res.render("single-post", {
-    post,
-    comments,
-    reactions,
-    user: req.user,
-    isAuthor: req.user && req.user.id === post.authorid,
-    filterUserHTML: sanitizeBody
-  });
+    res.render("single-post", {
+      post,
+      comments,
+      reactions,
+      user: req.user,
+      isAuthor: req.user && req.user.id === post.authorid,
+      filterUserHTML: sanitizeBody,
+
+      // SEO variables
+      title: `${post.title} – Dream Meaning, analysis & Interpretation | DreamBook`,
+      description: post.body.replace(/<[^>]*>/g, "").substring(0, 160),
+      canonical: `https://dreambook.com.et/post/${post.id}`
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
 });
+
 
 // 6.10  Edit post -------------------
 app.post("/edit-post/:id", mustBeLoggedIn, async (req, res) => {
@@ -848,14 +885,23 @@ app.post("/chat-admin/:id", mustBeAdmin, async (req, res) => {
     res.redirect(`/chat-admin?user=${userId}`);
 });
 
-
-
 //6.18. routes for the dictionary
 app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
   const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
   res.render("dictionary", { terms, user: req.user, errors: [] });
 });
 
+
+router.get("/dictionary", mustBeLoggedIn, async (req, res) => {
+  const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
+  res.render("dictionary", {terms, user: req.user, errors: [],
+    title: "Dream Dictionary A–Z | Dream Meanings & Interpretation",
+    description: "Browse the dream dictionary A–Z to discover dream meanings and interpretations of common dream symbols.",
+    canonical: "https://dreambook.com.et/dictionary"
+  });
+});
+
+//adding a new term
 app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
   const term = req.body.term.trim();
   const meaning = req.body.meaning.trim();
