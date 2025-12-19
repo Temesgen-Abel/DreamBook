@@ -900,7 +900,7 @@ app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
 });
 
 
-router.get("/dictionary", mustBeLoggedIn, async (req, res) => {
+app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
   const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
   res.render("dictionary", {terms, user: req.user, errors: [],
     title: "Dream Dictionary A–Z | Dream Meanings & Interpretation",
@@ -1119,4 +1119,5 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
