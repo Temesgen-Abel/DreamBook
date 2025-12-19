@@ -39,6 +39,7 @@
 
             <div class="reactions">
               👍 <%= countReactions.get(post.id)?.likes || 0 %> • 👎 <%= countReactions.get(post.id)?.dislikes || 0 %>
+              
             </div>
 
             <small>
@@ -47,10 +48,10 @@
               const isValidDate = date && !isNaN(date.getTime());
             %>
 
-            <time datetime="<%= isValidDate ? date.toISOString() : '' %>">
+            <time createdDate="<%= isValidDate ? date.toISOString() : '' %>">
               <%= isValidDate ? date.toLocaleDateString() : 'Unknown date' %>
+
             </time>
-              ️• Comments: <%= countComments.get(post.id) || 0 %>
             </small>
 
             <a href="/post/<%= post.id %>" class="btn">Read Interpretation</a>
