@@ -42,9 +42,15 @@
             </div>
 
             <small>
-              Posted on <time datetime="<%= new Date(post.createdDate).toISOString() %>">
-                <%= new Date(post.createdDate).toLocaleDateString() %>
-              </time>
+              <%
+              const date = post.createdDate ? new Date(post.createdDate) : null;
+              const isValidDate = date && !isNaN(date.getTime());
+            %>
+
+            <time datetime="<%= isValidDate ? date.toISOString() : '' %>">
+              <%= isValidDate ? date.toLocaleDateString() : 'Unknown date' %>
+            </time>
+              ️• Comments: <%= countComments.get(post.id) || 0 %>
             </small>
 
             <a href="/post/<%= post.id %>" class="btn">Read Interpretation</a>
