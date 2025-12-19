@@ -256,7 +256,11 @@ router.get("/", (req, res) => {
 
 // 6.1 Login Route
 app.get("/login", (_, res) => {
-  res.render("login", { errors: [] });
+  res.render("login", {errors: [],
+    title: "Login – DreamBook",
+    description: "Login to your DreamBook account",
+    canonical: "https://dreambook.com.et/login"
+  });
 });
 
 app.post("/login", async (req, res) => {
@@ -1111,4 +1115,5 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
