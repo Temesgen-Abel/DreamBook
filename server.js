@@ -263,6 +263,7 @@ app.get("/login", (_, res) => {
   });
 });
 
+
 app.post("/login", async (req, res) => {
   const username = req.body.username?.trim();
   const password = req.body.password?.trim();
@@ -439,13 +440,14 @@ app.use(unreadMiddleware);
 
 
 // 6.7. Dashboard -------------------
-// 6.7 Dashboard -------------------
 app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
     const pageSize = 10;
 
-    const total = await dbGet("SELECT COUNT(*)::int AS c FROM posts");
+    const total = await dbGet(
+      "SELECT COUNT(*)::int AS c FROM posts"
+    );
     const totalPages = Math.ceil((total?.c || 0) / pageSize);
 
     const posts = await dbQuery(
@@ -453,48 +455,51 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
       [pageSize, (page - 1) * pageSize]
     );
 
+    // === FIX: load reaction counts INSIDE async route ===
+    const postIds = posts.map(p => p.id);
+
+    let countReactions = new Map();
+
+    if (postIds.length > 0) {
+      const reactions = await dbQuery(
+        `
+        SELECT postid,
+               SUM(CASE WHEN type = 'like' THEN 1 ELSE 0 END)::int AS likes,
+               SUM(CASE WHEN type = 'dislike' THEN 1 ELSE 0 END)::int AS dislikes
+        FROM reactions
+        WHERE postid = ANY($1)
+        GROUP BY postid
+        `,
+        [postIds]
+      );
+
+      reactions.forEach(r => {
+        countReactions.set(r.postid, {
+          likes: r.likes || 0,
+          dislikes: r.dislikes || 0
+        });
+      });
+    }
+
+    // ✅ SINGLE render call
     res.render("dashboard", {
+      user: req.user,
       posts,
       currentPage: page,
       totalPages,
+      countReactions,
 
       // SEO (dashboard should be NOINDEX)
       title: "DreamBook Community Dashboard",
       description: "Browse dreams shared by the DreamBook community.",
       canonical: "https://dreambook.com.et/dashboard"
     });
+
   } catch (err) {
-    console.error(err);
+    console.error("Dashboard error:", err);
     res.status(500).send("Server error");
   }
 });
-
-  // === FIX: load reaction counts for posts ===
-  const reactions = await dbQuery(`
-    SELECT postId, 
-           SUM(CASE WHEN type = 'like' THEN 1 ELSE 0 END) AS likes,
-           SUM(CASE WHEN type = 'dislike' THEN 1 ELSE 0 END) AS dislikes
-    FROM reactions
-    WHERE postId = ANY($1)
-    GROUP BY postId
-  `, [posts.map(p => p.id)]);
-
-  const countReactions = new Map();
-  reactions.forEach(r => {
-    countReactions.set(r.postid, {
-      likes: Number(r.likes) || 0,
-      dislikes: Number(r.dislikes) || 0
-    });
-  });
-
-  res.render("dashboard", {
-    user: req.user,
-    posts,
-    currentPage: page,
-    totalPages,
-    sanitizeBody,
-    countReactions // ← THIS FIXES THE ERROR
-  });
 
 // 6.8. Create post -------------------
 app.get("/create-post", mustBeLoggedIn, (_, res) => res.render("create-post", {
@@ -535,7 +540,6 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
 app.get("/post/:id", async (req, res) => {
   try {
     const postId = Number(req.params.id);
-
     const post = await dbGet(
       "SELECT posts.*, u.username AS authorUsername FROM posts JOIN users u ON u.id = posts.authorid WHERE posts.id=$1",
       [postId]
@@ -571,7 +575,7 @@ app.get("/post/:id", async (req, res) => {
 
       // SEO variables
       title: `${post.title} – Dream Meaning, analysis & Interpretation | DreamBook`,
-      description: post.body.replace(/<[^>]*>/g, "").substring(0, 160).trim() + "…"
+      description: post.body.replace(/<[^>]*>/g, "").substring(0, 160).trim() + "…",
       canonical: `https://dreambook.com.et/post/${post.id}`
     });
 
@@ -1115,5 +1119,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
-
