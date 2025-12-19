@@ -1,48 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <%- include("includes/head") %>
-
-  <!-- SEO essentials -->
   <meta name="robots" content="index, follow">
 </head>
-<body class="single-post-page">
 
+<body class="single-post-page">
 <%- include("includes/header") %>
 
 <main class="wrapper page-wrapper">
-
   <article class="post-card">
 
-    <!-- H1: Primary SEO keyword -->
     <h1><%= post.title %></h1>
+
+    <%
+      const postDate = post.createdDate ? new Date(post.createdDate) : null;
+      const isValidDate = postDate && !isNaN(postDate.getTime());
+    %>
 
     <p class="post-date">
       Dream shared by <strong><%= post.username %></strong>
-      on <time datetime="<%= post.createdDate.toISOString() %>">
-        <%= new Date(post.createdDate).toLocaleDateString() %>
+      on
+      <time datetime="<%= isValidDate ? postDate.toISOString() : '' %>">
+        <%= isValidDate ? postDate.toLocaleDateString() : "Unknown date" %>
       </time>
     </p>
 
-    <!-- Main content -->
     <div class="post-body">
       <%- post.body %>
     </div>
 
-    <!-- Engagement -->
+    <!-- Reactions -->
     <form action="/post/<%= post.id %>/reactions" method="POST">
       <button name="reaction" value="like">👍 Like</button>
       <button name="reaction" value="dislike">👎 Dislike</button>
-      <button type="button" onclick="document.getElementById('new-comment-form').classList.toggle('hidden')">
+      <button type="button"
+        onclick="document.getElementById('new-comment-form').classList.toggle('hidden')">
         💬 Comment
       </button>
     </form>
 
     <div class="reactions">
-      👍 <%= reactions.likes %> • 👎 <%= reactions.dislikes %> • 💬 <%= comments.length %> comments
+      👍 <%= reactions?.likes || 0 %>
+      • 👎 <%= reactions?.dislikes || 0 %>
+      • 💬 <%= comments?.length || 0 %> comments
     </div>
-
   </article>
 
   <!-- Comments -->
@@ -55,21 +57,21 @@
         <textarea name="body" required placeholder="Share your interpretation..."></textarea>
         <button type="submit">Post Comment</button>
         <button type="button"
-                onclick="document.getElementById('new-comment-form').classList.add('hidden')">
+          onclick="document.getElementById('new-comment-form').classList.add('hidden')">
           Cancel
         </button>
       </form>
     <% } %>
 
-    <% comments.forEach(comment => { %>
+    <% (comments || []).forEach(comment => { %>
       <div class="comment" id="comment-<%= comment.id %>">
         <strong><%= comment.authorUsername %></strong>
         <p><%= comment.body %></p>
       </div>
     <% }) %>
   </section>
-
 </main>
-</body>
+
 <%- include("includes/footer") %>
+</body>
 </html>
