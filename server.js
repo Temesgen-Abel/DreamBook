@@ -244,7 +244,7 @@ app.set("io", io);
 // ===================================================================
 // 6. ROUTES
 // ===================================================================
-router.get("/", (req, res) => {
+app.get("/", (req, res) => {
   if (req.user) return res.redirect("/dashboard");
   res.render("homepage", {
     title: "DreamBook | Dream Dictionary, Dream Meanings & Interpretation",
@@ -1119,3 +1119,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
