@@ -8,6 +8,8 @@ require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const { Pool } = require("pg");
+const session = require("express-session");
+const pgSession = require("connect-pg-simple")(session);
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
@@ -216,6 +218,23 @@ async function unreadMiddleware(req, res, next) {
 // ===================================================================
 const app = express();
 
+app.use(session({
+  store: new pgSession({
+    conString: process.env.DATABASE_URL,
+    tableName: "user_sessions"
+  }),
+  name: "dreambook.sid",
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+  }
+}));
+
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
@@ -230,9 +249,10 @@ app.use((req, _, next) => {
   next();
 });
 
-// ⭐ No session → always define user to avoid EJS errors
+// ⭐ add session user to res.locals for all views
+
 app.use((req, res, next) => {
-  res.locals.user = null;
+  res.locals.user = req.session.user || null;
   res.locals.notifications = [];  // default empty array
   next();
 });
@@ -296,9 +316,12 @@ app.post("/login", async (req, res) => {
 
 // 6.2 Logout Route
 app.get("/logout", (req, res) => {
-  res.clearCookie("DreamBookApp");
-  res.redirect("/login");
+  req.session.destroy(() => {
+    res.clearCookie("dreambook.sid");
+    res.redirect("/");
+  });
 });
+
 
 
 //6.3 admin login route
@@ -1055,6 +1078,7 @@ app.post("/dream-realness", (req, res) => {
     notifications: []
   });
 });
+
 // ===================================================================
 // 7. SOCKET.IO USERS ONLINE
 // ===================================================================
@@ -1133,6 +1157,8 @@ async function ensureAdmin() {
     console.log("✔ Admin already exists");
   }
 }
+
+// ===================================================================
 // 8. START SERVER
 
 (async () => {
@@ -1143,4 +1169,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
