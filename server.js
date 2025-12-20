@@ -230,6 +230,13 @@ app.use((req, _, next) => {
   next();
 });
 
+app.use((req, res, next) => {
+  res.locals.user = null;
+  res.locals.notifications = [];
+  next();
+});
+
+
 const server = http.createServer(app);
 const io = require("socket.io")(server, { cors: { origin: "*" } });
 app.set("io", io);
@@ -348,14 +355,7 @@ app.post("/register", async (req, res) => {
   res.redirect("/dashboard");
 });
 
-
-// // ================================
-// PASSWORD RESET WITH EMAIL & SMS
-// ================================
-// ================================
-// PASSWORD RESET (SUPABASE EMAIL)
-// ================================
-
+//6.5. forgot password route
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY // ✅ anon key ONLY
@@ -1143,6 +1143,7 @@ async function ensureAdmin() {
     console.log("✔ Admin already exists");
   }
 }
+
 // ===================================================================
 // 8. START SERVER
 
@@ -1154,5 +1155,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
-
