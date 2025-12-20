@@ -525,6 +525,8 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
 
 // 6.8. Create post -------------------
 app.get("/create-post", mustBeLoggedIn, (_, res) => res.render("create-post", {
+  user: req.user,
+  errors: [],
   title: "Post a Dream | DreamBook",
   description: "Share your dream experience with the DreamBook community.",
   canonical: "https://dreambook.com.et/create-post"
@@ -532,20 +534,42 @@ app.get("/create-post", mustBeLoggedIn, (_, res) => res.render("create-post", {
 
 
 app.post("/create-post", mustBeLoggedIn, async (req, res) => {
-  const text = req.body.body.trim();
-  if (!text) return res.redirect("/dashboard");
+  const errors = [];
+
+  const text = req.body.body ? req.body.body.trim() : "";
+
+  // ✅ Validation
+  if (!text) {
+    errors.push("Post content cannot be empty.");
+  }
+
+  // ❌ If validation fails, re-render with errors
+  if (errors.length) {
+    return res.render("create-post", {
+      title: "Create Post | DreamBook",
+      user: req.user,
+      errors
+    });
+  }
 
   const now = new Date().toISOString();
 
+  // ✅ Insert post
   const inserted = await dbGet(
-    "INSERT INTO posts (authorid, username, body, createdDate) VALUES ($1,$2,$3,$4) RETURNING id",
+    `INSERT INTO posts (authorid, username, body, createdDate)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id`,
     [req.user.id, req.user.username, text, now]
   );
 
   const io = req.app.get("io");
 
-  const post = await dbGet("SELECT * FROM posts WHERE id=$1", [inserted.id]);
+  const post = await dbGet(
+    "SELECT * FROM posts WHERE id = $1",
+    [inserted.id]
+  );
 
+  // ✅ Emit socket event
   io.emit("new_post", {
     id: post.id,
     authorid: post.authorid,
@@ -554,8 +578,10 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
     createdDate: post.createdDate
   });
 
+  // ✅ Redirect on success
   res.redirect("/dashboard");
 });
+
 
 
 // 6.9 Single post -------------------
