@@ -1023,23 +1023,31 @@ function calculateDreamProbability(timing, memory, health, emotion) {
   return { totalScore, category };
 }
 
-app.get("/dream-realness", (_, res) => {
-  res.render("dream-realness", { result: null });
+app.get("/dream-realness", (req, res) => {
+  res.render("dream-realness", {
+    title: "Dream Analyzer | DreamBook",
+    description: "Analyze your dream and discover its meaning using DreamBook.",
+    canonical: "/dream-realness",
+    result: null,
+    noindex: false,      // optional
+    user: req.user || null,
+    notifications: []    // optional
+  });
 });
 
 app.post("/dream-realness", (req, res) => {
-  const result = calculateDreamProbability(
-    req.body.timing,
-    req.body.memory,
-    req.body.health,
-    req.body.emotion
-  );
+  const analysis = analyzeDream(req.body);
 
-  res.render("dream-realness", { result });
+  res.render("dream-realness", {
+    title: "Dream Analyzer Result | DreamBook",
+    description: "Your dream analysis result from DreamBook.",
+    canonical: "/dream-realness",
+    result: analysis,
+    noindex: false,
+    user: req.user || null,
+    notifications: []
+  });
 });
-
-
-
 // ===================================================================
 // 7. SOCKET.IO USERS ONLINE
 // ===================================================================
