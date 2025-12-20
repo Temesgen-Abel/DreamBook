@@ -2,11 +2,11 @@
 <html lang="en">
 
 <head>
-  <%- include("includes/head") %>
-
-  <title><%= title || "Dream Analyzer | DreamBook" %></title>
-  <meta name="description" content="<%= description || 'Discover if your dream could come true using DreamBook analyzer.' %>">
-  <link rel="canonical" href="https://dreambook.com.et/dream-analysis">
+  <%- include("includes/head") %>, {
+    title: "Dream Analyzer | DreamBook",
+    description: "Discover if your dream could come true using DreamBook analyzer.",
+    canonical: "/dream-analysis"
+  } %>
 
   <!-- Open Graph / Social Sharing -->
   <meta property="og:title" content="<%= title || 'Dream Analyzer | DreamBook' %>">
