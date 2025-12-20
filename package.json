@@ -2,27 +2,26 @@
   "name": "dreambook",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",  
+  "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "build": "npm install --only=production"
+    "dev": "nodemon server.js"
   },
   "engines": {
-    "node": ">=18.0.0"  
+    "node": ">=18.0.0"
   },
-  
- "keywords": [],
+  "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "@supabase/supabase-js": "^2.87.1",
     "bcrypt": "^6.0.0",
+    "connect-pg-simple": "^10.0.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
+    "express-session": "^1.18.2",
     "jsonwebtoken": "^9.0.2",
     "marked": "^17.0.0",
     "nodemailer": "^7.0.10",
