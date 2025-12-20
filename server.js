@@ -1126,8 +1126,6 @@ async function ensureAdmin() {
     console.log("✔ Admin already exists");
   }
 }
-
-// ===================================================================
 // 8. START SERVER
 
 (async () => {
