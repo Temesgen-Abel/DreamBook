@@ -525,7 +525,6 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
 
 // 6.8. Create post -------------------
 app.get("/create-post", mustBeLoggedIn, (_, res) => res.render("create-post", {
-  user: req.user,
   errors: [],
   title: "Post a Dream | DreamBook",
   description: "Share your dream experience with the DreamBook community.",
@@ -1195,3 +1194,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
