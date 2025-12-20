@@ -488,7 +488,6 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
       currentPage: page,
       totalPages,
       countReactions,
-
       // SEO (dashboard should be NOINDEX)
       title: "DreamBook Community Dashboard",
       description: "Browse dreams shared by the DreamBook community.",
@@ -944,6 +943,18 @@ app.get("/dictionary/search", mustBeLoggedIn, async (req, res) => {
   res.render("dictionary-search", { terms, user: req.user, query });
 });
 
+app.get("/dictionary/live", async (req, res) => {
+  const q = req.query.q;
+  if (!q) return res.json([]);
+
+  const results = await dbQuery(
+    "SELECT term FROM dream_dictionary WHERE term ILIKE $1 LIMIT 8",
+    [`${q}%`]
+  );
+
+  res.json(results.rows);
+});
+
 // 6.19. NOTIFICATIONS
 // ===================================================================
 app.get("/notifications", mustBeLoggedIn, async (req, res) => {
@@ -1119,5 +1130,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
-
