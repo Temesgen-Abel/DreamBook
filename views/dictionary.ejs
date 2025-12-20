@@ -1,71 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <%- include("includes/head") %>
+  <%- include("includes/head", {
+    title: "Dream Dictionary A–Z | DreamBook",
+    description: "Search and explore dream meanings from A to Z using the DreamBook dictionary.",
+    canonical: "/dictionary"
+  }) %>
 </head>
 
-<body>
+<body class="dictionary-page">
 
-  <%- include("includes/header") %>
+<%- include("includes/header") %>
 
-  <main>
-    <h1>Dream Dictionary A–Z</h1>
+<main class="wrapper">
+  <h1>Dream Dictionary A–Z</h1>
 
-    <p>
-      Explore our dream dictionary to discover the meanings of your dreams.
-    </p>
-    <section>
-      <br>
-      <h2>Search Dream Meanings</h2>
-      <br>
+  <p>Explore our dream dictionary to discover the meanings of your dreams.</p>
 
-<div>
-      <form id="searchForm" action="/dictionary" method="POST">
-        <label for="search">Enter a dream symbol:</label>
-        <input type="text" id="search" name="term" placeholder="e.g. snake, water, flying" required>
-        <button type="submit">Search</button>
-      </form>
-      <div id="liveResults"></div>
-</div>
-      <% if (typeof results !== 'undefined' && results.length) { %>
-        <h3>Search Results</h3>
-        <ul>
-          <% results.forEach(function(result) { %>
-            <li>
-              <strong>
-                <a href="/dream-dictionary/<%= result.term.toLowerCase() %>">
-                  <%= result.term %> Dream Meaning
-                </a>
-              </strong>
-            </li>
-          <% }) %>
-        </ul>
-      <% } %>
-    </section>
-<br>
-    <section>
-      <h2>Contribute to the Dream Dictionary</h2>
-      <p>
-        Registered users can add new dream meanings and help expand the DreamBook dictionary.
-      </p>
-      <a href="/login" class="btn">Login to Contribute</a>
-    </section>
-<br>
-    <section>
-      <h2>Browse Dream Meanings A–Z</h2>
-      <div class="alphabet-list">
-        <% const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''); %>
-        <% alphabet.forEach(function(letter) { %>
-          <a href="/dictionary/<%= letter %>"><%= letter %></a>
+  <section>
+    <h2>Search Dream Meanings</h2>
+
+    <form id="searchForm" action="/dictionary" method="POST">
+      <label for="search">Enter a dream symbol:</label>
+      <input type="text" id="search" name="term" placeholder="e.g. snake, water, flying" required>
+      <button class="btn" type="submit">Search</button>
+    </form>
+
+    <ul id="liveResults"></ul>
+
+    <% if (typeof results !== "undefined" && results.length) { %>
+      <h3>Search Results</h3>
+      <ul>
+        <% results.forEach(r => { %>
+          <li>
+            <a href="/dream-dictionary/<%= r.term.toLowerCase() %>">
+              <strong><%= r.term %></strong> Dream Meaning
+            </a>
+          </li>
         <% }) %>
-      </div>
-    </section>
+      </ul>
+    <% } %>
+  </section>
 
-    <script>
+  <section>
+    <h2>Browse A–Z</h2>
+    <div class="alphabet-list">
+      <% "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(l => { %>
+        <a href="/dictionary/<%= l %>"><%= l %></a>
+      <% }) %>
+    </div>
+  </section>
+</main>
+
+<%- include("includes/footer") %>
+
+<script>
 const input = document.getElementById("search");
 const resultsBox = document.getElementById("liveResults");
-
 let timer;
+
 input.addEventListener("input", () => {
   clearTimeout(timer);
   const q = input.value.trim();
@@ -86,9 +79,5 @@ input.addEventListener("input", () => {
 });
 </script>
 
-
-  </main>
-
 </body>
-<%- include("includes/footer") %>  
 </html>
