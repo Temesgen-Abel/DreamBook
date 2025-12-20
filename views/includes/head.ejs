@@ -1,33 +1,22 @@
 <%
   const pageTitle =
-    typeof title !== "undefined" ? title : "DreamBook";
+    typeof title !== "undefined"
+      ? title
+      : "DreamBook – Dreams Interpretation, Analyzer & Dictionary";
 
   const pageDescription =
     typeof description !== "undefined"
       ? description
-      : "DreamBook – share stories, ideas, and dreams.";
-
-  const pageCanonical =
-    typeof canonical !== "undefined" ? canonical : "";
+      : "Explore dream meanings, dream analyzer, and dream interpretation on DreamBook.";
 %>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title><%= pageTitle %></title>
-  <meta name="description" content="<%= pageDescription %>">
-  <link rel="canonical" href="<%= pageCanonical %>">
-  <meta name="author" content="DreamBook Team">
+<title><%= pageTitle %></title>
+<meta name="description" content="<%= pageDescription %>">
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="/style.css">
-  <link
-    href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
-    rel="stylesheet"
-  />
+<link rel="canonical" href="https://dreambook.com.et<%= typeof canonical !== 'undefined' ? canonical : '' %>">
 
-  <!-- Scripts -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-</head>
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="/favicon.ico">
