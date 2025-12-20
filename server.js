@@ -1036,7 +1036,14 @@ app.get("/dream-realness", (req, res) => {
 });
 
 app.post("/dream-realness", (req, res) => {
-  const analysis = analyzeDream(req.body);
+  const { timing, memory, health, emotion } = req.body;
+
+  const analysis = calculateDreamProbability(
+    timing,
+    memory,
+    health,
+    emotion
+  );
 
   res.render("dream-realness", {
     title: "Dream Analyzer Result | DreamBook",
@@ -1136,3 +1143,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
