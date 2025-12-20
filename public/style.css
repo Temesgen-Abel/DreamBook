@@ -12,8 +12,7 @@
 }
 
 .galaxy-rotate {
-  position: relative;
-  align: centre;
+  position: absolute;
   width: 2000px;
   height: 2000px;
   top: 50%;
@@ -37,6 +36,7 @@
 /* individual textures */
 .moon + .stars,  .moon + .stars2,
   .moon + .stars3 { filter: drop-shadow(0 0 4px rgba(0,0,0,0.2)); }
+
 .stars  { background-size: 600px 600px; background-image: radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 2px); animation-duration: 120s; opacity: 0.85; }
 .stars2 { background-size: 400px 400px; background-image: radial-gradient(circle, rgba(255,255,255,0.7) 1px, transparent 2px); animation-duration: 90s; opacity: 0.6; }
 .stars3 { background-size: 260px 260px; background-image: radial-gradient(circle, rgba(255,255,255,0.55) 1px, transparent 2px); animation-duration: 70s; opacity: 0.45; }
@@ -53,16 +53,18 @@
 /* moon */
 .moon {
   position: absolute;
-  right: 10%;
-  top: 15%;
+  top: 50%;
+  left: 50%;
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  box-shadow: 0 0 60px rgba(255,255,255,0.5), 0 0 120px rgba(180,180,255,0.25);
+  transform: translate(-50%, -50%);
+  box-shadow:
+    0 0 60px rgba(255,255,255,.5),
+    0 0 120px rgba(180,180,255,.25);
   background: radial-gradient(circle at 30% 30%, #f5f5f5, #d0d0d0, #888);
   pointer-events: none;
 }
-
 
 /* -------------------- RESET -------------------- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -86,6 +88,10 @@ button { cursor: pointer; }
   align-items: center;
   background: #292b29;
   padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+  
 }
 
 /* Left section (logo) */
@@ -229,6 +235,11 @@ button { cursor: pointer; }
   border: 1px solid #ccc;
 }
 
+/* comment section */
+
+.comment-section { margin-top: 20px; }
+.comment-section h2 { margin-bottom: 12px; }
+
 
 /* -------------------- COMMENT FORM -------------------- */
 .comment-form textarea {
@@ -242,9 +253,6 @@ button { cursor: pointer; }
 
 
 /* -------------------- CHAT LAYOUT -------------------- */
-.me { align-self: flex-end; }
-.them { align-self: flex-start; }
-
 .chat-layout {
   display: grid;
   grid-template-columns: 280px 1fr;
@@ -382,7 +390,6 @@ button { cursor: pointer; }
   margin-bottom: 12px;
 }
 
-
 /* -------------------- 2-COLUMN AUTH -------------------- */
 .auth-two-column {
   display: grid;
@@ -435,7 +442,57 @@ button { cursor: pointer; }
   .right-column { margin-top: 20px; }
 }
 
+/* ---- DREAM DICTIONARY GALAXY GLOW ---- */
 
+#searchForm {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
+#searchForm input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
 
+/* results */
+section ul li {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+}
 
+/* alphabet */
+.alphabet-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 8px;
+}
+
+.alphabet-list a {
+  text-align: center;
+  padding: 8px 0;
+  border-radius: 6px;
+  background: #f3f6ff;
+  font-weight: 600;
+}
+
+/* galaxy glow */
+.alphabet-list a,
+section ul li {
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.alphabet-list a:hover,
+section ul li:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 8px rgba(110,168,254,.6),
+    0 0 18px rgba(110,168,254,.35);
+}
+
+/* mobile */
+@media (max-width: 600px) {
+  #searchForm { flex-direction: column; }
+}
