@@ -36,14 +36,14 @@
     <h1>Dream Analyzer</h1>
 <div class ="dream-analyzer-form">
     <% if (result) { %>
-      <h2>Analysis Result:</h2> the dream probability to be realized is <strong><%= result.category %></strong>
+      <h2>Analysis Result:</h2> the dream probability to be realized is <strong><%= result.category %>✅</strong>
       <p>
         If you want share the dream publicly: <a href="/create-post">press here</a>  
-        but, you want to be privately interpreted: <a href="/inbox">press here</a>
+        but, if you want it to be privately interpreted privatlye: <a href="/inbox">press here</a>
       </p>
     <% } %>
   </div>
-  
+
     <form action="/dream-realness" method="POST">
       <section>
         <h2>Timing of Dream</h2>
