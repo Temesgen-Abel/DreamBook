@@ -12,20 +12,21 @@
     <h1>Dream Dictionary A–Z</h1>
 
     <p>
-      Explore our dream dictionary to discover the meanings behind common dream symbols.
-      Search for dream meanings such as <strong>snake</strong>, <strong>water</strong>,
-      <strong>flying</strong>, and more to better understand your subconscious mind.
+      Explore our dream dictionary to discover the meanings of your dreams.
     </p>
-
     <section>
+      <br>
       <h2>Search Dream Meanings</h2>
+      <br>
 
+<div>
       <form id="searchForm" action="/dictionary" method="POST">
         <label for="search">Enter a dream symbol:</label>
         <input type="text" id="search" name="term" placeholder="e.g. snake, water, flying" required>
         <button type="submit">Search</button>
       </form>
-
+      <div id="liveResults"></div>
+</div>
       <% if (typeof results !== 'undefined' && results.length) { %>
         <h3>Search Results</h3>
         <ul>
@@ -41,7 +42,7 @@
         </ul>
       <% } %>
     </section>
-
+<br>
     <section>
       <h2>Contribute to the Dream Dictionary</h2>
       <p>
@@ -49,6 +50,42 @@
       </p>
       <a href="/login" class="btn">Login to Contribute</a>
     </section>
+<br>
+    <section>
+      <h2>Browse Dream Meanings A–Z</h2>
+      <div class="alphabet-list">
+        <% const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''); %>
+        <% alphabet.forEach(function(letter) { %>
+          <a href="/dictionary/<%= letter %>"><%= letter %></a>
+        <% }) %>
+      </div>
+    </section>
+
+    <script>
+const input = document.getElementById("search");
+const resultsBox = document.getElementById("liveResults");
+
+let timer;
+input.addEventListener("input", () => {
+  clearTimeout(timer);
+  const q = input.value.trim();
+  if (!q) return resultsBox.innerHTML = "";
+
+  timer = setTimeout(async () => {
+    const res = await fetch("/dictionary/live?q=" + encodeURIComponent(q));
+    const data = await res.json();
+
+    resultsBox.innerHTML = data.map(d =>
+      `<li>
+        <a href="/dream-dictionary/${d.term.toLowerCase()}">
+          <strong>${d.term}</strong> Dream Meaning
+        </a>
+      </li>`
+    ).join("");
+  }, 300);
+});
+</script>
+
 
   </main>
 
