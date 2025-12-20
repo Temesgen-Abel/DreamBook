@@ -1,9 +1,3 @@
-
-/********************************************************************
- * DreamBook – Fully Integrated Node.js Server
- ********************************************************************/
-
-// -----------------------------
 require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
@@ -282,8 +276,6 @@ app.get("/login", (_, res) => {
     canonical: "https://dreambook.com.et/login"
   });
 });
-
-
 app.post("/login", async (req, res) => {
   const username = req.body.username?.trim();
   const password = req.body.password?.trim();
@@ -304,7 +296,6 @@ app.post("/login", async (req, res) => {
       errors: ["Invalid credentials"]
     });
   }
-
   res.cookie("DreamBookApp", signToken(user), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -1192,5 +1183,6 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
