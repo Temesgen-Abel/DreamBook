@@ -310,8 +310,6 @@ app.post("/login", async (req, res) => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict"
   });
-
-  res.redirect("/password-reset");
 });
 
 // 6.2 Logout Route
@@ -1194,4 +1192,5 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
