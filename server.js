@@ -1,9 +1,13 @@
+
+/********************************************************************
+ * DreamBook – Fully Integrated Node.js Server
+ ********************************************************************/
+
+// -----------------------------
 require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const { Pool } = require("pg");
-const session = require("express-session");
-const pgSession = require("connect-pg-simple")(session);
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
@@ -212,23 +216,6 @@ async function unreadMiddleware(req, res, next) {
 // ===================================================================
 const app = express();
 
-app.use(session({
-  store: new pgSession({
-    conString: process.env.DATABASE_URL,
-    tableName: "user_sessions"
-  }),
-  name: "dreambook.sid",
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
-  }
-}));
-
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
@@ -240,14 +227,6 @@ app.set("trust proxy", 1);
 // Request logger
 app.use((req, _, next) => {
   console.log(`[REQ] ${req.method} ${req.path}`);
-  next();
-});
-
-// ⭐ add session user to res.locals for all views
-
-app.use((req, res, next) => {
-  res.locals.user = req.session.user || null;
-  res.locals.notifications = [];  // default empty array
   next();
 });
 
@@ -267,7 +246,6 @@ app.get("/", (req, res) => {
   });
 });
 
-
 // 6.1 Login Route
 app.get("/login", (_, res) => {
   res.render("login", {errors: [],
@@ -276,6 +254,7 @@ app.get("/login", (_, res) => {
     canonical: "https://dreambook.com.et/login"
   });
 });
+
 app.post("/login", async (req, res) => {
   const username = req.body.username?.trim();
   const password = req.body.password?.trim();
@@ -296,6 +275,7 @@ app.post("/login", async (req, res) => {
       errors: ["Invalid credentials"]
     });
   }
+
   res.cookie("DreamBookApp", signToken(user), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -305,12 +285,9 @@ app.post("/login", async (req, res) => {
 
 // 6.2 Logout Route
 app.get("/logout", (req, res) => {
-  req.session.destroy(() => {
-    res.clearCookie("dreambook.sid");
+    res.clearCookie("DreamBookApp");
     res.redirect("/");
   });
-});
-
 
 
 //6.3 admin login route
@@ -515,6 +492,7 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
 // 6.8. Create post -------------------
 app.get("/create-post", mustBeLoggedIn, (_, res) => res.render("create-post", {
   errors: [],
+  
   title: "Post a Dream | DreamBook",
   description: "Share your dream experience with the DreamBook community.",
   canonical: "https://dreambook.com.et/create-post"
@@ -1171,7 +1149,6 @@ async function ensureAdmin() {
     console.log("✔ Admin already exists");
   }
 }
-
 // ===================================================================
 // 8. START SERVER
 
@@ -1183,6 +1160,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
-
-
