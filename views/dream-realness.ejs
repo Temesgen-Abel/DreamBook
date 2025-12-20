@@ -2,22 +2,25 @@
 <html lang="en">
 
 <head>
-  <%- include("includes/head") %>, <%{
-    title: "Dream Analyzer | DreamBook",
-    description: "Discover if your dream could come true using DreamBook analyzer.",
-    canonical: "/dream-analysis"
-  } %>
+  <% 
+    // Set default variables for the page
+    const pageTitle = typeof title !== 'undefined' ? title : "Dream Analyzer | DreamBook";
+    const pageDescription = typeof description !== 'undefined' ? description : "Discover if your dream could come true using DreamBook analyzer.";
+    const pageCanonical = typeof canonical !== 'undefined' ? canonical : "/dream-analysis";
+  %>
+
+  <%- include("includes/head", { title: pageTitle, description: pageDescription, canonical: pageCanonical }) %>
 
   <!-- Open Graph / Social Sharing -->
-  <meta property="og:title" content="<%= title || 'Dream Analyzer | DreamBook' %>">
-  <meta property="og:description" content="<%= description || 'Discover if your dream could come true using DreamBook analyzer.' %>">
+  <meta property="og:title" content="<%= pageTitle %>">
+  <meta property="og:description" content="<%= pageDescription %>">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://dreambook.com.et/dream-analysis">
+  <meta property="og:url" content="https://dreambook.com.et<%= pageCanonical %>">
   <meta property="og:image" content="https://dreambook.com.et/img/og-dream.png">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="<%= title || 'Dream Analyzer | DreamBook' %>">
-  <meta name="twitter:description" content="<%= description || 'Discover if your dream could come true using DreamBook analyzer.' %>">
+  <meta name="twitter:title" content="<%= pageTitle %>">
+  <meta name="twitter:description" content="<%= pageDescription %>">
   <meta name="twitter:image" content="https://dreambook.com.et/img/og-dream.png">
 
   <!-- Robots -->
@@ -76,4 +79,3 @@
 </body>
 <%- include('includes/footer') %>
 </html>
-
