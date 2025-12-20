@@ -497,11 +497,11 @@ section ul li:hover {
   #searchForm { flex-direction: column; }
 }
 .dream-analyzer-form {
-  background-color: hsl(138, 93%, 39%);
+  background-color: red;
   border: 1px solid #ddd;
   padding: 20px;
   border-radius: 100px;
-  margin-bottom: 20px;}
- 
+  margin-bottom: 20px;
+}
 
 
