@@ -550,8 +550,6 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
   res.redirect("/dashboard");
 });
 
-
-
 // 6.9 Single post -------------------
 app.get("/post/:id", async (req, res) => {
   try {
@@ -627,7 +625,6 @@ app.post("/delete-post/:id", mustBeLoggedIn, async (req, res) => {
   await dbRun("DELETE FROM posts WHERE id=$1", [req.params.id]);
   res.redirect("/dashboard", "Post deleted" );
 });
-
 
 // ===================================================================
 //6.12 COMMENTS
@@ -910,21 +907,35 @@ app.post("/chat-admin/:id", mustBeAdmin, async (req, res) => {
 });
 
 //6.18. routes for the dictionary
-// // GET dictionary page
+// ================================
+// 6.18. Routes for the dictionary
+// ================================
+
+// GET /dictionary - show dictionary and handle search
 app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
-  const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
+  const searchQuery = req.query.q?.trim() || "";
+
+  // Fetch terms based on search query or show all
+  const terms = searchQuery
+    ? await dbQuery(
+        "SELECT * FROM dictionary WHERE term ILIKE $1 OR meaning ILIKE $1 ORDER BY term ASC",
+        [`%${searchQuery}%`]
+      )
+    : await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
+
   res.render("dictionary", {
     terms,
     user: req.user,
     errors: [],
-    success: req.query.success || "",   // pass success from query string
-    title: "Dream Dictionary A–Z | Dream Meanings & Interpretation",
+    success: req.query.success || "",
+    searchQuery, // ✅ pass searchQuery to EJS
+    title: "Dream Dictionary | Dream Meanings & Interpretation",
     description: "Browse the dream dictionary A–Z to discover dream meanings.",
     canonical: "https://dreambook.com.et/dictionary"
   });
 });
 
-// ADD term
+// POST /dictionary/add - add a new term
 app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
   const term = req.body.term?.trim();
   const meaning = req.body.meaning?.trim();
@@ -939,7 +950,8 @@ app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
       terms,
       user: req.user,
       errors,
-      success: "" // no success message on error
+      success: "",
+      searchQuery: ""
     });
   }
 
@@ -947,7 +959,7 @@ app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
   res.redirect("/dictionary?success=added");
 });
 
-// EDIT (ADMIN ONLY)
+// POST /dictionary/:id/edit - edit a term (admin only)
 app.post("/dictionary/:id/edit", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
   await dbRun(
     "UPDATE dictionary SET term=$1, meaning=$2 WHERE id=$3",
@@ -956,29 +968,15 @@ app.post("/dictionary/:id/edit", mustBeLoggedIn, mustBeAdmin, async (req, res) =
   res.redirect("/dictionary?success=updated");
 });
 
-// DELETE (ADMIN ONLY)
+// POST /dictionary/:id/delete - delete a term (admin only)
 app.post("/dictionary/:id/delete", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
   await dbRun("DELETE FROM dictionary WHERE id=$1", [req.params.id]);
   res.redirect("/dictionary?success=deleted");
 });
 
-// SEARCH
-app.get("/dictionary/search", mustBeLoggedIn, async (req, res) => {
-  const q = req.query.q?.trim() || "";
-
-  const terms = q
-    ? await dbQuery(
-        "SELECT * FROM dictionary WHERE term ILIKE $1 OR meaning ILIKE $1",
-        [`%${q}%`]
-      )
-    : [];
-
-  res.render("dictionary-search", { terms, user: req.user, q });
-});
-
-// LIVE SEARCH
+// GET /dictionary/live - live search API
 app.get("/dictionary/live", async (req, res) => {
-  const q = req.query.q;
+  const q = req.query.q?.trim();
   if (!q) return res.json([]);
 
   const result = await dbQuery(
@@ -1180,3 +1178,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
