@@ -75,23 +75,40 @@
   </section>
 
   <!-- SEARCH -->
-  <section class="dictionary-search">
-    <h2>Search Dream Meanings</h2>
+  <!-- SEARCH -->
+<section class="dictionary-search">
+  <h2>Search Dream Meanings</h2>
 
-    <form action="/dictionary/search" method="GET">
-      <input
-        type="text"
-        id="search"
-        name="q"
-        placeholder="Search a dream symbol..."
-        autocomplete="off"
-        required
-      >
-      <button class="btn">Search</button>
-    </form>
+  <form action="/dictionary" method="GET">
+    <input
+      type="text"
+      id="search"
+      name="q"
+      placeholder="Search a dream symbol..."
+      autocomplete="off"
+      value="<%= searchQuery || '' %>"
+      required
+    >
+    <button class="btn">Search</button>
+  </form>
 
-    <ul id="liveResults" class="live-results"></ul>
-  </section>
+  <!-- DISPLAY SEARCH RESULTS IF SEARCH QUERY EXISTS -->
+  <% if (searchQuery && terms.length) { %>
+    <h3>Results for "<%= searchQuery %>":</h3>
+    <ul class="search-results">
+      <% terms.forEach(t => { %>
+        <li>
+          <strong><%= t.term %></strong>: <%= t.meaning %>
+        </li>
+      <% }) %>
+    </ul>
+  <% } else if (searchQuery && !terms.length) { %>
+    <p>No results found for "<%= searchQuery %>".</p>
+  <% } %>
+
+  <!-- LIVE SEARCH RESULTS -->
+  <ul id="liveResults" class="live-results"></ul>
+</section>
 
   <!-- DICTIONARY LIST -->
   <section class="dictionary-list">
@@ -130,19 +147,7 @@
     <% }) %>
   </section>
 
-  <!-- BROWSE A–Z (UI ONLY – OPTIONAL ROUTE LATER) -->
-  <section class="dictionary-az">
-    <h2>Browse A–Z</h2>
-    <div class="alphabet-list">
-      <% "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(letter => { %>
-        <span class="alphabet-letter"><%= letter %></span>
-      <% }) %>
-    </div>
-  </section>
-
 </main>
-
-<%- include("includes/footer") %>
 
 <!-- LIVE SEARCH SCRIPT -->
 <script>
@@ -176,4 +181,5 @@
 </script>
 
 </body>
+<%- include("includes/footer") %>
 </html>
