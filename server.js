@@ -937,7 +937,8 @@ app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
     return res.render("dictionary", {
       terms,
       user: req.user,
-      errors
+      errors,
+      success: req.query.success, 
     });
   }
 
@@ -1175,8 +1176,6 @@ async function ensureAdmin() {
     console.log("✔ Admin already exists");
   }
 }
-
-// ===================================================================
 // 8. START SERVER
 
 (async () => {
