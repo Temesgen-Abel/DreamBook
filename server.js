@@ -907,7 +907,6 @@ app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
   res.render("dictionary", { terms, user: req.user, errors: [] });
 });
 
-
 app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
   const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
   res.render("dictionary", {terms, user: req.user, errors: [],
@@ -936,10 +935,14 @@ app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
     [term, meaning]
   );
 
+  //add confirmation message
+  req.session.message = "Added✔️.";
+  req.session.save(() => {
   res.redirect("/dictionary");
+  });
 });
-//searching for a term
 
+//searching for a term
 app.get("/dictionary/search", mustBeLoggedIn, async (req, res) => {
   const query = req.query.q?.trim() || "";
   let terms = [];
@@ -1155,3 +1158,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
