@@ -171,14 +171,22 @@ async function authMiddleware(req, res, next) {
 }
 
 function mustBeLoggedIn(req, res, next) {
-  if (req.user) return next();
-  res.redirect("/login");
+  if (!req.user) return res.redirect("/login");
+  next();
 }
 
 function mustBeAdmin(req, res, next) {
-  if (req.user?.username === process.env.ADMIN_USERNAME) return next();
-  res.redirect("/");
+  if (!req.user) return res.redirect("/login");
+
+  if (req.user.role !== "admin") {
+    return res.status(403).render("403", {
+      message: "Admin access required."
+    });
+  }
+
+  next();
 }
+
 
 async function unreadMiddleware(req, res, next) {
   if (!req.user) {
@@ -902,70 +910,98 @@ app.post("/chat-admin/:id", mustBeAdmin, async (req, res) => {
 });
 
 //6.18. routes for the dictionary
+// GET dictionary page
 app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
   const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
-  res.render("dictionary", { terms, user: req.user, errors: [] });
-});
-
-app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
-  const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
-  res.render("dictionary", {terms, user: req.user, errors: [],
+  res.render("dictionary", {
+    terms,
+    user: req.user,
+    errors: [],
     title: "Dream Dictionary A–Z | Dream Meanings & Interpretation",
-    description: "Browse the dream dictionary A–Z to discover dream meanings and interpretations of common dream symbols.",
+    description: "Browse the dream dictionary A–Z to discover dream meanings.",
     canonical: "https://dreambook.com.et/dictionary"
   });
 });
 
-//adding a new term
+// ADD term
 app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
-  const term = req.body.term.trim();
-  const meaning = req.body.meaning.trim();
+  const term = req.body.term?.trim();
+  const meaning = req.body.meaning?.trim();
   const errors = [];
 
-  if (!term) errors.push("Term is required.");
-  if (!meaning) errors.push("Meaning is required.");
+  if (!term) errors.push("Dream symbol is required.");
+  if (!meaning) errors.push("Dream meaning is required.");
 
   if (errors.length) {
     const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
-    return res.render("dictionary", { terms, user: req.user, errors });
+    return res.render("dictionary", {
+      terms,
+      user: req.user,
+      errors
+    });
   }
 
   await dbRun(
-    "INSERT INTO dictionary (term, meaning) VALUES ($1,$2)",
-    [term, meaning]
+    "INSERT INTO dictionary (term, meaning, added_by) VALUES ($1,$2,$3)",
+    [term, meaning, req.user.id]
   );
 
-  //add confirmation message
-  req.session.message = "Added✔️.";
-  req.session.save(() => {
+  req.session.message = "Thank you! Your dream meaning has been added ✔️";
   res.redirect("/dictionary");
-  });
 });
 
-//searching for a term
+// SEARCH
 app.get("/dictionary/search", mustBeLoggedIn, async (req, res) => {
-  const query = req.query.q?.trim() || "";
-  let terms = [];
-  if (query) {
-    terms = await dbQuery(
-      "SELECT * FROM dictionary WHERE term ILIKE $1 OR meaning ILIKE $1 ORDER BY term ASC",
-      [`%${query}%`]
-    );
-  }
-  res.render("dictionary-search", { terms, user: req.user, query });
+  const q = req.query.q?.trim() || "";
+
+  const terms = q
+    ? await dbQuery(
+        "SELECT * FROM dictionary WHERE term ILIKE $1 OR meaning ILIKE $1",
+        [`%${q}%`]
+      )
+    : [];
+
+  res.render("dictionary-search", { terms, user: req.user, q });
 });
 
+// LIVE SEARCH
 app.get("/dictionary/live", async (req, res) => {
   const q = req.query.q;
   if (!q) return res.json([]);
 
-  const results = await dbQuery(
-    "SELECT term FROM dream_dictionary WHERE term ILIKE $1 LIMIT 8",
+  const result = await dbQuery(
+    "SELECT term FROM dictionary WHERE term ILIKE $1 LIMIT 8",
     [`${q}%`]
   );
 
-  res.json(results.rows);
+  res.json(result.rows);
 });
+
+app.post("/dictionary/:id/edit",
+  mustBeLoggedIn,
+  mustBeAdmin,
+  async (req, res) => {
+
+  await dbRun(
+    "UPDATE dictionary SET term=$1, meaning=$2 WHERE id=$3",
+    [req.body.term, req.body.meaning, req.params.id]
+  );
+
+  req.session.message = "Dream meaning updated ✔️";
+  res.redirect("/dictionary");
+});
+app.post("/dictionary/:id/delete",
+  mustBeLoggedIn,
+  mustBeAdmin,
+  async (req, res) => {
+  await dbRun("DELETE FROM dictionary WHERE id=$1", [req.params.id]);
+  req.session.message = "Dream meaning deleted ✔️";
+  res.redirect("/dictionary");
+});
+
+
+
+
 
 // 6.19. NOTIFICATIONS
 // ===================================================================
@@ -1158,4 +1194,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
