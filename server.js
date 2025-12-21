@@ -1,4 +1,9 @@
 
+/********************************************************************
+ * DreamBook – Fully Integrated Node.js Server
+ ********************************************************************/
+
+// -----------------------------
 require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
@@ -940,9 +945,7 @@ app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
     "INSERT INTO dictionary (term, meaning) VALUES ($1,$2)",
     [term, meaning]
   );
-
-  req.session.message = "Thank you! Your dream meaning has been added ✔️";
-  res.redirect("/dictionary");
+  res.redirect("/dictionary?success=added");
 });
 
 // SEARCH
@@ -981,21 +984,16 @@ app.post("/dictionary/:id/edit",
     "UPDATE dictionary SET term=$1, meaning=$2 WHERE id=$3",
     [req.body.term, req.body.meaning, req.params.id]
   );
-
-  req.session.message = "Dream meaning updated ✔️";
-  res.redirect("/dictionary");
+  res.redirect("/dictionary?success=edited");
 });
+
 app.post("/dictionary/:id/delete",
   mustBeLoggedIn,
   mustBeAdmin,
   async (req, res) => {
   await dbRun("DELETE FROM dictionary WHERE id=$1", [req.params.id]);
-  req.session.message = "Dream meaning deleted ✔️";
-  res.redirect("/dictionary");
+  res.redirect("/dictionary?success=deleted");
 });
-
-
-
 
 
 // 6.19. NOTIFICATIONS
@@ -1189,4 +1187,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
