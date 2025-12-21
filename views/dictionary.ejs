@@ -30,9 +30,21 @@
   <% } %>
 
   <!-- SUCCESS MESSAGE -->
-  <% if (typeof message !== "undefined" && message) { %>
-    <div class="alert success"><%= message %></div>
-  <% } %>
+  <% if (req.query.success === "added") { %>
+  <div class="alert success">
+    Thank you! Your dream meaning has been added ✔️
+  </div>
+<% } %>
+  <% if (req.query.success === "updated") { %>
+  <div class="alert success">
+    Dream meaning updated successfully ✔️
+  </div>
+<% } %>
+  <% if (req.query.success === "deleted") { %>
+  <div class="alert success">
+    Dream meaning deleted successfully ✔️
+  </div>
+<% } %>
 
   <!-- ADD DREAM MEANING (ALL USERS) -->
   <section class="dictionary-add">
