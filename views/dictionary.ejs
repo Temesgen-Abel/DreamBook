@@ -120,17 +120,20 @@
 
     <article
   class="dictionary-item"
-  <% if (user && user.role === "admin") { %>
-    onclick="toggleAdmin('<%= t.id %>')"
-    style="cursor:pointer;"
-  <% } %>
+  <%= (user && user.role === "admin")
+      ? `onclick="toggleAdmin('${t.id}')" style="cursor:pointer;"`
+      : "" %>
 >
   <h3><%= t.term %></h3>
   <p><%= t.meaning %></p>
 
   <% if (user && user.role === "admin") { %>
-    <div class="admin-controls" id="admin-<%= t.id %>" style="display:none;">
-
+    <div
+      class="admin-controls"
+      id="admin-<%= t.id %>"
+      style="display:none;"
+      onclick="event.stopPropagation();"
+    >
       <form action="/dictionary/<%= t.id %>/edit" method="POST">
         <input type="text" name="term" value="<%= t.term %>" required>
         <textarea name="meaning" required><%= t.meaning %></textarea>
@@ -144,7 +147,6 @@
       >
         <button class="btn danger small">Delete</button>
       </form>
-
     </div>
   <% } %>
 </article>
