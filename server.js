@@ -1,9 +1,4 @@
 
-/********************************************************************
- * DreamBook – Fully Integrated Node.js Server
- ********************************************************************/
-
-// -----------------------------
 require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
@@ -942,8 +937,8 @@ app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
   }
 
   await dbRun(
-    "INSERT INTO dictionary (term, meaning, added_by) VALUES ($1,$2,$3)",
-    [term, meaning, req.user.id]
+    "INSERT INTO dictionary (term, meaning) VALUES ($1,$2)",
+    [term, meaning]
   );
 
   req.session.message = "Thank you! Your dream meaning has been added ✔️";
@@ -1194,3 +1189,4 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
