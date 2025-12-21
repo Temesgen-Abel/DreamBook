@@ -910,13 +910,14 @@ app.post("/chat-admin/:id", mustBeAdmin, async (req, res) => {
 });
 
 //6.18. routes for the dictionary
-// GET dictionary page
+// // GET dictionary page
 app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
   const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
   res.render("dictionary", {
     terms,
     user: req.user,
     errors: [],
+    success: req.query.success || "",   // pass success from query string
     title: "Dream Dictionary A–Z | Dream Meanings & Interpretation",
     description: "Browse the dream dictionary A–Z to discover dream meanings.",
     canonical: "https://dreambook.com.et/dictionary"
@@ -938,15 +939,27 @@ app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
       terms,
       user: req.user,
       errors,
-      success: req.query.success, 
+      success: "" // no success message on error
     });
   }
 
-  await dbRun(
-    "INSERT INTO dictionary (term, meaning) VALUES ($1,$2)",
-    [term, meaning]
-  );
+  await dbRun("INSERT INTO dictionary (term, meaning) VALUES ($1,$2)", [term, meaning]);
   res.redirect("/dictionary?success=added");
+});
+
+// EDIT (ADMIN ONLY)
+app.post("/dictionary/:id/edit", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
+  await dbRun(
+    "UPDATE dictionary SET term=$1, meaning=$2 WHERE id=$3",
+    [req.body.term, req.body.meaning, req.params.id]
+  );
+  res.redirect("/dictionary?success=updated");
+});
+
+// DELETE (ADMIN ONLY)
+app.post("/dictionary/:id/delete", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
+  await dbRun("DELETE FROM dictionary WHERE id=$1", [req.params.id]);
+  res.redirect("/dictionary?success=deleted");
 });
 
 // SEARCH
@@ -975,27 +988,6 @@ app.get("/dictionary/live", async (req, res) => {
 
   res.json(result.rows);
 });
-
-app.post("/dictionary/:id/edit",
-  mustBeLoggedIn,
-  mustBeAdmin,
-  async (req, res) => {
-
-  await dbRun(
-    "UPDATE dictionary SET term=$1, meaning=$2 WHERE id=$3",
-    [req.body.term, req.body.meaning, req.params.id]
-  );
-  res.redirect("/dictionary?success=edited");
-});
-
-app.post("/dictionary/:id/delete",
-  mustBeLoggedIn,
-  mustBeAdmin,
-  async (req, res) => {
-  await dbRun("DELETE FROM dictionary WHERE id=$1", [req.params.id]);
-  res.redirect("/dictionary?success=deleted");
-});
-
 
 // 6.19. NOTIFICATIONS
 // ===================================================================
@@ -1176,6 +1168,8 @@ async function ensureAdmin() {
     console.log("✔ Admin already exists");
   }
 }
+
+// ===================================================================
 // 8. START SERVER
 
 (async () => {
