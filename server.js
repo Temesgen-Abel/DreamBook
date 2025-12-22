@@ -1105,10 +1105,8 @@ app.post("/dream-realness", (req, res) => {
 const userSockets = new Map();
 const lastSeen = new Map();
 
-io.on("connection", socket => {
-  console.log("Socket connected:", socket.id);
-
-  socket.on("join_room", userId => {
+io.emit("online_users", [...userSockets.keys()]); // just IDs
+   socket.on("join_room", userId => {
     userId = Number(userId);
     if (!userId) return;
 
@@ -1120,11 +1118,14 @@ io.on("connection", socket => {
 
     lastSeen.set(userId, new Date().toISOString());
 
+
     io.emit("online_users_update", [...userSockets.keys()].map(id => ({
-      id,
-      lastSeen: lastSeen.get(id)
-    })));
+  id,
+
+  lastSeen: lastSeen.get(id)
+})));
   });
+
 
   socket.on("typing", data => {
     const rid = Number(data?.receiverId);
