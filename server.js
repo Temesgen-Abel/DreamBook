@@ -261,8 +261,8 @@ app.get("/", (req, res) => {
   });
 });
 
-// 6.1 Login Route
-app.get("/login", (_, res) => res.render("login", { errors: [], notifications: [] }));
+app.get("/login", (_, res) => {
+  res.render("login", { errors: [], notifications: [], hideSearch: true }); });
 
 app.post("/login", async (req, res) => {
   const username = req.body.username?.trim();
@@ -1178,4 +1178,5 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
