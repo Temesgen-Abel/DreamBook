@@ -88,11 +88,26 @@
       const user = allUsers.find(u => String(u.id) === String(userObj.id));
       if (!user) return;
 
+      // Convert ISO string to Date
+      const d = new Date(userObj.lastSeen);
+      const now = new Date();
+      const diffMs = now - d;
+      const diffMinutes = diffMs / 1000 / 60;
+
+      let displayText;
+      if (diffMinutes <= 5) {
+        displayText = "Active now";
+      } else {
+        const hh = d.getHours().toString().padStart(2, "0");
+        const mm = d.getMinutes().toString().padStart(2, "0");
+        displayText = `${hh}:${mm}`;
+      }
+
       ul.innerHTML += `
         <li class="user-item">
           <a href="/chat/${user.id}">
             <span class="online-dot"></span> ${user.username}
-            <small>Last seen: ${userObj.lastSeen}</small>
+            <small>Last seen: ${displayText}</small>
           </a>
         </li>
       `;
@@ -126,3 +141,5 @@
 <%- include('includes/footer', { user }) %>
 </body>
 </html>
+<footer>
+    <small>&copy; DreamBook_2025</small>
