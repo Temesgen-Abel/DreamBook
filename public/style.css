@@ -80,8 +80,9 @@ button { cursor: pointer; }
 .wrapper { max-width: 1000px; margin: 0 auto; padding: 20px; }
 
 
-"/* -------------------- NAVBAR -------------------- */
+/* -------------------- NAVBAR -------------------- */
 /* Make .nav behave exactly like <nav> */
+/* -------------------- NAVBAR -------------------- */
 .nav {
   display: flex;
   justify-content: space-between;
@@ -91,13 +92,40 @@ button { cursor: pointer; }
   border-radius: 8px;
   margin-bottom: 20px;
   box-sizing: border-box;
+  gap: 12px; /* space between boxes */
+}
+
+/* Generic box style for each section */
+.nav > div {
+  background: #3a3d3a;       /* slightly lighter than nav background */
+  padding: 10px 16px;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+  flex: 1;                   /* make them grow evenly */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
 }
 
 /* Left section (logo) */
 .logo-wrapper {
   display: flex;
   align-items: center;
-}"
+  justify-content: flex-start;
+  flex: 0 0 auto;            /* logo box stays compact */
+  background: #444;          /* distinct background for logo box */
+}
+
+/* Middle section (links) */
+.nav-links {
+  justify-content: center;
+}
+
+/* Right section (profile/actions) */
+.nav-actions {
+  justify-content: flex-end;
+}
 
 /* mobile menu button */
 .menu-btn {
@@ -468,4 +496,168 @@ section ul li:hover {
   border-radius: 100px;
   margin-bottom: 20px;
 }
+/* ===========================
+   Dream Dictionary Styles
+   =========================== */
 
+body.dictionary-page {
+  font-family: "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(135deg, #fdfcfb, #e2d1c3);
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+.wrapper {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+/* Page header */
+.page-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.page-header h1 {
+  font-size: 2.5rem;
+  color: #4a3f35;
+  margin-bottom: 10px;
+}
+.page-header p {
+  font-size: 1.1rem;
+  color: #6b5f52;
+}
+
+/* Alerts */
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+.alert.error {
+  background: #ffe5e5;
+  color: #a33;
+  border: 1px solid #f99;
+}
+.alert.success {
+  background: #e5ffe9;
+  color: #2d7a3e;
+  border: 1px solid #7c9;
+}
+
+/* Forms */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+form label {
+  font-weight: 600;
+  color: #4a3f35;
+}
+form input,
+form textarea {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+form input:focus,
+form textarea:focus {
+  border-color: #8a6d46;
+  outline: none;
+}
+form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Buttons */
+.btn {
+  background: #8a6d46;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+.btn:hover {
+  background: #6f5536;
+}
+.btn.small {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+.btn.danger {
+  background: #b33a3a;
+}
+.btn.danger:hover {
+  background: #8a2a2a;
+}
+
+/* Sections */
+section {
+  margin-bottom: 40px;
+}
+section h2 {
+  font-size: 1.6rem;
+  margin-bottom: 10px;
+  color: #4a3f35;
+}
+
+/* Search results */
+.search-results,
+.live-results {
+  list-style: none;
+  padding: 0;
+  margin-top: 15px;
+}
+.search-results li,
+.live-results li {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  transition: background 0.2s;
+}
+.search-results li:hover,
+.live-results li:hover {
+  background: #f9f5f0;
+}
+
+/* Dictionary entries */
+.dictionary-item {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.dictionary-item h3 {
+  margin: 0 0 10px;
+  font-size: 1.3rem;
+  color: #8a6d46;
+  cursor: default;
+}
+.dictionary-item p {
+  margin: 0;
+  line-height: 1.5;
+  color: #444;
+}
+
+/* Admin controls */
+.admin-controls {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #ccc;
+}
+.admin-controls form {
+  margin-bottom: 10px;
+}
