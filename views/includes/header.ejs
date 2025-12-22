@@ -27,16 +27,17 @@
       <a href="/inbox" class="highlight">Inbox</a>
       <a href="/notifications">Notifications</a>
 
-      <% if (!hideSearch) { %>
-        <form class="search-form">
-          <input
-            id="searchInput"
-            type="search"
-            placeholder="Search dreams..."
-            autocomplete="off"
-          />
-        </form>
+      <% if (typeof hideSearch === "undefined" || !hideSearch) { %>
+  <form class="search-form">
+    <input
+      id="searchInput"
+      type="search"
+      placeholder="Search dreams..."
+      autocomplete="off"
+    />
+  </form>
       <% } %>
+
 
       <button id="notif-bell" aria-label="Notifications">
         🔔 <span id="notif-count">0</span>
@@ -85,3 +86,4 @@ if (notifBell) {
 
 </body>
 </html>
+
