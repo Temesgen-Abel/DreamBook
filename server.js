@@ -261,8 +261,14 @@ app.get("/", (req, res) => {
   });
 });
 
+// 6.1 Login Route
 app.get("/login", (_, res) => {
-  res.render("login", { errors: [], notifications: [], hideSearch: true }); });
+  res.render("login", {
+    errors: [],
+    notifications: [],
+    hideSearch: true
+  });
+});
 
 app.post("/login", async (req, res) => {
   const username = req.body.username?.trim();
@@ -285,12 +291,15 @@ app.post("/login", async (req, res) => {
     });
   }
 
-  res.cookie("DreamBookApp", signToken(user), {
+  //issue JWT
+  const token = signToken(user);
+  
+  res.cookie("DreamBookApp", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict"
   });
-   res.redirect("/dashboard");
+  res.redirect("/dashboard");
 });
 
 // 6.2 Logout Route
@@ -416,6 +425,7 @@ app.post("/password-reset", async (req, res) => {
   }
 });
 
+// ----------------
 // GET: password reset confirm page
 // ----------------
 app.get("/password-reset/confirm", (req, res) => {
@@ -428,6 +438,7 @@ app.get("/password-reset/confirm", (req, res) => {
 // ===================================================================
 app.use(authMiddleware);
 app.use(unreadMiddleware);
+
 
 // 6.7. Dashboard -------------------
 app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
@@ -549,6 +560,8 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
   res.redirect("/dashboard");
 });
 
+
+
 // 6.9 Single post -------------------
 app.get("/post/:id", async (req, res) => {
   try {
@@ -622,8 +635,9 @@ app.post("/delete-post/:id", mustBeLoggedIn, async (req, res) => {
   const post = await dbGet("SELECT * FROM posts WHERE id=$1", [req.params.id]);
   if (!post || post.authorid !== req.user.id) return res.redirect("/dashboard");
   await dbRun("DELETE FROM posts WHERE id=$1", [req.params.id]);
-  res.redirect( "/dashboard" );
+  res.redirect("/dashboard");
 });
+
 
 // ===================================================================
 //6.12 COMMENTS
@@ -905,7 +919,6 @@ app.post("/chat-admin/:id", mustBeAdmin, async (req, res) => {
     res.redirect(`/chat-admin?user=${userId}`);
 });
 
-//6.18. routes for the dictionary
 // ================================
 // 6.18. Routes for the dictionary
 // ================================
@@ -985,7 +998,6 @@ app.get("/dictionary/live", async (req, res) => {
 
   res.json(result.rows);
 });
-
 // 6.19. NOTIFICATIONS
 // ===================================================================
 app.get("/notifications", mustBeLoggedIn, async (req, res) => {
@@ -1177,10 +1189,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
-
-
-
-
-
-
