@@ -66,82 +66,63 @@
     </div>
 </div>
 
+<!-- Socket.IO client -->
 <script src="/socket.io/socket.io.js"></script>
-
 <script>
 (function () {
-    const currentUserId = <%= JSON.stringify(user.id) %>;
-    const allUsers      = <%- JSON.stringify(users) %>;
+  const currentUserId = <%= JSON.stringify(user.id) %>;
+  const allUsers      = <%- JSON.stringify(users) %>;
 
-    const socket = io();
+  const socket = io();
 
-    socket.on("connect", () => {
-        socket.emit("join_room", currentUserId);
-    });
+  socket.on("connect", () => {
+    socket.emit("join_room", currentUserId);
+  });
 
-    // RENDER ONLINE USERS
-    function renderOnlineUsers(list) {
-        const ul = document.getElementById("online-users-list");
-        ul.innerHTML = "";
-
-        list.forEach(uid => {
-            const user = allUsers.find(u => String(u.id) === String(uid));
-            if (!user) return;
-
-            ul.innerHTML += `
-                <li class="user-item">
-                    <a href="/chat/${user.id}">
-                        <span class="online-dot"></span> ${user.username}
-                    </a>
-                </li>
-            `;
-        });
-    }
-
-    socket.on("online_users", renderOnlineUsers);
-socket.on("online_users_update", data => {
-    // If you want just IDs:
-    // renderOnlineUsers(data.map(u => u.id));
-
-    // Or if you want lastSeen info too:
+  // Render online users
+  function renderOnlineUsers(list) {
     const ul = document.getElementById("online-users-list");
     ul.innerHTML = "";
-    data.forEach(user => {
-        const u = allUsers.find(x => String(x.id) === String(user.id));
-        if (!u) return;
-        ul.innerHTML += `
-            <li class="user-item">
-                <a href="/chat/${u.id}">
-                    <span class="online-dot"></span> ${u.username}
-                    <small>Last seen: ${user.lastSeen}</small>
-                </a>
-            </li>
-        `;
+
+    list.forEach(userObj => {
+      const user = allUsers.find(u => String(u.id) === String(userObj.id));
+      if (!user) return;
+
+      ul.innerHTML += `
+        <li class="user-item">
+          <a href="/chat/${user.id}">
+            <span class="online-dot"></span> ${user.username}
+            <small>Last seen: ${userObj.lastSeen}</small>
+          </a>
+        </li>
+      `;
     });
-});
+  }
 
-    // NOTIFICATIONS
-    function incBadge() {
-        const badge = document.getElementById("notif-badge");
-        badge.textContent = Number(badge.textContent) + 1;
-    }
+  socket.on("online_users", renderOnlineUsers);
 
-    function prependNotification(data) {
-        const ul = document.getElementById("notifications-list");
-        ul.innerHTML = `
-            <li class="bubble them">
-                <strong>${data.fromName}</strong> — ${data.preview}
-            </li>
-        ` + ul.innerHTML;
-    }
+  // Notifications
+  function incBadge() {
+    const badge = document.getElementById("notif-badge");
+    badge.textContent = Number(badge.textContent) + 1;
+  }
 
-    socket.on("notification", data => {
-        incBadge();
-        prependNotification(data);
-    });
+  function prependNotification(data) {
+    const ul = document.getElementById("notifications-list");
+    ul.innerHTML = `
+      <li class="bubble them">
+        <strong>${data.fromName}</strong> — ${data.preview}
+      </li>
+    ` + ul.innerHTML;
+  }
+
+  socket.on("notification", data => {
+    incBadge();
+    prependNotification(data);
+  });
 })();
 </script>
 
+<%- include('includes/footer', { user }) %>
 </body>
 </html>
-

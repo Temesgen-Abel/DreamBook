@@ -1102,31 +1102,35 @@ app.post("/dream-realness", (req, res) => {
 // ===================================================================
 // 7. SOCKET.IO USERS ONLINE
 // ===================================================================
-const userSockets = new Map();
-const lastSeen = new Map();
+const userSockets = new Map(); // userId -> Set of socket IDs
+const lastSeen = new Map();    // userId -> ISO timestamp
 
-io.emit("online_users", [...userSockets.keys()]); // just IDs
-   socket.on("join_room", userId => {
+io.on("connection", socket => {
+  console.log("Socket connected:", socket.id);
+
+  // When user joins
+  socket.on("join_room", userId => {
     userId = Number(userId);
     if (!userId) return;
 
     socket.userId = userId;
     socket.join(`user_${userId}`);
 
-    if (!userSockets.has(userId)) userSockets.set(userId, new Set());
+    if (!userSockets.has(userId)) {
+      userSockets.set(userId, new Set());
+    }
     userSockets.get(userId).add(socket.id);
 
     lastSeen.set(userId, new Date().toISOString());
 
-
-    io.emit("online_users_update", [...userSockets.keys()].map(id => ({
-  id,
-
-  lastSeen: lastSeen.get(id)
-})));
+    // Emit updated online users list
+    io.emit("online_users", [...userSockets.keys()].map(id => ({
+      id,
+      lastSeen: lastSeen.get(id)
+    })));
   });
 
-
+  // Typing events
   socket.on("typing", data => {
     const rid = Number(data?.receiverId);
     if (!rid) return;
@@ -1139,6 +1143,7 @@ io.emit("online_users", [...userSockets.keys()]); // just IDs
     io.to(`user_${rid}`).emit("stop_typing", data);
   });
 
+  // Disconnect
   socket.on("disconnect", () => {
     const uid = socket.userId;
     if (!uid) return;
@@ -1150,11 +1155,12 @@ io.emit("online_users", [...userSockets.keys()]); // just IDs
     }
     lastSeen.set(uid, new Date().toISOString());
 
-    io.emit("online_users_update", [...userSockets.keys()].map(id => ({
+    io.emit("online_users", [...userSockets.keys()].map(id => ({
       id,
       lastSeen: lastSeen.get(id)
     })));
   });
+});
 
 //  20. ADMIN AUTO-CREATE
 // ===================================================================
