@@ -624,7 +624,7 @@ app.post("/delete-post/:id", mustBeLoggedIn, async (req, res) => {
   const post = await dbGet("SELECT * FROM posts WHERE id=$1", [req.params.id]);
   if (!post || post.authorid !== req.user.id) return res.redirect("/dashboard");
   await dbRun("DELETE FROM posts WHERE id=$1", [req.params.id]);
-  res.send( "Post deleted", redirectToDashboard );
+  res.redirect( "/dashboard", {message: "post deleted succesfully"} );
 });
 
 // ===================================================================
@@ -1179,6 +1179,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
