@@ -80,9 +80,8 @@ button { cursor: pointer; }
 .wrapper { max-width: 1000px; margin: 0 auto; padding: 20px; }
 
 
-/* -------------------- NAVBAR -------------------- */
+"/* -------------------- NAVBAR -------------------- */
 /* Make .nav behave exactly like <nav> */
-/* -------------------- NAVBAR -------------------- */
 .nav {
   display: flex;
   justify-content: space-between;
@@ -92,40 +91,13 @@ button { cursor: pointer; }
   border-radius: 8px;
   margin-bottom: 20px;
   box-sizing: border-box;
-  gap: 12px; /* space between boxes */
-}
-
-/* Generic box style for each section */
-.nav > div {
-  background: #3a3d3a;       /* slightly lighter than nav background */
-  padding: 10px 16px;
-  border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
-  flex: 1;                   /* make them grow evenly */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
 }
 
 /* Left section (logo) */
 .logo-wrapper {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  flex: 0 0 auto;            /* logo box stays compact */
-  background: #444;          /* distinct background for logo box */
-}
-
-/* Middle section (links) */
-.nav-links {
-  justify-content: center;
-}
-
-/* Right section (profile/actions) */
-.nav-actions {
-  justify-content: flex-end;
-}
+}"
 
 /* mobile menu button */
 .menu-btn {
@@ -496,3 +468,4 @@ section ul li:hover {
   border-radius: 100px;
   margin-bottom: 20px;
 }
+
