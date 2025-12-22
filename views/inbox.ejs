@@ -99,6 +99,26 @@
     }
 
     socket.on("online_users", renderOnlineUsers);
+socket.on("online_users_update", data => {
+    // If you want just IDs:
+    // renderOnlineUsers(data.map(u => u.id));
+
+    // Or if you want lastSeen info too:
+    const ul = document.getElementById("online-users-list");
+    ul.innerHTML = "";
+    data.forEach(user => {
+        const u = allUsers.find(x => String(x.id) === String(user.id));
+        if (!u) return;
+        ul.innerHTML += `
+            <li class="user-item">
+                <a href="/chat/${u.id}">
+                    <span class="online-dot"></span> ${u.username}
+                    <small>Last seen: ${user.lastSeen}</small>
+                </a>
+            </li>
+        `;
+    });
+});
 
     // NOTIFICATIONS
     function incBadge() {
