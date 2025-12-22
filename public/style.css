@@ -149,6 +149,7 @@ button { cursor: pointer; }
   display: flex;
   align-items: center;
   gap: 10px;
+  background-color: #25d366;
 }
 
 /* dropdown */
@@ -503,5 +504,6 @@ section ul li:hover {
   border-radius: 100px;
   margin-bottom: 20px;
 }
+
 
 
