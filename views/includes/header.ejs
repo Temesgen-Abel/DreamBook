@@ -1,88 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/style.css" />
+  <title>DreamBook</title>
+</head>
+
+<body>
+
 <header>
   <nav class="nav">
-
-    <!-- LOGO -->
-    <a href="/" class="logo-wrapper" aria-label="DreamBook Home">
-      <img src="/images/DreamBook.png" class="DreamBook-logo" alt="DreamBook logo" />
-    </a>
-
-    <!-- MOBILE MENU BUTTON -->
-    <button class="menu-btn" onclick="toggleMenu()" aria-expanded="false">
+    <button class="menu-btn" onclick="toggleMenu()" aria-label="Toggle navigation menu" aria-expanded="false">
       ☰
     </button>
 
-    <!-- NAV LINKS -->
     <div class="nav-links" id="navLinks">
+      <a href="/">
+        <img src="/images/DreamBook.png" alt="logo" class="DreamBook-logo" />
+      </a>
 
       <a href="/dictionary">Dream Dictionary</a>
       <a href="/dream-realness">Dream Analyzer</a>
       <a href="/dashboard">Public Posts</a>
       <a href="/create-post">Post Your Dream</a>
       <a href="/inbox" class="highlight">Inbox</a>
+      <a href="/notifications">Notifications</a>
 
-      <!-- 🔔 Notification Dropdown -->
-      <div class="notif-dropdown">
-        <button id="notif-bell" onclick="toggleNotif()" aria-expanded="false">
-          🔔 <span id="notif-count">0</span>
-        </button>
+      <% if (!hideSearch) { %>
+        <form class="search-form">
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Search dreams..."
+            autocomplete="off"
+          />
+        </form>
+      <% } %>
 
-        <div class="notif-panel" id="notifPanel">
-          <p class="notif-title">Notifications</p>
+      <button id="notif-bell" aria-label="Notifications">
+        🔔 <span id="notif-count">0</span>
+      </button>
 
-          <% if (notifications && notifications.length > 0) { %>
-            <% notifications.forEach(n => { %>
-              <div class="notif-item">
-                <%= n.text %>
-              </div>
-            <% }) %>
-          <% } else { %>
-            <p class="notif-empty">No notifications yet</p>
-          <% } %>
-        </div>
-      </div>
-
-      <!-- Account Dropdown -->
       <div class="dropdown">
-        <button class="dropbtn">Account ▼</button>
+        <button class="dropbtn" aria-haspopup="true" aria-expanded="false">Account ▼</button>
         <div class="dropdown-content">
           <% if (user) { %>
-            <a href="#">Logged in as <strong><%= user.username %></strong></a>
-            <a href="/logout">Logout</a>
+            <a href="/logout"><%= user.username %> Logout</a>
           <% } else { %>
-            <a href="/register">Sign Up</a>
+            <a href="/register">Signup</a>
             <a href="/login">Login</a>
           <% } %>
         </div>
       </div>
-
     </div>
   </nav>
 </header>
 
 <script>
-/* ======= MOBILE MENU TOGGLE ======= */
 function toggleMenu() {
-  const menu = document.getElementById("navLinks");
-  const btn = document.querySelector(".menu-btn");
-
-  menu.classList.toggle("active");
-
-  btn.setAttribute("aria-expanded", menu.classList.contains("active"));
+  const navLinks = document.getElementById("navLinks");
+  const menuBtn = document.querySelector(".menu-btn");
+  navLinks.classList.toggle("active");
+  menuBtn.setAttribute(
+    "aria-expanded",
+    navLinks.classList.contains("active")
+  );
 }
 
-/* ======= NOTIFICATION TOGGLE ======= */
-function toggleNotif() {
-  const notifPanel = document.getElementById("notifPanel");
-  const expanded = notifPanel.classList.toggle("open");
-
-  document.getElementById("notif-bell")
-    .setAttribute("aria-expanded", expanded);
+const searchInput = document.getElementById("searchInput");
+if (searchInput) {
+  searchInput.addEventListener("input", () => {
+    // search logic
+  });
 }
 
-/* Close notification panel if clicked outside */
-document.addEventListener("click", function(e) {
-  if (!e.target.closest(".notif-dropdown")) {
-    document.getElementById("notifPanel").classList.remove("open");
-  }
-});
+const notifBell = document.getElementById("notif-bell");
+if (notifBell) {
+  notifBell.addEventListener("click", () => {
+    // notification logic
+  });
+}
 </script>
+
+</body>
+</html>
