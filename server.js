@@ -416,7 +416,6 @@ app.post("/password-reset", async (req, res) => {
   }
 });
 
-// ----------------
 // GET: password reset confirm page
 // ----------------
 app.get("/password-reset/confirm", (req, res) => {
@@ -429,7 +428,6 @@ app.get("/password-reset/confirm", (req, res) => {
 // ===================================================================
 app.use(authMiddleware);
 app.use(unreadMiddleware);
-
 
 // 6.7. Dashboard -------------------
 app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
@@ -624,7 +622,7 @@ app.post("/delete-post/:id", mustBeLoggedIn, async (req, res) => {
   const post = await dbGet("SELECT * FROM posts WHERE id=$1", [req.params.id]);
   if (!post || post.authorid !== req.user.id) return res.redirect("/dashboard");
   await dbRun("DELETE FROM posts WHERE id=$1", [req.params.id]);
-  res.redirect( "/dashboard", {message: "post deleted succesfully"} );
+  res.redirect( "/dashboard" );
 });
 
 // ===================================================================
@@ -1179,6 +1177,7 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
+
 
 
 
