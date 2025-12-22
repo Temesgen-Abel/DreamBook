@@ -1155,7 +1155,6 @@ io.emit("online_users", [...userSockets.keys()]); // just IDs
       lastSeen: lastSeen.get(id)
     })));
   });
-});
 
 //  20. ADMIN AUTO-CREATE
 // ===================================================================
