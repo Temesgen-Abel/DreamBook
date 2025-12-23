@@ -1,89 +1,61 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/style.css" />
-  <title>DreamBook</title>
-</head>
-
-<body>
-
 <header>
-  <nav class="nav">
-    <button class="menu-btn" onclick="toggleMenu()" aria-label="Toggle navigation menu" aria-expanded="false">
-      ☰
-    </button>
-
-    <div class="nav-links" id="navLinks">
-      <a href="/">
-        <img src="/images/DreamBook.png" alt="logo" class="DreamBook-logo" />
+  <nav class="db-nav" role="navigation" aria-label="Main navigation">
+    <div class="db-nav-inner">
+      <a class="db-brand" href="/" aria-label="DreamBook home">
+        <img src="/images/DreamBook.png" alt="DreamBook logo" class="DreamBook-logo" />
+        <span class="db-title">DreamBook</span>
       </a>
 
-      <a href="/dictionary">Dream Dictionary</a>
-      <a href="/dream-realness">Dream Analyzer</a>
-      <a href="/dashboard">Public Posts</a>
-      <a href="/create-post">Post Your Dream</a>
-      <a href="/inbox" class="highlight">Inbox</a>
-      <a href="/notifications">Notifications</a>
-
-      <% if (typeof hideSearch === "undefined" || !hideSearch) { %>
-  <form class="search-form">
-    <input
-      id="searchInput"
-      type="search"
-      placeholder="Search dreams..."
-      autocomplete="off"
-    />
-  </form>
-      <% } %>
-
-
-      <button id="notif-bell" aria-label="Notifications">
-        🔔 <span id="notif-count">0</span>
+      <button
+        class="db-hamburger menu-btn"
+        aria-controls="navLinks"
+        aria-expanded="false"
+        aria-label="Toggle navigation menu"
+        type="button"
+      >
+        <span class="bar" aria-hidden="true"></span>
+        <span class="bar" aria-hidden="true"></span>
+        <span class="bar" aria-hidden="true"></span>
       </button>
 
-      <div class="dropdown">
-        <button class="dropbtn" aria-haspopup="true" aria-expanded="false">Account ▼</button>
-        <div class="dropdown-content">
-          <% if (user) { %>
-            <a href="/logout"><%= user.username %> Logout</a>
-          <% } else { %>
-            <a href="/register">Signup</a>
-            <a href="/login">Login</a>
-          <% } %>
+      <div class="nav-links" id="navLinks" role="menubar" aria-hidden="true">
+        <a role="menuitem" href="/dictionary">Dream Dictionary</a>
+        <a role="menuitem" href="/dream-realness">Dream Analyzer</a>
+        <a role="menuitem" href="/dashboard">Public Posts</a>
+        <a role="menuitem" class="db-cta" href="/create-post">Post Your Dream</a>
+        <a role="menuitem" href="/inbox" class="highlight">Inbox</a>
+        <a role="menuitem" href="/notifications">Notifications</a>
+
+        <% if (typeof hideSearch === "undefined" || !hideSearch) { %>
+          <form class="search-form" role="search" onsubmit="return false;">
+            <input
+              id="searchInput"
+              type="search"
+              placeholder="Search dreams..."
+              autocomplete="off"
+              aria-label="Search dreams"
+            />
+          </form>
+        <% } %>
+
+        <button id="notif-bell" aria-label="Notifications" type="button" class="notif-btn">
+          🔔 <span id="notif-count" aria-live="polite">0</span>
+        </button>
+
+        <div class="dropdown" data-dropdown>
+          <button class="dropbtn" aria-haspopup="true" aria-expanded="false" type="button">
+            Account ▾
+          </button>
+          <div class="dropdown-content" role="menu" aria-hidden="true">
+            <% if (user) { %>
+              <a role="menuitem" href="/logout"><%= user.username %> Logout</a>
+            <% } else { %>
+              <a role="menuitem" href="/register">Signup</a>
+              <a role="menuitem" href="/login">Login</a>
+            <% } %>
+          </div>
         </div>
       </div>
     </div>
   </nav>
 </header>
-
-<script>
-function toggleMenu() {
-  const navLinks = document.getElementById("navLinks");
-  const menuBtn = document.querySelector(".menu-btn");
-  navLinks.classList.toggle("active");
-  menuBtn.setAttribute(
-    "aria-expanded",
-    navLinks.classList.contains("active")
-  );
-}
-
-const searchInput = document.getElementById("searchInput");
-if (searchInput) {
-  searchInput.addEventListener("input", () => {
-    // search logic
-  });
-}
-
-const notifBell = document.getElementById("notif-bell");
-if (notifBell) {
-  notifBell.addEventListener("click", () => {
-    // notification logic
-  });
-}
-</script>
-
-</body>
-</html>
-
