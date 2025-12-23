@@ -2,36 +2,29 @@
    DESIGN TOKENS (SOCIAL APP THEME)
 ========================================================= */
 :root {
-  /* Brand */
   --primary: #1877f2;
   --secondary: #25d366;
   --accent: #ffb703;
 
-  /* CTA */
   --cta-bg: linear-gradient(135deg, #1877f2, #25d366);
   --cta-color: #ffffff;
 
-  /* Text */
   --text-main: #1c1e21;
   --text-muted: #65676b;
 
-  /* Surfaces */
   --bg-page: #f0f2f5;
   --bg-card: #ffffff;
   --nav-bg: rgba(255,255,255,0.9);
 
-  /* Borders & radius */
   --border-soft: #e4e6eb;
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 18px;
   --radius-pill: 999px;
 
-  /* Shadows */
   --shadow-sm: 0 4px 12px rgba(0,0,0,0.08);
   --shadow-lg: 0 12px 30px rgba(0,0,0,0.16);
 
-  /* Spacing scale */
   --space-1: 6px;
   --space-2: 12px;
   --space-3: 16px;
@@ -43,9 +36,7 @@
 ========================================================= */
 *,
 *::before,
-*::after {
-  box-sizing: border-box;
-}
+*::after { box-sizing: border-box; }
 
 html { font-size: 16px; }
 
@@ -78,23 +69,12 @@ button:active { transform: scale(0.97); }
 /* =========================================================
    LAYOUT SYSTEM
 ========================================================= */
-.wrapper {
-  width: 100%;
-  max-width: 1100px;
-  margin-inline: auto;
-  padding: var(--space-3);
-}
+.wrapper { width: 100%; max-width: 1100px; margin-inline: auto; padding: var(--space-3); }
 
-.page-wrapper {
-  display: grid;
-  gap: var(--space-3);
-}
+.page-wrapper { display: grid; gap: var(--space-3); }
 
-/* Desktop feed layout */
 @media (min-width: 1100px) {
-  .page-wrapper {
-    grid-template-columns: 280px minmax(0, 1fr) 280px;
-  }
+  .page-wrapper { grid-template-columns: 280px minmax(0, 1fr) 280px; }
 }
 
 /* =========================================================
@@ -120,11 +100,7 @@ button:active { transform: scale(0.97); }
   box-shadow: var(--shadow-sm);
 }
 
-.db-brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
+.db-brand { display: flex; align-items: center; gap: var(--space-2); }
 
 .DreamBook-logo { width: 36px; height: 36px; }
 
@@ -158,13 +134,12 @@ button:active { transform: scale(0.97); }
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
-  overflow-y: auto;
-  overscroll-behavior: contain;
   transform: translateY(-8px);
   opacity: 0;
   pointer-events: none;
   transition: .25s ease;
   z-index: 1100;
+  overflow: visible; /* 🔥 show full dropdown items */
 }
 
 .nav-links.active {
@@ -189,7 +164,7 @@ button:active { transform: scale(0.97); }
 }
 
 /* =========================================================
-   CARDS (POSTS, COMMENTS, DICTIONARY)
+   CARDS
 ========================================================= */
 .post-card,
 .comment,
@@ -202,16 +177,12 @@ button:active { transform: scale(0.97); }
   transition: transform .2s ease, box-shadow .2s ease;
 }
 
-.post-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
+.post-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 
 /* =========================================================
    BUTTONS
 ========================================================= */
-.btn,
-button[type="submit"] {
+.btn, button[type="submit"] {
   padding: 0.7rem 1.2rem;
   border-radius: var(--radius-pill);
   font-weight: 700;
@@ -224,14 +195,9 @@ button[type="submit"] {
 /* =========================================================
    FORMS & INPUTS
 ========================================================= */
-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
+form { display: flex; flex-direction: column; gap: var(--space-2); }
 
-input,
-textarea {
+input, textarea {
   width: 100%;
   padding: 0.9rem;
   border-radius: var(--radius-md);
@@ -242,21 +208,12 @@ textarea {
 textarea { min-height: 120px; resize: vertical; }
 
 input:focus,
-textarea:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(24,119,242,.15);
-}
+textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(24,119,242,.15); }
 
 /* =========================================================
    AUTH PAGES
 ========================================================= */
-.auth-wrapper {
-  min-height: 100vh;
-  display: grid;
-  place-content: center;
-  padding: var(--space-3);
-}
+.auth-wrapper { min-height: 100vh; display: grid; place-content: center; padding: var(--space-3); }
 
 .auth-form {
   width: 100%;
@@ -268,17 +225,13 @@ textarea:focus {
 }
 
 /* =========================================================
-   CHAT (WHATSAPP STYLE)
+   CHAT
 ========================================================= */
 .chat-layout { display: flex; flex-direction: column; gap: var(--space-2); }
 
 @media (min-width: 900px) { .chat-layout { flex-direction: row; height: 80vh; } }
 
-.message {
-  max-width: 75%;
-  padding: var(--space-2);
-  border-radius: var(--radius-lg);
-}
+.message { max-width: 75%; padding: var(--space-2); border-radius: var(--radius-lg); }
 
 .message.sent { background: #dcf8c6; margin-left: auto; }
 .message.received { background: #ffffff; }
@@ -289,17 +242,19 @@ textarea:focus {
 .hidden { display: none; }
 .text-muted { color: var(--text-muted); }
 
-footer {
-  text-align: center;
-  padding: var(--space-3);
-  color: var(--text-muted);
-}
+footer { text-align: center; padding: var(--space-3); color: var(--text-muted); }
 
 /* =========================================================
    ACCOUNT DROPDOWN
 ========================================================= */
 .dropdown { position: relative; }
 
+.dropdown-content {
+  transform-origin: top right;
+  animation: dropdownIn .15s ease;
+}
+
+/* Desktop dropdown */
 @media (min-width: 900px) {
   .dropdown-content {
     position: absolute;
@@ -309,13 +264,17 @@ footer {
     background: var(--bg-card);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
-    padding: 6px;
+    padding: 6px 0;
     display: none;
     z-index: 3000;
+    max-height: none; /* 🔥 show all items */
+    overflow: visible;
   }
+  .dropdown-content a { padding: 10px 16px; display: block; }
   .dropdown-content.active { display: block; }
 }
 
+/* Mobile dropdown */
 @media (max-width: 899px) {
   .dropdown-content {
     position: relative;
@@ -324,20 +283,17 @@ footer {
     box-shadow: none;
     padding: 0;
     margin-top: 6px;
+    max-height: none; /* 🔥 show all items */
+    overflow: visible;
   }
-  .dropdown-content.active { display: block; }
   .dropdown-content a { padding-left: 24px; }
+  .dropdown-content.active { display: block; }
 }
 
 /* Animation */
-.dropdown-content {
-  transform-origin: top right;
-  animation: dropdownIn .15s ease;
-}
-
 @keyframes dropdownIn {
   from { opacity: 0; transform: scale(.95); }
-  to   { opacity: 1; transform: scale(1); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 /* Mobile nav open state */
