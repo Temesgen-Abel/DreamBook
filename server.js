@@ -1,9 +1,4 @@
 
-/********************************************************************
- * DreamBook – Fully Integrated Node.js Server
- ********************************************************************/
-
-// -----------------------------
 require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
@@ -1195,7 +1190,3 @@ async function ensureAdmin() {
   const PORT = process.env.PORT || 5733;
   server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
 })();
-
-// ===================================================================
-// END OF FILE
-// ===================================================================
