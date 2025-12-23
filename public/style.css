@@ -214,7 +214,6 @@ button:active {
     margin-left: auto;
   }
 }
-
 /* =========================================================
    CARDS (POSTS, COMMENTS, DICTIONARY)
 ========================================================= */
@@ -346,46 +345,60 @@ footer {
 }
 
 /* =========================
-   ACCOUNT DROPDOWN
+   ACCOUNT DROPDOWN (FIXED)
 ========================= */
 .dropdown {
   position: relative;
 }
 
+/* Desktop dropdown */
 .dropdown-content {
   position: absolute;
-  top: 110%;
+  top: calc(100% + 8px);
   right: 0;
   min-width: 180px;
   background: var(--bg-card);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  padding: 8px;
+  padding: 6px;
   display: none;
-  z-index: 2000;
+  z-index: 3000;
 }
 
 .dropdown-content a {
   display: block;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border-radius: var(--radius-sm);
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .dropdown-content a:hover {
   background: var(--bg-page);
 }
 
-/* show */
+/* Show dropdown */
 .dropdown-content.active {
   display: block;
 }
 
-/* MOBILE SAFETY */
+/* =========================
+   MOBILE BEHAVIOR
+========================= */
 @media (max-width: 900px) {
+  /* dropdown becomes part of the menu list */
   .dropdown-content {
-    position: static;
+    position: static;          /* 🔥 KEY FIX */
     box-shadow: none;
+    background: transparent;
     padding: 0;
+    margin-top: 6px;
+  }
+
+  .dropdown-content a {
+    padding-left: 24px;        /* indent under Account */
+    background: transparent;
   }
 }
+/* =========================================================
+   DARK MODE (OPTIONAL)
