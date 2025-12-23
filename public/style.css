@@ -375,17 +375,42 @@ textarea:focus {
 ========================================================= */
 .dream-analyzer-form {
   background: linear-gradient(135deg, #1877f2, #25d366);
-  color: #fff;
+  color: #2c3025;
   padding: 20px;
   border-radius: 18px;
   box-shadow: var(--shadow-soft);
 }
-.dream-analyzer-form input,
-.dream-analyzer-form textarea {
-  border: none;
-  border-radius: 12px;
+/* Prevent layout break */
+body {
+  overflow-x: hidden;
 }
-.dream-analyzer-form input:focus,
-.dream-analyzer-form textarea:focus {
-  box-shadow: 0 0 0 3px rgba(255,255,255,.3);
+
+/* Universal page container */
+.page-wrapper {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* Desktop layout */
+@media (min-width: 1100px) {
+  .page-wrapper {
+    grid-template-columns: 280px minmax(0, 1fr) 280px;
+    max-width: 1200px;
+    margin: auto;
+  }
+}
+
+input,
+textarea,
+button {
+  max-width: 100%;
+}
+
+textarea {
+  resize: vertical;
 }
