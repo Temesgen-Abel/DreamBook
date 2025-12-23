@@ -47,9 +47,7 @@
   box-sizing: border-box;
 }
 
-html {
-  font-size: 16px;
-}
+html { font-size: 16px; }
 
 body {
   margin: 0;
@@ -60,11 +58,7 @@ body {
   overflow-x: hidden;
 }
 
-img,
-video {
-  max-width: 100%;
-  height: auto;
-}
+img, video { max-width: 100%; height: auto; }
 
 a {
   color: var(--primary);
@@ -79,9 +73,7 @@ button {
   font-family: inherit;
 }
 
-button:active {
-  transform: scale(0.97);
-}
+button:active { transform: scale(0.97); }
 
 /* =========================================================
    LAYOUT SYSTEM
@@ -134,15 +126,9 @@ button:active {
   gap: var(--space-2);
 }
 
-.DreamBook-logo {
-  width: 36px;
-  height: 36px;
-}
+.DreamBook-logo { width: 36px; height: 36px; }
 
-.db-title {
-  font-weight: 800;
-  color: var(--primary);
-}
+.db-title { font-weight: 800; color: var(--primary); }
 
 /* Hamburger */
 .db-hamburger {
@@ -167,27 +153,29 @@ button:active {
   left: 0;
   right: 0;
   bottom: 0;
-
   background: #ffffff;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
-
-  overflow-y: auto;          /* 🔥 KEY */
+  overflow-y: auto;
   overscroll-behavior: contain;
-
   transform: translateY(-8px);
   opacity: 0;
   pointer-events: none;
   transition: .25s ease;
-
-  z-index: 1100;             /* BELOW NAV */
+  z-index: 1100;
 }
+
+.nav-links.active {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* Desktop nav */
 @media (min-width: 900px) {
   .db-hamburger { display: none; }
-
   .nav-links {
     position: static;
     flex-direction: row;
@@ -199,6 +187,7 @@ button:active {
     margin-left: auto;
   }
 }
+
 /* =========================================================
    CARDS (POSTS, COMMENTS, DICTIONARY)
 ========================================================= */
@@ -230,9 +219,7 @@ button[type="submit"] {
   color: #fff;
 }
 
-.btn.danger {
-  background: #e63946;
-}
+.btn.danger { background: #e63946; }
 
 /* =========================================================
    FORMS & INPUTS
@@ -252,10 +239,7 @@ textarea {
   font-size: 1rem;
 }
 
-textarea {
-  min-height: 120px;
-  resize: vertical;
-}
+textarea { min-height: 120px; resize: vertical; }
 
 input:focus,
 textarea:focus {
@@ -286,18 +270,9 @@ textarea:focus {
 /* =========================================================
    CHAT (WHATSAPP STYLE)
 ========================================================= */
-.chat-layout {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
+.chat-layout { display: flex; flex-direction: column; gap: var(--space-2); }
 
-@media (min-width: 900px) {
-  .chat-layout {
-    flex-direction: row;
-    height: 80vh;
-  }
-}
+@media (min-width: 900px) { .chat-layout { flex-direction: row; height: 80vh; } }
 
 .message {
   max-width: 75%;
@@ -305,14 +280,8 @@ textarea:focus {
   border-radius: var(--radius-lg);
 }
 
-.message.sent {
-  background: #dcf8c6;
-  margin-left: auto;
-}
-
-.message.received {
-  background: #ffffff;
-}
+.message.sent { background: #dcf8c6; margin-left: auto; }
+.message.received { background: #ffffff; }
 
 /* =========================================================
    UTILITIES
@@ -320,24 +289,17 @@ textarea:focus {
 .hidden { display: none; }
 .text-muted { color: var(--text-muted); }
 
-/* =========================================================
-   FOOTER
-========================================================= */
 footer {
   text-align: center;
   padding: var(--space-3);
   color: var(--text-muted);
 }
 
-/* =========================
-   /* =========================
-   ACCOUNT DROPDOWN (FINAL)
-========================= */
-.dropdown {
-  position: relative;
-}
+/* =========================================================
+   ACCOUNT DROPDOWN
+========================================================= */
+.dropdown { position: relative; }
 
-/* Desktop dropdown */
 @media (min-width: 900px) {
   .dropdown-content {
     position: absolute;
@@ -349,56 +311,25 @@ footer {
     box-shadow: var(--shadow-lg);
     padding: 6px;
     display: none;
-    z-index: 2000;
+    z-index: 3000;
   }
-
-  .dropdown-content.active {
-    display: block;
-  }
+  .dropdown-content.active { display: block; }
 }
 
-/* Mobile dropdown = inline list */
 @media (max-width: 899px) {
   .dropdown-content {
-    position: relative;       /* 🔥 NOT static */
+    position: relative;
     display: none;
     background: transparent;
     box-shadow: none;
     padding: 0;
-    margin-left: 12px;
-  }
-
-  .dropdown-content.active {
-    display: block;
-  }
-
-  .dropdown-content a {
-    padding: 12px 16px;
-    border-radius: var(--radius-pill);
-  }
-}
-body.nav-open {
-  overflow: hidden;
-}
-
-/* =========================
-   MOBILE BEHAVIOR
-========================= */
-@media (max-width: 900px) {
-  /* dropdown becomes part of the menu list */
-  .dropdown-content {
-    position: static;          /* 🔥 KEY FIX */
-    box-shadow: none;
-    background: transparent;
-    padding: 0;
     margin-top: 6px;
   }
-
-  .dropdown-content a {
-    padding-left: 24px;        /* indent under Account */
-    background: transparent;
-  }
+  .dropdown-content.active { display: block; }
+  .dropdown-content a { padding-left: 24px; }
 }
+
+/* Animation */
 .dropdown-content {
   transform-origin: top right;
   animation: dropdownIn .15s ease;
@@ -409,5 +340,5 @@ body.nav-open {
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* =========================================================
-   DARK MODE (OPTIONAL)
+/* Mobile nav open state */
+body.nav-open { overflow: hidden; }

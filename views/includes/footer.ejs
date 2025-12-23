@@ -10,7 +10,6 @@
      SOCKET NOTIFICATIONS
   ========================= */
   const socket = io("http://localhost:5733");
-
   socket.emit("join_room", "user_<%= user ? user.id : '' %>");
 
   socket.on("new_message", data => {
@@ -18,16 +17,13 @@
     if (badge) badge.textContent = Number(badge.textContent) + 1;
 
     if (Notification.permission === "granted") {
-      new Notification(`New message from ${data.sendername}`, {
-        body: data.body
-      });
+      new Notification(`New message from ${data.sendername}`, { body: data.body });
     }
   });
 
   async function loadUnread() {
     const badge = document.getElementById("notif-count");
     if (!badge) return;
-
     const res = await fetch("/notifications/unread-count");
     const json = await res.json();
     badge.textContent = json.count;
@@ -44,26 +40,21 @@
   const navLinks = document.getElementById("navLinks");
 
   toggleBtn?.addEventListener("click", (e) => {
-  e.stopPropagation();
-
-  const isOpen = navLinks.classList.toggle("active");
-
-  toggleBtn.setAttribute("aria-expanded", isOpen);
-  navLinks.setAttribute("aria-hidden", !isOpen);
-
-  // 🔥 prevents page scrolling / overlap
-  document.body.classList.toggle("nav-open", isOpen);
-});
-
+    e.stopPropagation();
+    const isOpen = navLinks.classList.toggle("active");
+    toggleBtn.setAttribute("aria-expanded", isOpen);
+    navLinks.setAttribute("aria-hidden", !isOpen);
+    document.body.classList.toggle("nav-open", isOpen);
+  });
 
   /* =========================
-     ACCOUNT DROPDOWN (FIXED)
+     ACCOUNT DROPDOWN
   ========================= */
   const accountBtn = document.getElementById("accountBtn");
   const accountMenu = document.getElementById("accountMenu");
 
   accountBtn?.addEventListener("click", (e) => {
-    e.stopPropagation(); // 🔥 critical fix
+    e.stopPropagation();
     const isOpen = accountMenu.classList.toggle("active");
     accountBtn.setAttribute("aria-expanded", isOpen);
     accountMenu.setAttribute("aria-hidden", !isOpen);
@@ -72,16 +63,20 @@
   /* =========================
      CLOSE MENUS ON OUTSIDE CLICK
   ========================= */
-  document.addEventListener("click", () => {
-    navLinks?.classList.remove("active");
-    toggleBtn?.setAttribute("aria-expanded", "false");
-    navLinks?.setAttribute("aria-hidden", "true");
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".dropdown")) {
+      accountMenu?.classList.remove("active");
+      accountBtn?.setAttribute("aria-expanded", "false");
+      accountMenu?.setAttribute("aria-hidden", "true");
+    }
 
-    accountMenu?.classList.remove("active");
-    accountBtn?.setAttribute("aria-expanded", "false");
-    accountMenu?.setAttribute("aria-hidden", "true");
+    if (!e.target.closest("#navLinks") && !e.target.closest("#menuToggle")) {
+      navLinks?.classList.remove("active");
+      toggleBtn?.setAttribute("aria-expanded", "false");
+      navLinks?.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("nav-open");
+    }
   });
 </script>
-
 </body>
 </html>

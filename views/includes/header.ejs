@@ -4,11 +4,7 @@
 
       <!-- BRAND -->
       <a class="db-brand" href="/" aria-label="DreamBook home">
-        <img
-          src="/images/DreamBook.png"
-          alt="DreamBook logo"
-          class="DreamBook-logo"
-        />
+        <img src="/images/DreamBook.png" alt="DreamBook logo" class="DreamBook-logo" />
         <span class="db-title">DreamBook</span>
       </a>
 
@@ -27,12 +23,7 @@
       </button>
 
       <!-- NAV LINKS -->
-      <div
-        class="nav-links"
-        id="navLinks"
-        role="menubar"
-        aria-hidden="true"
-      >
+      <div class="nav-links" id="navLinks" role="menubar" aria-hidden="true">
         <a role="menuitem" href="/dictionary">Dream Dictionary</a>
         <a role="menuitem" href="/dream-realness">Dream Analyzer</a>
         <a role="menuitem" href="/dashboard">Public Posts</a>
@@ -64,16 +55,9 @@
             Account ▾
           </button>
 
-          <div
-            class="dropdown-content"
-            id="accountMenu"
-            role="menu"
-            aria-hidden="true"
-          >
+          <div class="dropdown-content" id="accountMenu" role="menu" aria-hidden="true">
             <% if (user) { %>
-              <a role="menuitem" href="/logout">
-                <%= user.username %> · Logout
-              </a>
+              <a role="menuitem" href="/logout"><%= user.username %> · Logout</a>
             <% } else { %>
               <a role="menuitem" href="/register">Signup</a>
               <a role="menuitem" href="/login">Login</a>
