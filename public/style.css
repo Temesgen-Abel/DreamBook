@@ -400,5 +400,15 @@ footer {
     background: transparent;
   }
 }
+.dropdown-content {
+  transform-origin: top right;
+  animation: dropdownIn .15s ease;
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: scale(.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
 /* =========================================================
    DARK MODE (OPTIONAL)
