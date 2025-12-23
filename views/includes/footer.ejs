@@ -44,11 +44,17 @@
   const navLinks = document.getElementById("navLinks");
 
   toggleBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const isOpen = navLinks.classList.toggle("active");
-    toggleBtn.setAttribute("aria-expanded", isOpen);
-    navLinks.setAttribute("aria-hidden", !isOpen);
-  });
+  e.stopPropagation();
+
+  const isOpen = navLinks.classList.toggle("active");
+
+  toggleBtn.setAttribute("aria-expanded", isOpen);
+  navLinks.setAttribute("aria-hidden", !isOpen);
+
+  // 🔥 prevents page scrolling / overlap
+  document.body.classList.toggle("nav-open", isOpen);
+});
+
 
   /* =========================
      ACCOUNT DROPDOWN (FIXED)
