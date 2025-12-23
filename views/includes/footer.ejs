@@ -30,5 +30,37 @@ async function loadUnread() {
 
 loadUnread();
 </script>
+
+<script>
+  // Mobile menu toggle
+  const toggleBtn = document.getElementById("menuToggle");
+  const navLinks = document.getElementById("navLinks");
+
+  toggleBtn?.addEventListener("click", () => {
+    const isOpen = navLinks.classList.toggle("active");
+    toggleBtn.setAttribute("aria-expanded", isOpen);
+    navLinks.setAttribute("aria-hidden", !isOpen);
+  });
+
+  // Account dropdown
+  const accountBtn = document.getElementById("accountBtn");
+  const accountMenu = document.getElementById("accountMenu");
+
+  accountBtn?.addEventListener("click", () => {
+    const isOpen = accountMenu.classList.toggle("active");
+    accountBtn.setAttribute("aria-expanded", isOpen);
+    accountMenu.setAttribute("aria-hidden", !isOpen);
+  });
+
+  // Close menus on outside click
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".dropdown")) {
+      accountMenu?.classList.remove("active");
+      accountBtn?.setAttribute("aria-expanded", "false");
+      accountMenu?.setAttribute("aria-hidden", "true");
+    }
+  });
+</script>
+
 </body>
 </html>

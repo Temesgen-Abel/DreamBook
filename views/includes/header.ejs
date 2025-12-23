@@ -1,33 +1,47 @@
 <header>
   <nav class="db-nav" role="navigation" aria-label="Main navigation">
     <div class="db-nav-inner">
+
+      <!-- BRAND -->
       <a class="db-brand" href="/" aria-label="DreamBook home">
-        <img src="/images/DreamBook.png" alt="DreamBook logo" class="DreamBook-logo" />
+        <img
+          src="/images/DreamBook.png"
+          alt="DreamBook logo"
+          class="DreamBook-logo"
+        />
         <span class="db-title">DreamBook</span>
       </a>
 
+      <!-- HAMBURGER -->
       <button
-        class="db-hamburger menu-btn"
+        class="db-hamburger"
+        id="menuToggle"
         aria-controls="navLinks"
         aria-expanded="false"
         aria-label="Toggle navigation menu"
         type="button"
       >
-        <span class="bar" aria-hidden="true"></span>
-        <span class="bar" aria-hidden="true"></span>
-        <span class="bar" aria-hidden="true"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
       </button>
 
-      <div class="nav-links" id="navLinks" role="menubar" aria-hidden="true">
+      <!-- NAV LINKS -->
+      <div
+        class="nav-links"
+        id="navLinks"
+        role="menubar"
+        aria-hidden="true"
+      >
         <a role="menuitem" href="/dictionary">Dream Dictionary</a>
         <a role="menuitem" href="/dream-realness">Dream Analyzer</a>
         <a role="menuitem" href="/dashboard">Public Posts</a>
         <a role="menuitem" class="db-cta" href="/create-post">Post Your Dream</a>
-        <a role="menuitem" href="/inbox" class="highlight">Inbox</a>
+        <a role="menuitem" href="/inbox">Inbox</a>
         <a role="menuitem" href="/notifications">Notifications</a>
 
-        <% if (typeof hideSearch === "undefined" || !hideSearch) { %>
-          <form class="search-form" role="search" onsubmit="return false;">
+        <% if (!hideSearch) { %>
+          <form class="search-form" role="search">
             <input
               id="searchInput"
               type="search"
@@ -38,17 +52,28 @@
           </form>
         <% } %>
 
-        <button id="notif-bell" aria-label="Notifications" type="button" class="notif-btn">
-          🔔 <span id="notif-count" aria-live="polite">0</span>
-        </button>
-
-        <div class="dropdown" data-dropdown>
-          <button class="dropbtn" aria-haspopup="true" aria-expanded="false" type="button">
+        <!-- ACCOUNT DROPDOWN -->
+        <div class="dropdown">
+          <button
+            class="dropbtn"
+            id="accountBtn"
+            aria-haspopup="true"
+            aria-expanded="false"
+            type="button"
+          >
             Account ▾
           </button>
-          <div class="dropdown-content" role="menu" aria-hidden="true">
+
+          <div
+            class="dropdown-content"
+            id="accountMenu"
+            role="menu"
+            aria-hidden="true"
+          >
             <% if (user) { %>
-              <a role="menuitem" href="/logout"><%= user.username %> Logout</a>
+              <a role="menuitem" href="/logout">
+                <%= user.username %> · Logout
+              </a>
             <% } else { %>
               <a role="menuitem" href="/register">Signup</a>
               <a role="menuitem" href="/login">Login</a>
@@ -59,4 +84,3 @@
     </div>
   </nav>
 </header>
-
