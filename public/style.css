@@ -163,42 +163,27 @@ button:active {
 /* Mobile nav */
 .nav-links {
   position: fixed;
-  inset: 0;
   top: 76px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
   background: #ffffff;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
-  transform: translateY(-10%);
+
+  overflow-y: auto;          /* 🔥 KEY */
+  overscroll-behavior: contain;
+
+  transform: translateY(-8px);
   opacity: 0;
   pointer-events: none;
   transition: .25s ease;
-}
 
-.nav-links.active {
-  transform: translateY(0);
-  opacity: 1;
-  pointer-events: auto;
+  z-index: 1100;             /* BELOW NAV */
 }
-
-.nav-links a {
-  padding: var(--space-2);
-  border-radius: var(--radius-pill);
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.nav-links a:hover {
-  background: var(--bg-page);
-}
-
-/* CTA */
-.db-cta {
-  background: var(--cta-bg);
-  color: var(--cta-color);
-}
-
 /* Desktop nav */
 @media (min-width: 900px) {
   .db-hamburger { display: none; }
@@ -345,41 +330,55 @@ footer {
 }
 
 /* =========================
-   ACCOUNT DROPDOWN (FIXED)
+   /* =========================
+   ACCOUNT DROPDOWN (FINAL)
 ========================= */
 .dropdown {
   position: relative;
 }
 
 /* Desktop dropdown */
-.dropdown-content {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 180px;
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  padding: 6px;
-  display: none;
-  z-index: 3000;
+@media (min-width: 900px) {
+  .dropdown-content {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    min-width: 200px;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: 6px;
+    display: none;
+    z-index: 2000;
+  }
+
+  .dropdown-content.active {
+    display: block;
+  }
 }
 
-.dropdown-content a {
-  display: block;
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  color: var(--text-main);
-  white-space: nowrap;
-}
+/* Mobile dropdown = inline list */
+@media (max-width: 899px) {
+  .dropdown-content {
+    position: relative;       /* 🔥 NOT static */
+    display: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    margin-left: 12px;
+  }
 
-.dropdown-content a:hover {
-  background: var(--bg-page);
-}
+  .dropdown-content.active {
+    display: block;
+  }
 
-/* Show dropdown */
-.dropdown-content.active {
-  display: block;
+  .dropdown-content a {
+    padding: 12px 16px;
+    border-radius: var(--radius-pill);
+  }
+}
+body.nav-open {
+  overflow: hidden;
 }
 
 /* =========================
