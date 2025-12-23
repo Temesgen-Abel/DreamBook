@@ -40,7 +40,7 @@
         <a role="menuitem" href="/inbox">Inbox</a>
         <a role="menuitem" href="/notifications">Notifications</a>
 
-        <% if (!hideSearch) { %>
+        <% if (typeof hideSearch === "undefined" || !hideSearch) { %>
           <form class="search-form" role="search">
             <input
               id="searchInput"
