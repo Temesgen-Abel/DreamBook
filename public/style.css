@@ -161,7 +161,7 @@ button {
   }
 
   .nav-links {
-    position: static;
+    position: absolute;
     flex-direction: row;
     background: none;
     padding: 0;
@@ -183,7 +183,7 @@ button {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: radial-gradient(#bcb5b5 0%, #0f0fc9 70%);
+  background: radial-gradient(#bcb5b5 0%, #000009 70%);
 }
 
 .galaxy-rotate {
@@ -225,22 +225,26 @@ button {
    CHAT (MOBILE FIRST)
 ========================================================= */
 .chat-layout {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+  
 }
 
 @media (min-width: 900px) {
   .chat-layout {
-    grid-template-columns: 280px 1fr;
+    flex-direction: row;
+    gap: 20px;
     height: 80vh;
   }
 }
 
 .sidebar,
 .chat-area {
-  width: 100%;
-  max-width: 100%;
+  background: #0ac284;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(204, 3, 44, 0.1);
+  padding: 20px;
 }
 
 /* =========================================================
@@ -296,15 +300,18 @@ form {
 textarea,
 input {
   width: 100%;
-  max-width: 100%;
+  padding: 14px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  font-size: 1rem;
 }
 
 /* =========================================================
    DREAM ANALYZER (FIXED)
 ========================================================= */
 .dream-analyzer-form {
-  background: #fff;
-  border: 1px solid #ddd;
+  background: #10777e;
+  border: 1px solid #dddddd;
   padding: 20px;
   border-radius: 16px;
   margin-bottom: 20px;
