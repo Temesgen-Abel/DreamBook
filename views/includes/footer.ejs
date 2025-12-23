@@ -1,64 +1,79 @@
 <footer>
-    <small>&copy; DreamBook_2025</small>
+  <small>&copy; DreamBook_2025</small>
 </footer>
 
+<!-- Socket.io -->
 <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+
 <script>
-const socket = io("http://localhost:5733");
+  /* =========================
+     SOCKET NOTIFICATIONS
+  ========================= */
+  const socket = io("http://localhost:5733");
 
-// Join the correct room
-socket.emit("join_room", "user_<%= user ? user.id : '' %>");
+  socket.emit("join_room", "user_<%= user ? user.id : '' %>");
 
-// Listen for real-time messages
-socket.on("new_message", data => {
-  const badge = document.getElementById("notif-count");
-  if (badge) badge.textContent = Number(badge.textContent) + 1;
+  socket.on("new_message", data => {
+    const badge = document.getElementById("notif-count");
+    if (badge) badge.textContent = Number(badge.textContent) + 1;
 
-  if (Notification.permission === "granted") {
-    new Notification(`New message from ${data.sendername}`, {
-      body: data.body
-    });
+    if (Notification.permission === "granted") {
+      new Notification(`New message from ${data.sendername}`, {
+        body: data.body
+      });
+    }
+  });
+
+  async function loadUnread() {
+    const badge = document.getElementById("notif-count");
+    if (!badge) return;
+
+    const res = await fetch("/notifications/unread-count");
+    const json = await res.json();
+    badge.textContent = json.count;
   }
-});
 
-// Load unread count on page refresh
-async function loadUnread() {
-  const res = await fetch("/notifications/unread-count");
-  const json = await res.json();
-  document.getElementById("notif-count").textContent = json.count;
-}
-
-loadUnread();
+  loadUnread();
 </script>
 
 <script>
-  // Mobile menu toggle
+  /* =========================
+     MOBILE NAV TOGGLE
+  ========================= */
   const toggleBtn = document.getElementById("menuToggle");
   const navLinks = document.getElementById("navLinks");
 
-  toggleBtn?.addEventListener("click", () => {
+  toggleBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
     const isOpen = navLinks.classList.toggle("active");
     toggleBtn.setAttribute("aria-expanded", isOpen);
     navLinks.setAttribute("aria-hidden", !isOpen);
   });
 
-  // Account dropdown
+  /* =========================
+     ACCOUNT DROPDOWN (FIXED)
+  ========================= */
   const accountBtn = document.getElementById("accountBtn");
   const accountMenu = document.getElementById("accountMenu");
 
-  accountBtn?.addEventListener("click", () => {
+  accountBtn?.addEventListener("click", (e) => {
+    e.stopPropagation(); // 🔥 critical fix
     const isOpen = accountMenu.classList.toggle("active");
     accountBtn.setAttribute("aria-expanded", isOpen);
     accountMenu.setAttribute("aria-hidden", !isOpen);
   });
 
-  // Close menus on outside click
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".dropdown")) {
-      accountMenu?.classList.remove("active");
-      accountBtn?.setAttribute("aria-expanded", "false");
-      accountMenu?.setAttribute("aria-hidden", "true");
-    }
+  /* =========================
+     CLOSE MENUS ON OUTSIDE CLICK
+  ========================= */
+  document.addEventListener("click", () => {
+    navLinks?.classList.remove("active");
+    toggleBtn?.setAttribute("aria-expanded", "false");
+    navLinks?.setAttribute("aria-hidden", "true");
+
+    accountMenu?.classList.remove("active");
+    accountBtn?.setAttribute("aria-expanded", "false");
+    accountMenu?.setAttribute("aria-hidden", "true");
   });
 </script>
 
