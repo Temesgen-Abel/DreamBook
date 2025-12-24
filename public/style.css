@@ -1,5 +1,5 @@
 /* =========================================================
-   DESIGN TOKENS (SOCIAL APP THEME)
+   DESIGN TOKENS
 ========================================================= */
 :root {
   --primary: #1877f2;
@@ -14,31 +14,36 @@
 
   --bg-page: #f0f2f5;
   --bg-card: #ffffff;
-  --nav-bg: rgba(255,255,255,0.9);
+  --nav-bg: rgba(255,255,255,0.92);
 
   --border-soft: #e4e6eb;
+
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 18px;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 12px 30px rgba(0,0,0,0.16);
+  --shadow-sm: 0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg: 0 14px 30px rgba(0,0,0,.16);
 
   --space-1: 6px;
   --space-2: 12px;
   --space-3: 16px;
   --space-4: 24px;
+
+  --nav-height: 72px;
 }
 
 /* =========================================================
-   RESET & BASE
+   RESET
 ========================================================= */
 *,
 *::before,
-*::after { box-sizing: border-box; }
+*::after {
+  box-sizing: border-box;
+}
 
-html { font-size: 12px; }
+html { font-size: 14px; }
 
 body {
   margin: 0;
@@ -46,74 +51,72 @@ body {
   background: var(--bg-page);
   color: var(--text-main);
   line-height: 1.6;
-  overflow-x: hidden;
   padding-top: var(--nav-height);
-  position: relative;
+  overflow-x: hidden;
 }
 
-img, video { max-width: 100%; height: auto; }
+img { max-width: 100%; display: block; }
 
-a {
-  color: var(--primary);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-button {
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-button:active { transform: scale(0.97); }
+a { text-decoration: none; color: var(--primary); }
 
 /* =========================================================
-   LAYOUT SYSTEM
+   LAYOUT
 ========================================================= */
-.wrapper { width: 100%; max-width: 1100px; margin-inline: auto; padding: var(--space-3); }
-
-.page-wrapper { display: grid; gap: var(--space-3); }
-
-@media (min-width: 1100px) {
-  .page-wrapper { grid-template-columns: 280px minmax(0, 1fr) 280px; }
+.wrapper {
+  max-width: 1100px;
+  margin-inline: auto;
+  padding: var(--space-3);
 }
 
 /* =========================================================
    NAVBAR
 ========================================================= */
 .db-nav {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 1300;
+  left: 0;
+  right: 0;
+  height: var(--nav-height);
+  z-index: 1400;
+  background: transparent;
 }
 
 .db-nav-inner {
-  max-width: 1200px;
+  height: 100%;
+  max-width: 1100px;
   margin-inline: auto;
+  padding: 0 var(--space-3);
+
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-3);
+
   background: var(--nav-bg);
   backdrop-filter: blur(12px);
-  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
 
-.db-brand { display: flex; align-items: center; gap: var(--space-2); }
+.db-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 800;
+}
 
-.DreamBook-logo { width: 36px; height: 36px; }
+.DreamBook-logo {
+  width: 36px;
+  height: 36px;
+}
 
-.db-title { font-weight: 800; color: var(--primary); }
-
-/* Hamburger */
+/* =========================================================
+   HAMBURGER
+========================================================= */
 .db-hamburger {
   margin-left: auto;
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   display: grid;
-  place-content: center;
+  place-items: center;
 }
 
 .db-hamburger .bar {
@@ -123,30 +126,30 @@ button:active { transform: scale(0.97); }
   margin: 3px 0;
 }
 
-/* ===============================
-   MOBILE NAV (FIXED PROPERLY)
-================================ */
+/* =========================================================
+   MOBILE NAV
+========================================================= */
 .nav-links {
-  position: absolute;
+  position: fixed;
   top: var(--nav-height);
   left: 0;
   right: 0;
-  height: calc(100vh - var(--nav-height));
+  bottom: 0;
+
   background: #fff;
+  padding: var(--space-4);
 
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-
-  padding: var(--space-3);
-  overflow-y: auto;
+  gap: var(--space-3);
 
   transform: translateY(-100%);
   opacity: 0;
   pointer-events: none;
-  transition: transform .25s ease, opacity .25s ease;
+  transition: .25s ease;
 
-  z-index: 1200;
+  overflow-y: auto;
+  z-index: 1300;
 }
 
 .nav-links.active {
@@ -155,93 +158,88 @@ button:active { transform: scale(0.97); }
   pointer-events: auto;
 }
 
-/* Desktop nav */
+/* =========================================================
+   DROPDOWN (MOBILE)
+========================================================= */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-content {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.dropdown-content.active {
+  display: flex;
+}
+
+/* =========================================================
+   DESKTOP NAV
+========================================================= */
 @media (min-width: 900px) {
+  body { padding-top: var(--nav-height); }
+
   .db-hamburger { display: none; }
+
   .nav-links {
     position: static;
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
     flex-direction: row;
     background: none;
     padding: 0;
-    opacity: 1;
-    pointer-events: auto;
-    transform: none;
     margin-left: auto;
+    height: auto;
+  }
+
+  /* Desktop dropdown */
+  .dropdown {
+    position: relative;
+  }
+
+  .dropdown-content {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+
+    min-width: 220px;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+
+    padding: 8px 0;
+    display: none;
+    z-index: 3000;
+  }
+
+  .dropdown-content a {
+    padding: 10px 16px;
+    color: var(--text-main);
+    white-space: nowrap;
+  }
+
+  .dropdown-content a:hover {
+    background: var(--bg-page);
+  }
+
+  .dropdown-content.active {
+    display: block;
   }
 }
 
 /* =========================================================
    CARDS
 ========================================================= */
-.post-card,
-.comment,
-.dictionary-item {
+.post-card {
   background: var(--bg-card);
   padding: var(--space-3);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-sm);
-  transition: transform .2s ease, box-shadow .2s ease;
 }
-
-.post-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-
-/* =========================================================
-   BUTTONS
-========================================================= */
-.btn, button[type="submit"] {
-  padding: 0.7rem 1.2rem;
-  border-radius: var(--radius-pill);
-  font-weight: 700;
-  background: var(--cta-bg);
-  color: #fff;
-}
-
-.btn.danger { background: #e63946; }
-
-/* =========================================================
-   FORMS & INPUTS
-========================================================= */
-form { display: flex; flex-direction: column; gap: var(--space-2); }
-
-input, textarea {
-  width: 100%;
-  padding: 0.9rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-soft);
-  font-size: 1rem;
-}
-
-textarea { min-height: 120px; resize: vertical; }
-
-input:focus,
-textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(24,119,242,.15); }
-
-/* =========================================================
-   AUTH PAGES
-========================================================= */
-.auth-wrapper { min-height: 100vh; display: grid; place-content: center; padding: var(--space-3); }
-
-.auth-form {
-  width: 100%;
-  max-width: 380px;
-  background: var(--bg-card);
-  padding: var(--space-4);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-}
-
-/* =========================================================
-   CHAT
-========================================================= */
-.chat-layout { display: flex; flex-direction: column; gap: var(--space-2); }
-
-@media (min-width: 900px) { .chat-layout { flex-direction: row; height: 80vh; } }
-
-.message { max-width: 75%; padding: var(--space-2); border-radius: var(--radius-lg); }
-
-.message.sent { background: #dcf8c6; margin-left: auto; }
-.message.received { background: #ffffff; }
 
 /* =========================================================
    UTILITIES
@@ -249,57 +247,7 @@ textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 
 .hidden { display: none; }
 .text-muted { color: var(--text-muted); }
 
-footer { text-align: center; padding: var(--space-3); color: var(--text-muted); }
-
-/* =========================================================
-   ACCOUNT DROPDOWN
-========================================================= */
-.dropdown {
-  position:absolute;
-  display: inline-block;
-  z-index: 50; /* stays above comment box */
+/* Lock scroll when mobile menu open */
+body.nav-open {
+  overflow: hidden;
 }
-
-/* Desktop dropdown */
-@media (min-width: 900px) {
-  .dropdown-content {
-    position: absolute;
-    top: calc(100% + 10px);
-    left: 0;
-    min-width: 200px;
-    background: var(--bg-card);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
-    padding: 6px 0;
-    display: none;
-    z-index: 3000;
-    max-height: none; /* 🔥 show all items */
-    overflow: visible;
-  }
-  .dropdown-content a { padding: 10px 16px; display: block; }
-  .dropdown-content.active { display: inline; }
-}
-
-/* Mobile dropdown */
-@media (max-width: 899px) {
-  .dropdown-content {
-    position: absolute;
-    background: transparent;
-    box-shadow: none;
-    padding: 0;
-    margin-top: 6px;
-    max-height: none; /* 🔥 show all items */
-    overflow: visible;
-    left: auto;
-  }
-
-}
-
-/* Animation */
-@keyframes dropdownIn {
-  from { opacity: 0; transform: scale(.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* Mobile nav open state */
-body.nav-open { overflow: hidden; }
