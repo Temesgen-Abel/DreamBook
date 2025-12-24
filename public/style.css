@@ -273,7 +273,7 @@ footer { text-align: center; padding: var(--space-3); color: var(--text-muted); 
 @media (max-width: 899px) {
   .dropdown-content {
     position: relative;
-    display: inline;
+    display: list-item;
     background: transparent;
     box-shadow: none;
     padding: 0;
