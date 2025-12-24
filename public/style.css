@@ -29,6 +29,7 @@
   --space-2: 12px;
   --space-3: 16px;
   --space-4: 24px;
+  --nav-height: 72px;
 }
 
 /* =========================================================
@@ -47,6 +48,7 @@ body {
   color: var(--text-main);
   line-height: 1.6;
   overflow-x: hidden;
+  padding-top: var(--nav-height);
 }
 
 img, video { max-width: 100%; height: auto; }
@@ -82,9 +84,8 @@ button:active { transform: scale(0.97); }
 ========================================================= */
 .db-nav {
   position: sticky;
-  top: 10px;
-  z-index: 1200;
-  padding: var(--space-2);
+  top: 0;
+  z-index: 1300;
 }
 
 .db-nav-inner {
@@ -122,24 +123,30 @@ button:active { transform: scale(0.97); }
   margin: 3px 0;
 }
 
-/* Mobile nav */
+/* ===============================
+   MOBILE NAV (FIXED PROPERLY)
+================================ */
 .nav-links {
   position: fixed;
-  top: 76px;
+  top: var(--nav-height);
   left: 0;
   right: 0;
-  bottom: 0;
-  background: #ffffff;
+  height: calc(100vh - var(--nav-height));
+  background: #fff;
+
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+
   padding: var(--space-3);
-  transform: translateY(-8px);
+  overflow-y: auto;
+
+  transform: translateY(-100%);
   opacity: 0;
   pointer-events: none;
-  transition: .25s ease;
-  z-index: 1100;
-  overflow: visible; /* 🔥 show full dropdown items */
+  transition: transform .25s ease, opacity .25s ease;
+
+  z-index: 1200;
 }
 
 .nav-links.active {
