@@ -266,14 +266,14 @@ footer { text-align: center; padding: var(--space-3); color: var(--text-muted); 
     overflow: visible;
   }
   .dropdown-content a { padding: 10px 16px; display: block; }
-  .dropdown-content.active { display: block; }
+  .dropdown-content.active { display: inline; }
 }
 
 /* Mobile dropdown */
 @media (max-width: 899px) {
   .dropdown-content {
     position: relative;
-    display: none;
+    display: inline;
     background: transparent;
     box-shadow: none;
     padding: 0;
