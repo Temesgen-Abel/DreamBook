@@ -1,5 +1,5 @@
 /* =========================================================
-   DESIGN TOKENS
+   DESIGN TOKENS (SOCIAL APP THEME)
 ========================================================= */
 :root {
   --primary: #1877f2;
@@ -14,7 +14,7 @@
 
   --bg-page: #f0f2f5;
   --bg-card: #ffffff;
-  --nav-bg: rgba(255,255,255,0.92);
+  --nav-bg: rgba(255,255,255,0.9);
 
   --border-soft: #e4e6eb;
 
@@ -23,27 +23,26 @@
   --radius-lg: 18px;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 4px 12px rgba(0,0,0,.08);
-  --shadow-lg: 0 14px 30px rgba(0,0,0,.16);
+  --shadow-sm: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 12px 30px rgba(0,0,0,0.16);
 
   --space-1: 6px;
   --space-2: 12px;
   --space-3: 16px;
   --space-4: 24px;
 
+  /* ✅ FIX: define nav height */
   --nav-height: 72px;
 }
 
 /* =========================================================
-   RESET
+   RESET & BASE
 ========================================================= */
 *,
 *::before,
-*::after {
-  box-sizing: border-box;
-}
+*::after { box-sizing: border-box; }
 
-html { font-size: 14px; }
+html { font-size: 12px; }
 
 body {
   margin: 0;
@@ -51,48 +50,71 @@ body {
   background: var(--bg-page);
   color: var(--text-main);
   line-height: 1.6;
-  padding-top: var(--nav-height);
   overflow-x: hidden;
+  padding-top: var(--nav-height);
+  position: relative;
 }
 
-img { max-width: 100%; display: block; }
+img, video { max-width: 100%; height: auto; }
 
-a { text-decoration: none; color: var(--primary); }
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button:active { transform: scale(0.97); }
 
 /* =========================================================
-   LAYOUT
+   LAYOUT SYSTEM (UNCHANGED)
 ========================================================= */
 .wrapper {
+  width: 100%;
   max-width: 1100px;
   margin-inline: auto;
   padding: var(--space-3);
+}
+
+.page-wrapper {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (min-width: 1100px) {
+  .page-wrapper {
+    grid-template-columns: 280px minmax(0, 1fr) 280px;
+  }
 }
 
 /* =========================================================
    NAVBAR
 ========================================================= */
 .db-nav {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  height: var(--nav-height);
-  z-index: 1400;
-  background: transparent;
+  z-index: 1300;
 }
 
 .db-nav-inner {
-  height: 100%;
+  /* ✅ FIX: match wrapper width */
   max-width: 1100px;
   margin-inline: auto;
-  padding: 0 var(--space-3);
 
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
 
   background: var(--nav-bg);
   backdrop-filter: blur(12px);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
 
@@ -100,7 +122,6 @@ a { text-decoration: none; color: var(--primary); }
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-weight: 800;
 }
 
 .DreamBook-logo {
@@ -108,15 +129,18 @@ a { text-decoration: none; color: var(--primary); }
   height: 36px;
 }
 
-/* =========================================================
-   HAMBURGER
-========================================================= */
+.db-title {
+  font-weight: 800;
+  color: var(--primary);
+}
+
+/* Hamburger */
 .db-hamburger {
   margin-left: auto;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   display: grid;
-  place-items: center;
+  place-content: center;
 }
 
 .db-hamburger .bar {
@@ -127,29 +151,29 @@ a { text-decoration: none; color: var(--primary); }
 }
 
 /* =========================================================
-   MOBILE NAV
+   MOBILE NAV (UNCHANGED STRUCTURE)
 ========================================================= */
 .nav-links {
-  position: fixed;
+  position: absolute;
   top: var(--nav-height);
   left: 0;
   right: 0;
-  bottom: 0;
-
+  height: calc(100vh - var(--nav-height));
   background: #fff;
-  padding: var(--space-4);
 
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
+
+  padding: var(--space-3);
+  overflow-y: auto;
 
   transform: translateY(-100%);
   opacity: 0;
   pointer-events: none;
-  transition: .25s ease;
+  transition: transform .25s ease, opacity .25s ease;
 
-  overflow-y: auto;
-  z-index: 1300;
+  z-index: 1200;
 }
 
 .nav-links.active {
@@ -158,71 +182,77 @@ a { text-decoration: none; color: var(--primary); }
   pointer-events: auto;
 }
 
-/* =========================================================
-   DROPDOWN (MOBILE)
-========================================================= */
-.dropdown {
-  position: relative;
-}
-
-.dropdown-content {
-  display: none;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.dropdown-content.active {
-  display: flex;
-}
-
-/* =========================================================
-   DESKTOP NAV
-========================================================= */
+/* Desktop nav */
 @media (min-width: 900px) {
-  body { padding-top: var(--nav-height); }
-
   .db-hamburger { display: none; }
 
   .nav-links {
     position: static;
-    transform: none;
-    opacity: 1;
-    pointer-events: auto;
     flex-direction: row;
     background: none;
     padding: 0;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
     margin-left: auto;
     height: auto;
   }
+}
 
-  /* Desktop dropdown */
-  .dropdown {
-    position: relative;
-  }
+/* =========================================================
+   ACCOUNT DROPDOWN (FIXED)
+========================================================= */
+.dropdown {
+  /* ✅ FIX: anchor dropdown properly */
+  position: relative;
+  display: inline-block;
+}
 
+/* Desktop dropdown */
+@media (min-width: 900px) {
   .dropdown-content {
     position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
+    top: calc(100% + 8px);
 
-    min-width: 220px;
+    /* ✅ FIX: open on RIGHT */
+    right: 0;
+    left: auto;
+
+    min-width: 200px;
     background: var(--bg-card);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
+    padding: 6px 0;
 
-    padding: 8px 0;
     display: none;
     z-index: 3000;
+
+    /* ✅ FIX: show all items */
+    max-height: none;
+    overflow: visible;
   }
 
   .dropdown-content a {
     padding: 10px 16px;
-    color: var(--text-main);
+    display: block;
     white-space: nowrap;
   }
 
-  .dropdown-content a:hover {
-    background: var(--bg-page);
+  .dropdown-content.active {
+    display: block;
+  }
+}
+
+/* Mobile dropdown */
+@media (max-width: 899px) {
+  .dropdown-content {
+    /* ✅ FIX: flow inside nav (no overlap) */
+    position: static;
+    display: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    margin-top: 6px;
   }
 
   .dropdown-content.active {
@@ -233,7 +263,9 @@ a { text-decoration: none; color: var(--primary); }
 /* =========================================================
    CARDS
 ========================================================= */
-.post-card {
+.post-card,
+.comment,
+.dictionary-item {
   background: var(--bg-card);
   padding: var(--space-3);
   border-radius: var(--radius-lg);
@@ -247,7 +279,15 @@ a { text-decoration: none; color: var(--primary); }
 .hidden { display: none; }
 .text-muted { color: var(--text-muted); }
 
-/* Lock scroll when mobile menu open */
+footer {
+  text-align: center;
+  padding: var(--space-3);
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   MOBILE NAV OPEN STATE
+========================================================= */
 body.nav-open {
   overflow: hidden;
 }
