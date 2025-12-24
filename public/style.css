@@ -29,7 +29,7 @@
   --space-2: 12px;
   --space-3: 16px;
   --space-4: 24px;
-  --nav-height:12px
+  --nav-height:flexible(60px, 8vh, 80px);
 }
 
 /* =========================================================
