@@ -29,7 +29,6 @@
   --space-2: 12px;
   --space-3: 16px;
   --space-4: 24px;
-  --nav-height:flexible(60px, 8vh, 80px);
 }
 
 /* =========================================================
@@ -127,7 +126,7 @@ button:active { transform: scale(0.97); }
    MOBILE NAV (FIXED PROPERLY)
 ================================ */
 .nav-links {
-  position: fixed;
+  position: absolute;
   top: var(--nav-height);
   left: 0;
   right: 0;
@@ -255,7 +254,7 @@ footer { text-align: center; padding: var(--space-3); color: var(--text-muted); 
    ACCOUNT DROPDOWN
 ========================================================= */
 .dropdown {
-  position: relative;
+  position:absolute;
   display: inline-block;
   z-index: 50; /* stays above comment box */
 }
@@ -283,8 +282,7 @@ footer { text-align: center; padding: var(--space-3); color: var(--text-muted); 
 /* Mobile dropdown */
 @media (max-width: 899px) {
   .dropdown-content {
-    position: relative;
-    display: list-item;
+    position: absolute;
     background: transparent;
     box-shadow: none;
     padding: 0;
