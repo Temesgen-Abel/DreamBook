@@ -247,14 +247,18 @@ footer { text-align: center; padding: var(--space-3); color: var(--text-muted); 
 /* =========================================================
    ACCOUNT DROPDOWN
 ========================================================= */
-.dropdown { position: inline; }
+.dropdown {
+  position: relative;
+  display: inline-block;
+  z-index: 50; /* stays above comment box */
+}
 
 /* Desktop dropdown */
 @media (min-width: 900px) {
   .dropdown-content {
     position: absolute;
     top: calc(100% + 10px);
-    right: 0;
+    left: 0;
     min-width: 200px;
     background: var(--bg-card);
     border-radius: var(--radius-md);
@@ -280,6 +284,7 @@ footer { text-align: center; padding: var(--space-3); color: var(--text-muted); 
     margin-top: 6px;
     max-height: none; /* 🔥 show all items */
     overflow: visible;
+    left: auto;
   }
 
 }
