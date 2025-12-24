@@ -215,8 +215,8 @@ button:active { transform: scale(0.97); }
     top: calc(100% + 8px);
 
     /* ✅ FIX: open on RIGHT */
-    right: 0;
-    left: auto;
+    left: 0;
+    right: auto;
 
     min-width: 200px;
     background: var(--bg-card);
@@ -291,3 +291,9 @@ footer {
 body.nav-open {
   overflow: hidden;
 }
+ .btn {  background-color: lightgrey;
+  border-radius: 75px;
+  color: green;
+  padding: 10px 20px;
+  font-size: 16px;
+ }
