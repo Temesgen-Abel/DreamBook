@@ -301,11 +301,6 @@ app.get("/admin", adminOnly, (req, res) => {
   res.render("admin"); // your EJS admin page
 });
 
-// Example dashboard route
-app.get("/dashboard", adminOnly, (req, res) => {
-  res.render("admin"); // reuse admin EJS
-});
-
 // 6.0 Home Route
 app.get("/", (req, res) => {
   if (req.user) return res.redirect("/dashboard");
