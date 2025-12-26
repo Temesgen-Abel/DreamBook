@@ -72,7 +72,6 @@
 (function () {
   const currentUserId = <%= JSON.stringify(user.id) %>;
   const allUsers      = <%- JSON.stringify(users) %>;
-
   const socket = io();
 
   socket.on("connect", () => {

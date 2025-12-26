@@ -13,6 +13,8 @@ const path = require("path");
 const http = require("http");
 const fs = require("fs");
 
+const app = express();
+
 // ===================================================================
 // 1. DATABASE SETUP
 // ===================================================================
@@ -266,7 +268,6 @@ app.use((req, res, next) => {
 // ===================================================================
 // 5. EXPRESS + SOCKET.IO SETUP
 // ===================================================================
-const app = express();
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
