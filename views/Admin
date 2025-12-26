@@ -1,4 +1,7 @@
 
+<Admin->Basic info about the admin panel</Admin->
+// Admin Statistics Section
+
 
 <% if (visitCount !== undefined) { %>
   <div class="admin-stat">
