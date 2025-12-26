@@ -214,6 +214,30 @@ async function unreadMiddleware(req, res, next) {
   next();
 }
 
+function adminAuth(req, res, next) {
+  const token = req.cookies?.DreamBookApp;
+
+  if (!token) {
+    req.admin = null;
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.username === process.env.ADMIN_USERNAME) {
+      req.admin = decoded; // attach admin info to request
+    } else {
+      req.admin = null;
+    }
+  } catch {
+    req.admin = null;
+  }
+
+  next();
+}
+
+
 // ===================================================================
 // 5. EXPRESS + SOCKET.IO SETUP
 // ===================================================================
@@ -226,6 +250,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static("public"));
 app.use(cookieParser());
 app.set("trust proxy", 1);
+app.use(adminAuth);
 
 // Visit counter for admins
 let visitCount = 0;
@@ -234,8 +259,6 @@ app.use((req, res, next) => {
   visitCount++;
   next();
 });
-
-
 
 // Request logger
 app.use((req, _, next) => {
@@ -266,9 +289,10 @@ app.set("io", io);
 // ===================================================================
 // 6. ROUTES
 // ===================================================================
-app.get("/admin", adminOnly, (req, res) => {
-  res.render("Admin", { visitCount });
+app.get("/dashboard", adminOnly, (req, res) => {
+  res.render("admin"); // your EJS admin page
 });
+
 // 6.0 Home Route
 app.get("/", (req, res) => {
   if (req.user) return res.redirect("/dashboard");
