@@ -57,7 +57,6 @@ async function dbRun(text, params = []) {
 // ===================================================================
 async function initDb() {
   await dbRun(`
-
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
@@ -71,7 +70,6 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`);
-
 
   await dbRun(`
     CREATE TABLE IF NOT EXISTS posts (
@@ -150,9 +148,18 @@ function newResetToken() {
   return crypto.randomBytes(20).toString("hex");
 }
 
+function adminOnly(req, res, next) {
+  if (!req.admin) {
+    return res.status(403).send("Access denied");
+  }
+  next();
+}
+
 // ===================================================================
 // 4. MIDDLEWARE
 // ===================================================================
+
+// auth middleware for normal users
 async function authMiddleware(req, res, next) {
   try {
     const token = req.cookies?.DreamBookApp;
@@ -181,7 +188,6 @@ function mustBeAdmin(req, res, next) {
 
   next();
 }
-
 
 async function unreadMiddleware(req, res, next) {
   if (!req.user) {
@@ -214,6 +220,7 @@ async function unreadMiddleware(req, res, next) {
   next();
 }
 
+// admin auth middleware for dashboard
 function adminAuth(req, res, next) {
   const token = req.cookies?.DreamBookApp;
 
@@ -237,6 +244,24 @@ function adminAuth(req, res, next) {
   next();
 }
 
+// ===================================================================
+// 4.1 Visitor Counter (memory-based, cleaned)
+// ===================================================================
+let visitCount = 0;
+
+// Increment every request
+app.use((req, res, next) => {
+  visitCount++;
+  next();
+});
+
+// Only expose visit count to admin for EJS
+app.use((req, res, next) => {
+  if (req.admin) {
+    res.locals.visitCount = visitCount;
+  }
+  next();
+});
 
 // ===================================================================
 // 5. EXPRESS + SOCKET.IO SETUP
@@ -252,14 +277,6 @@ app.use(cookieParser());
 app.set("trust proxy", 1);
 app.use(adminAuth);
 
-// Visit counter for admins
-let visitCount = 0;
-
-app.use((req, res, next) => {
-  visitCount++;
-  next();
-});
-
 // Request logger
 app.use((req, _, next) => {
   console.log(`[REQ] ${req.method} ${req.path}`);
@@ -272,26 +289,35 @@ app.use((req, res, next) => {
   next();
 });
 
-//count visitors of my website 
-app.use((req, res, next) => {
-  if (req.admin) {
-    res.locals.visitCount = visitCount;
-  }
-  next();
-});
-
-
 const server = http.createServer(app);
 const io = require("socket.io")(server, { cors: { origin: "*" } });
 app.set("io", io);
 
-
 // ===================================================================
 // 6. ROUTES
 // ===================================================================
-app.get("/dashboard", adminOnly, (req, res) => {
+app.get("/admin", adminOnly, (req, res) => {
   res.render("admin"); // your EJS admin page
 });
+
+// Example dashboard route
+app.get("/dashboard", adminOnly, (req, res) => {
+  res.render("admin"); // reuse admin EJS
+});
+
+// ===================================================================
+// 7. START SERVER
+// ===================================================================
+(async () => {
+  await createPoolOrExit();
+  await initDb();
+
+  const PORT = process.env.PORT || 5733;
+  server.listen(PORT, () => {
+    console.log(`✔ DreamBook server running on port ${PORT}`);
+  });
+})();
+
 
 // 6.0 Home Route
 app.get("/", (req, res) => {
@@ -473,7 +499,6 @@ app.post("/password-reset", async (req, res) => {
 app.get("/password-reset/confirm", (req, res) => {
   res.render("password-reset-confirm");
 });
-
 
 
 // 6.6. MAIN APP ROUTES

@@ -1,7 +1,4 @@
-
-<Admin->Basic info about the admin panel</Admin->
-// Admin Statistics Section
-
+<Admin->Basic info about the admin panel</Admin->>
 
 <% if (visitCount !== undefined) { %>
   <div class="admin-stat">
@@ -9,3 +6,9 @@
     <p><%= visitCount %></p>
   </div>
 <% } %>
+
+<% if (userCount !== undefined) { %>
+  <div class="admin-stat">
+    <h4>Total Registered Users</h4>
+    <p><%= userCount %></p>
+  </div>
