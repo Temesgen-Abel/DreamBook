@@ -227,6 +227,15 @@ app.use(express.static("public"));
 app.use(cookieParser());
 app.set("trust proxy", 1);
 
+// Visit counter for admins
+app.use((req, res, next) => {
+  if (req.user && req.user.isAdmin) {
+    res.locals.visitCount = visitCount;
+  }
+  next();
+});
+
+
 // Request logger
 app.use((req, _, next) => {
   console.log(`[REQ] ${req.method} ${req.path}`);
@@ -240,13 +249,25 @@ app.use((req, res, next) => {
 });
 
 
+function adminOnly(req, res, next) {
+  if (!req.user || !req.user.isAdmin) {
+    return res.status(403).send("Access denied");
+  }
+  next();
+}
+
 const server = http.createServer(app);
 const io = require("socket.io")(server, { cors: { origin: "*" } });
 app.set("io", io);
 
+
 // ===================================================================
 // 6. ROUTES
 // ===================================================================
+app.get("/admin", adminOnly, (req, res) => {
+  res.render("admin");
+});
+// 6.0 Home Route
 app.get("/", (req, res) => {
   if (req.user) return res.redirect("/dashboard");
   res.render("homepage", {
