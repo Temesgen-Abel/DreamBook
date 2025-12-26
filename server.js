@@ -306,20 +306,6 @@ app.get("/dashboard", adminOnly, (req, res) => {
   res.render("admin"); // reuse admin EJS
 });
 
-// ===================================================================
-// 7. START SERVER
-// ===================================================================
-(async () => {
-  await createPoolOrExit();
-  await initDb();
-
-  const PORT = process.env.PORT || 5733;
-  server.listen(PORT, () => {
-    console.log(`✔ DreamBook server running on port ${PORT}`);
-  });
-})();
-
-
 // 6.0 Home Route
 app.get("/", (req, res) => {
   if (req.user) return res.redirect("/dashboard");
