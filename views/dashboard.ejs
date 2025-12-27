@@ -31,8 +31,9 @@
 
   <main class="wrapper page-wrapper dashboard-page">
     <h1>Community Dream Posts</h1>
-    <h3>Post</h3>
-    <a href="/create-post" class="btn">Share Your Dream</a>
+<form action="/create-post" method="post"> 
+  <input type="submit" class="btn">Share Your Dream</input>
+</form>
 
     <div class="posts-list">
       <% if (posts.length) { %>
