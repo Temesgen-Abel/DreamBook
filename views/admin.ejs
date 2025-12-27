@@ -7,22 +7,23 @@
 </head>
 <body>
 <h1>Admin Dashboard</h1>
+
 <form action="/admin" method="get">
   <button type="submit" class="btn">Refresh Stats</button>
+</form>
 
-<% if (visitCount !== undefined) { %></form>
+<% if (typeof visitCount !== "undefined") { %>
   <div class="admin-stat">
     <h4>Total Website Visits</h4>
     <p><%= visitCount %></p>
   </div>
 <% } %>
 
-<% if (userCount !== undefined) { %>
+<% if (typeof userCount !== "undefined") { %>
   <div class="admin-stat">
     <h4>Total Registered Users</h4>
     <p><%= userCount %></p>
   </div>
-  </form>
 
 <% } %>
 <% if (typeof postCount !== "undefined") { %>
