@@ -348,95 +348,11 @@ body.nav-open {
   text-decoration: underline;
 }
 
-/* Sidebar */
-    .sidebar {
-      background: #fff;
-      border-right: 1px solid #ddd;
-      overflow-y: auto;
-    }
-    .sidebar h2 {
-      background: #075E54;
-      color: white;
-      padding: 15px;
-      margin: 0;
-    }
-    .user-item {
-      padding: 15px;
-      border-bottom: 1px solid #eee;
-    }
-    .user-item a {
-      text-decoration: none;
-      color: #333;
-      font-weight: bold;
-    }
-    .user-item.active {
-      background: #f0f0f0;
-    }
-
-    /* Chat area */
-    .chat-area {
-      display: flex;
-      flex-direction: column;
-      background: #ece5dd;
-    }
-
-    .messages {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-    }
-
-    .bubble {
-      max-width: 60%;
-      padding: 10px 15px;
-      border-radius: 15px;
-      margin-bottom: 10px;
-      display: inline-block;
-      line-height: 1.4;
-      position: relative;
-    }
-
-    .me {
-      background: #d9fdd3;
-      align-self: flex-end;
-      border-bottom-right-radius: 0;
-    }
-
-    .them {
-      background: #fff;
-      border-bottom-left-radius: 0;
-    }
-
-    .send-box {
-      display: flex;
-      padding: 15px;
-      background: white;
-      border-top: 1px solid #ccc;
-    }
-
-    .send-box textarea {
-      flex: 1;
-      border-radius: 10px;
-      padding: 10px;
-      resize: none;
-    }
-
-    .send-box button {
-      background: #25D366;
-      border: none;
-      color: white;
-      padding: 10px 20px;
-      margin-left: 10px;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-
-    .delete-btn {
-      font-size: 12px;
-      margin-top: 3px;
-      color: red;
-    }
-
-
-
-
+.sidebar {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-right: 8px solid #ddd;
+  padding-right: 16px;
+  
+}
