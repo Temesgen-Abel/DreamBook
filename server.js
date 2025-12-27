@@ -1122,7 +1122,7 @@ function calculateDreamProbability(timing, memory, health, emotion) {
   return { totalScore, category };
 }
 
-app.get("/dream-realness", (req, res) => {
+app.get("/dream-realness", mustBeLoggedIn, (req, res) => {
   res.render("dream-realness", {
     title: "Dream Analyzer | DreamBook",
     description: "Analyze your dream and discover its meaning using DreamBook.",
