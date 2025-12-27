@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('includes/head') %>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+<%- include('includes/header') %>
+
+<div class="contacts-page">
+
+  <h2>Contacts</h2>
+
+  <div class="contacts-list">
+    <% users.forEach(u => { %>
+      <div class="contact-item">
+        <a href="/chat/<%= u.id %>">
+          <span class="avatar">
+            <%= u.username.charAt(0).toUpperCase() %>
+          </span>
+          <span class="name"><%= u.username %></span>
+        </a>
+      </div>
+    <% }) %>
+  </div>
+
+</div>
+
+<%- include('includes/footer', { user }) %>
+</body>
+</html>
