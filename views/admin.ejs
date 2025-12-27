@@ -37,7 +37,7 @@
     <p><%= commentCount %></p>
   </div>
 <% } %>
-<% if (activeUsers !== undefined) { %>
+<% if (typeof activeUsers !== "undefined") { %>
   <div class="admin-stat">
     <h4>Active Users (Last 24 hrs)</h4>
     <p><%= activeUsers %></p>
