@@ -294,8 +294,8 @@ app.set("io", io);
 // ===================================================================
 // 6. ROUTES (FIXED)
 // ===================================================================
-app.get("/admin", mustBeLoggedIn, adminOnly, (req, res) => {
-  res.render("admin");
+app.get("/admin", mustBeLoggedIn, mustBeAdmin, (req, res) => {
+  res.render("admin.ejs", { visitCount: res.locals.visitCount });
 });
 
 // 6.0 Home Route
