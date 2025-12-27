@@ -2,7 +2,7 @@
 <html lang="en">
 <%- include('includes/head') %>
 <body>
-<%- include('includes/header', { user, notifications: notifications || [] }) %>
+<%- include('includes/header') %>
 <main>
     <form action="/admin-login" method="POST">
         <% if (errors && errors.length) { %>
