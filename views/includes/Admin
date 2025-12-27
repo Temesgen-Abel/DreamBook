@@ -1,8 +1,0 @@
-
-
-<% if (visitCount !== undefined) { %>
-  <div class="admin-stat">
-    <h4>Total Website Visits</h4>
-    <p><%= visitCount %></p>
-  </div>
-<% } %>
