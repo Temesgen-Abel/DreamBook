@@ -31,19 +31,9 @@
         <a role="menuitem" href="/inbox">Inbox</a>
         <a role="menuitem" href="/notifications">Notifications</a>
         <a role="menuitem" href="/admin">Admin Panel</a>
+      
 
-        <% if (typeof hideSearch === "undefined" || !hideSearch) { %>
-          <form class="search-form" role="search">
-            <input
-              id="searchInput"
-              type="search"
-              placeholder="Search dreams..."
-              autocomplete="off"
-              aria-label="Search dreams"
-            />
-          </form>
-        <% } %>
-
+ 
         <!-- ACCOUNT DROPDOWN -->
         <div class="dropdown">
           <button

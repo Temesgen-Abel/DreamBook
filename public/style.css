@@ -297,3 +297,14 @@ body.nav-open {
   padding: 10px 20px;
   font-size: 16px;
  }
+
+ .online-users-list {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  list-style: none;
+  color: #09b051;
+}
+
+

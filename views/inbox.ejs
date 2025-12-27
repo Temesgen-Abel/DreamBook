@@ -15,7 +15,11 @@
         <h2>Inbox</h2>
 
         <h3>Online Users</h3>
-        <ul id="online-users-list" class="user-list"></ul>
+        // Display online users here with green dot
+        
+        <ul id="online-users-list" class="online-users-list">
+            <!-- Filled by Socket.IO -->
+        </ul>
 
         <h3>All Users</h3>
         <% users.forEach(u => { %>
@@ -60,7 +64,7 @@
             </select>
 
             <textarea name="message" rows="2" placeholder="Type a message..." required></textarea>
-            <button type="submit">Send</button>
+            <button class="btn">Send</button>
         </form>
 
     </div>
