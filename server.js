@@ -137,12 +137,19 @@ function sanitizeBody(text) {
   });
 }
 
-const JWT_SECRET = process.env.JWTSECRET || crypto.randomBytes(32).toString("hex");
+const JWT_SECRET = process.env.JWTSECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWTSECRET missing in environment variables");
+}
 
 function signToken(user) {
   return jwt.sign(
-    { userid: user.id, username: user.username, exp: Math.floor(Date.now() / 1000) + 86400 },
-    JWT_SECRET
+    {
+      userid: user.id,
+      role: user.role
+    },
+    JWT_SECRET,
+    { expiresIn: "24h" }
   );
 }
 
@@ -150,27 +157,47 @@ function newResetToken() {
   return crypto.randomBytes(20).toString("hex");
 }
 
+
+/* ===== FIX: ROLE-BASED ADMIN CHECK ===== */
 function adminOnly(req, res, next) {
-  if (!req.admin) {
-    return res.status(403).send("Access denied");
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).render("403", {
+      message: "Admin access required."
+    });
   }
   next();
 }
 
 // ===================================================================
 // 4. MIDDLEWARE
-// ===================================================================
 
-// auth middleware for normal users
 async function authMiddleware(req, res, next) {
-  try {
-    const token = req.cookies?.DreamBookApp;
-    const data = token ? jwt.verify(token, JWT_SECRET) : null;
-    req.user = data ? await dbGet("SELECT id, username, role FROM users WHERE id=$1", [data.userid]) : null;
-  } catch {
-    req.user = null;
+  const token = req.cookies?.DreamBookApp;
+  req.user = null;
+
+  if (!token) {
+    res.locals.user = null;
+    return next();
   }
-  res.locals.user = req.user || {};
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const user = await dbGet(
+      "SELECT id, username, role FROM users WHERE id=$1",
+      [decoded.userid]
+    );
+
+    if (user) {
+      req.user = user;
+      res.locals.user = user;
+    } else {
+      res.locals.user = null;
+    }
+  } catch {
+    res.locals.user = null;
+  }
+
   next();
 }
 
@@ -181,15 +208,15 @@ function mustBeLoggedIn(req, res, next) {
 
 function mustBeAdmin(req, res, next) {
   if (!req.user) return res.redirect("/login");
-
   if (req.user.role !== "admin") {
     return res.status(403).render("403", {
       message: "Admin access required."
     });
   }
-
   next();
 }
+
+//unread middleware
 
 async function unreadMiddleware(req, res, next) {
   if (!req.user) {
@@ -222,48 +249,22 @@ async function unreadMiddleware(req, res, next) {
   next();
 }
 
-// admin auth middleware for dashboard
-function adminAuth(req, res, next) {
-  const token = req.cookies?.DreamBookApp;
 
-  if (!token) {
-    req.admin = null;
-    return next();
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    if (decoded.username === process.env.ADMIN_USERNAME) {
-      req.admin = decoded; // attach admin info to request
-    } else {
-      req.admin = null;
-    }
-  } catch {
-    req.admin = null;
-  }
-
-  next();
-}
-
-// ===================================================================
-// 4.1 Visitor Counter (memory-based, cleaned)
+// 4.1 VISITOR COUNTER (FIXED & SAFE)
 // ===================================================================
 let visitCount = 0;
 
-// Increment every request
 app.use((req, res, next) => {
   visitCount++;
   next();
 });
 
-// Only expose visit count to admin for EJS
 app.use((req, res, next) => {
-  if (req.admin) {
-    res.locals.visitCount = visitCount;
-  }
+  res.locals.visitCount =
+    req.user?.role === "admin" ? visitCount : null;
   next();
 });
+
 
 // ===================================================================
 // 5. EXPRESS + SOCKET.IO SETUP
@@ -276,17 +277,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static("public"));
 app.use(cookieParser());
 app.set("trust proxy", 1);
-app.use(adminAuth);
 
-// Request logger
+/* ===== FIX: AUTH FIRST ===== */
+app.use(authMiddleware);
+app.use(unreadMiddleware);
+
 app.use((req, _, next) => {
   console.log(`[REQ] ${req.method} ${req.path}`);
-  next();
-});
-
-app.use((req, res, next) => {
-  res.locals.user = null;
-  res.locals.notifications = [];
   next();
 });
 
@@ -295,10 +292,10 @@ const io = require("socket.io")(server, { cors: { origin: "*" } });
 app.set("io", io);
 
 // ===================================================================
-// 6. ROUTES
+// 6. ROUTES (FIXED)
 // ===================================================================
-app.get("/admin", adminOnly, (req, res) => {
-  res.render("admin"); // your EJS admin page
+app.get("/admin", mustBeLoggedIn, adminOnly, (req, res) => {
+  res.render("admin");
 });
 
 // 6.0 Home Route
