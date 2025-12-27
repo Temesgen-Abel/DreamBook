@@ -294,8 +294,18 @@ app.set("io", io);
 // ===================================================================
 // 6. ROUTES (FIXED)
 // ===================================================================
-app.get("/admin", mustBeLoggedIn, mustBeAdmin, (req, res) => {
-  res.render("admin", { visitCount: res.locals.visitCount });
+app.get("/admin", mustBeLoggedIn, adminOnly, async (req, res) => {
+  try {
+    // Count total users
+    const countResult = await dbGet("SELECT COUNT(*)::int AS userCount FROM users");
+    const userCount = countResult?.userCount || 0;
+
+    // Render admin page with the variable
+    res.render("admin", { userCount });
+  } catch (err) {
+    console.error("Error fetching user count:", err);
+    res.render("admin", { userCount: 0 });
+  }
 });
 
 // 6.0 Home Route
