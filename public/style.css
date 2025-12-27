@@ -297,14 +297,20 @@ body.nav-open {
   padding: 10px 20px;
   font-size: 16px;
  }
-
- .online-users-list {
+.online-users-list {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 8px;
   list-style: none;
-  background-color: #09b051;
 }
+
+.online-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #09b051;
+  border-radius: 50%;
+}
+
 
 
