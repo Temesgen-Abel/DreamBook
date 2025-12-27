@@ -312,5 +312,49 @@ body.nav-open {
   border-radius: 50%;
 }
 
+/* Sidebar base */
+.sidebar {
+  width: 260px;
+  padding: 15px;
+  background: #f9f9f9;
+  border-right: 1px solid #ddd;
+}
+
+/* Online users list */
+#online-users-list {
+  padding: 0;
+  margin: 10px 0 20px 0;
+}
+
+/* Each online user item */
+#online-users-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+/* Green dot */
+#online-users-list li::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background-color: #09b051; /* green */
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Username link */
+#online-users-list li a {
+  text-decoration: none;
+  color: #333;
+}
+
+#online-users-list li a:hover {
+  text-decoration: underline;
+}
+
 
 
