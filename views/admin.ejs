@@ -95,7 +95,7 @@
     </ul>
   </div>
 <% } %>
-<% if (latestComments && latestComments.length) { %>
+<% if (typeof latestComments !== "undefined" && latestComments.length) { %>
   <div class="admin-stat">
     <h4>Latest Comments Made</h4>
     <ul>
