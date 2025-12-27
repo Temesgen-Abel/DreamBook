@@ -31,7 +31,7 @@
     <p><%= postCount %></p>
   </div>
 <% } %>
-<% if (commentCount !== undefined) { %>
+<% if (typeof commentCount !== "undefined") { %>
   <div class="admin-stat">
     <h4>Total Comments Made</h4>
     <p><%= commentCount %></p>
@@ -43,38 +43,38 @@
     <p><%= activeUsers %></p>
   </div>
 <% } %>
-<% if (postsLastWeek !== undefined) { %>
+<% if (typeof postsLastWeek !== "undefined") { %>
   <div class="admin-stat">
     <h4>Dreams Posted (Last 7 days)</h4>
     <p><%= postsLastWeek %></p>
   </div>
 <% } %>
-<% if (commentsLastWeek !== undefined) { %>
+<% if (typeof commentsLastWeek !== "undefined") { %>
   <div class="admin-stat">
     <h4>Comments Made (Last 7 days)</h4>
     <p><%= commentsLastWeek %></p>
   </div>
 <% } %>
-<% if (mostActiveUser !== undefined) { %>
+<% if (typeof mostActiveUser !== "undefined") { %>
   <div class="admin-stat">
     <h4>Most Active User (Last 7 days)</h4>
     <p><%= mostActiveUser.username %> (<%= mostActiveUser.activityCount %> actions)</p>
   </div>
 <% } %>
-<% if (mostPostedDreamsUser !== undefined) { %>
+<% if (typeof mostPostedDreamsUser !== "undefined") { %>
   <div class="admin-stat">
     <h4>User with Most Dreams Posted</h4>
     <p><%= mostPostedDreamsUser.username %> (<%= mostPostedDreamsUser.postCount %> dreams)</p>
   </div>
 <% } %>
-<% if (mostCommentedUser !== undefined) { %>
+<% if (typeof mostCommentedUser !== "undefined") { %>
   <div class="admin-stat">
     <h4>User with Most Comments Made</h4>
     <p><%= mostCommentedUser.username %> (<%= mostCommentedUser.commentCount %> comments)</p>
   </div>
 
 <% } %>
-<% if (latestUsers && latestUsers.length) { %>
+<% if (typeof latestUsers !== "undefined" && latestUsers.length) { %>
   <div class="admin-stat">
     <h4>Latest Registered Users</h4>
     <ul>
@@ -84,7 +84,7 @@
     </ul>
   </div>
 <% } %>
-<% if (latestPosts && latestPosts.length) { %>
+<% if (typeof latestPosts !== "undefined" && latestPosts.length) { %>
   <div class="admin-stat">
     <h4>Latest Dreams Posted</h4>
     <ul>
