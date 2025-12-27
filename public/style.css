@@ -354,5 +354,7 @@ body.nav-open {
   margin: 0;
   border-right: 8px solid #ddd;
   padding-right: 16px;
-  
+}
+.user-item {
+  margin-bottom: 12px;
 }
