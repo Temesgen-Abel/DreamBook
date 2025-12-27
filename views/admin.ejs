@@ -25,7 +25,7 @@
   </form>
 
 <% } %>
-<% if (postCount !== undefined) { %>
+<% if (typeof postCount !== "undefined") { %>
   <div class="admin-stat">
     <h4>Total Dreams Posted</h4>
     <p><%= postCount %></p>
