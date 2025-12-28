@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <%- include('includes/head') %>
-    <link rel="stylesheet" href="/style.css">
+  <%- include('includes/head') %>
+  <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
@@ -10,67 +10,77 @@
 
 <div class="chat-layout">
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <h2>Inbox</h2>
-        <h3>Online Users</h3>
-        <ul id="online-users-list">
-        </ul>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h2>Inbox</h2>
+    <h3>Online Users</h3>
+    <ul id="online-users-list"></ul>
+  </div>
+  <!-- END SIDEBAR -->
 
-    <!-- MAIN CHAT AREA -->
-    <div class="chat-area">
+  <!-- MAIN CHAT AREA -->
+  <div class="chat-area">
 
-        <h2>Conversations</h2>
-        <ul id="inbox-list" class="conversation-list">
-            <% (conversations || []).forEach(c => { %>
-                <li class="bubble them">
-                    <a href="/chat/<%= c.id %>">
-                        <strong><%= c.username %></strong><br>
-                        <%= c.lastMessage || "No messages yet" %>
-                    </a>
-                </li>
-            <% }) %>
-        </ul>
+    <h2>Conversations</h2>
+    <ul id="inbox-list" class="conversation-list">
+      <% (conversations || []).forEach(c => { %>
+        <li class="bubble them" data-user-id="<%= c.id %>">
+          <a href="/chat/<%= c.id %>">
+            <strong><%= c.username %></strong>
+            <span class="unread-badge" style="display:none;">0</span><br>
+            <span class="last-message">
+              <%= c.lastMessage || "No messages yet" %>
+            </span>
+          </a>
+        </li>
+      <% }) %>
+    </ul>
 
-        <h2>Notifications</h2>
-        <div id="notifications-wrapper">
-            <a href="/notifications">
-                Notifications <span id="notif-badge"><%= unreadCount %></span>
-            </a>
-            <ul id="notifications-list"></ul>
-        </div>
+    <!-- SEND MESSAGE -->
+    <form class="send-box" action="/inbox" method="POST">
+      <select name="receiverId" required>
+        <option value="">Select user</option>
+        <% users.forEach(u => { %>
+          <option value="<%= u.id %>"><%= u.username %></option>
+        <% }) %>
+      </select>
 
-        <hr>
+      <textarea
+        name="message"
+        rows="2"
+        placeholder="Type a message..."
+        required></textarea>
 
-        <!-- SEND MESSAGE -->
-        <form class="send-box" action="/inbox" method="POST">
-            <select name="receiverId" required>
-                <option value="">Select user</option>
-                <% users.forEach(u => { %>
-                    <option value="<%= u.id %>"><%= u.username %></option>
-                <% }) %>
-            </select>
+      <button class="btn">Send</button>
+    </form>
 
-            <textarea name="message" rows="2" placeholder="Type a message..." required></textarea>
-            <button class="btn">Send</button>
-        </form>
+  </div>
+  <!-- END CHAT AREA -->
 
-    </div>
 </div>
 
-<!-- Socket.IO client -->
+<!-- Sound -->
+<audio id="notif-sound" src="/sounds/message.mp3" preload="auto"></audio>
+
+<!-- Socket.IO -->
 <script src="/socket.io/socket.io.js"></script>
+
 <script>
 (function () {
   const currentUserId = <%= JSON.stringify(user.id) %>;
-  const allUsers      = <%- JSON.stringify(users) %>;
+  const allUsers = <%- JSON.stringify(users) %>;
   const socket = io();
 
+  /* =========================
+     SOCKET JOIN
+  ========================= */
   socket.on("connect", () => {
     socket.emit("join_room", currentUserId);
   });
 
-  // Render online users
+  /* =========================
+     ONLINE USERS
+  ========================= */
   function renderOnlineUsers(list) {
     const ul = document.getElementById("online-users-list");
     ul.innerHTML = "";
@@ -79,25 +89,22 @@
       const user = allUsers.find(u => String(u.id) === String(userObj.id));
       if (!user) return;
 
-      // Convert ISO string to Date
       const d = new Date(userObj.lastSeen);
-      const now = new Date();
-      const diffMs = now - d;
-      const diffMinutes = diffMs / 1000 / 60;
+      const diffMinutes = (Date.now() - d) / 60000;
 
-      let displayText;
-      if (diffMinutes <= 5) {
-        displayText = "Active now";
-      } else {
-        const hh = d.getHours().toString().padStart(2, "0");
-        const mm = d.getMinutes().toString().padStart(2, "0");
-        displayText = `${hh}:${mm}`;
-      }
+      const displayText =
+        diffMinutes <= 5
+          ? "Active now"
+          : `${d.getHours().toString().padStart(2, "0")}:${d
+              .getMinutes()
+              .toString()
+              .padStart(2, "0")}`;
 
       ul.innerHTML += `
         <li class="user-item">
           <a href="/chat/${user.id}">
-            <span class="online-dot"></span> ${user.username}
+            <span class="online-dot"></span>
+            ${user.username}
             <small>: ${displayText}</small>
           </a>
         </li>
@@ -107,28 +114,79 @@
 
   socket.on("online_users", renderOnlineUsers);
 
-  // Notifications
-  function incBadge() {
-    const badge = document.getElementById("notif-badge");
-    badge.textContent = Number(badge.textContent) + 1;
-  }
-
-  function prependNotification(data) {
-    const ul = document.getElementById("notifications-list");
-    ul.innerHTML = `
-      <li class="bubble them">
-        <strong>${data.fromName}</strong> — ${data.preview}
-      </li>
-    ` + ul.innerHTML;
-  }
-
+  /* =========================
+     NOTIFICATIONS → INBOX
+  ========================= */
   socket.on("notification", data => {
-    incBadge();
-    prependNotification(data);
+    if (Number(data.fromId) === Number(currentUserId)) return;
+    updateInboxConversation(data);
+    playSound();
+    vibrate();
+    pushNotify(data);
   });
+
+  function updateInboxConversation(data) {
+    const ul = document.getElementById("inbox-list");
+    let li = ul.querySelector(`[data-user-id="${data.fromId}"]`);
+
+    if (li) {
+      const badge = li.querySelector(".unread-badge");
+      const count = Number(badge.textContent) + 1;
+
+      badge.textContent = count;
+      badge.style.display = "inline-block";
+
+      li.querySelector(".last-message").textContent = data.preview;
+      ul.prepend(li);
+    } else {
+      const newLi = document.createElement("li");
+      newLi.className = "bubble them";
+      newLi.dataset.userId = data.fromId;
+      newLi.innerHTML = `
+        <a href="/chat/${data.fromId}">
+          <strong>${data.fromName}</strong>
+          <span class="unread-badge">1</span><br>
+          <span class="last-message">${data.preview}</span>
+        </a>
+      `;
+      ul.prepend(newLi);
+    }
+  }
+
+  /* =========================
+     SOUND
+  ========================= */
+  function playSound() {
+    document.getElementById("notif-sound")?.play().catch(() => {});
+  }
+
+  /* =========================
+     VIBRATION
+  ========================= */
+  function vibrate() {
+    if (navigator.vibrate) {
+      navigator.vibrate([200, 100, 200]);
+    }
+  }
+
+  /* =========================
+     PUSH NOTIFICATIONS
+  ========================= */
+  if ("Notification" in window && Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
+
+  function pushNotify(data) {
+    if (Notification.permission === "granted") {
+      new Notification(`New message from ${data.fromName}`, {
+        body: data.preview,
+        icon: "/logo.png"
+      });
+    }
+  }
+
 })();
 </script>
-
 
 </body>
 <%- include('includes/footer', { user }) %>

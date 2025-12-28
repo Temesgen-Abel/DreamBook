@@ -157,7 +157,6 @@ function newResetToken() {
   return crypto.randomBytes(20).toString("hex");
 }
 
-
 /* ===== FIX: ROLE-BASED ADMIN CHECK ===== */
 function adminOnly(req, res, next) {
   if (!req.user || req.user.role !== "admin") {
@@ -489,13 +488,6 @@ app.get("/password-reset/confirm", (req, res) => {
   res.render("password-reset-confirm");
 });
 
-
-// 6.6. MAIN APP ROUTES
-// ===================================================================
-app.use(authMiddleware);
-app.use(unreadMiddleware);
-
-
 // 6.7. Dashboard -------------------
 app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
   try {
@@ -774,8 +766,7 @@ app.post("/post/:id/reactions", mustBeLoggedIn, async (req, res) => {
 
 // ===================================================================
 // 6.14. MESSAGES (inbox)
-//      USER INBOX PAGE
-// ============================
+
 app.get("/inbox", mustBeLoggedIn, async (req, res) => {
     const me = req.user.id;
 
@@ -908,6 +899,25 @@ app.post("/chat/:id/send", mustBeLoggedIn, async (req, res) => {
 
     res.redirect(`/chat/${receiverId}`);
 });
+
+app.post("/chat/:id/read", mustBeLoggedIn, async (req, res) => {
+  const me = req.user.id;
+  const otherId = Number(req.params.id);
+
+  await dbRun(
+    `UPDATE messages
+     SET is_read=true
+     WHERE senderid=$1 AND receiverid=$2 AND is_read=false`,
+    [otherId, me]
+  );
+
+  // notify sender that messages were read
+  const io = req.app.get("io");
+  io.to(`user_${otherId}`).emit("messages_read", { by: me });
+
+  res.sendStatus(200);
+});
+
 
 // ============================
 // 6.17. ADMIN CHAT PANEL

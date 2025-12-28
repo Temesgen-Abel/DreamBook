@@ -89,6 +89,7 @@ button:active { transform: scale(0.97); }
   margin-inline: auto;
   padding: var(--space-3);
   background-color: #fdfffd;
+  border-radius: 85px;
 }
 
 .page-wrapper {
@@ -460,3 +461,8 @@ body.nav-open {
       color: red;
     }
 
+.unread-badge {
+  color: #25d366;
+  font-size: 12px;
+  margin-left: 6px;
+}

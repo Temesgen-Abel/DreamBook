@@ -11,6 +11,9 @@
 
 <%- include('includes/header') %>
 
+fetch(`/chat/<%= otherUser.id %>/read`, { method: "POST" });
+
+
 <div class="chat-layout" style="grid-template-columns: 1fr;"> 
 
   <!-- CHAT AREA (same style as admin) -->
