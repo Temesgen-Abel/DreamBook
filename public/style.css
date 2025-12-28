@@ -76,10 +76,12 @@ button:active { transform: scale(0.97); }
    LAYOUT SYSTEM (UNCHANGED)
 ========================================================= */
 .wrapper {
+  background-color: #075E54;
   width: 100%;
   max-width: 1100px;
   margin-inline: auto;
   padding: var(--space-3);
+  
 }
 
 .page-wrapper {
