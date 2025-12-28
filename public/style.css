@@ -1,476 +1,203 @@
-/* =========================================================
-   DESIGN TOKENS (SOCIAL APP THEME)
-========================================================= */
-:root {
-  --primary: #1877f2;
-  --secondary: #25d366;
-  --accent: #ffb703;
-
-  --cta-bg: linear-gradient(135deg, #1877f2, #25d366);
-  --cta-color: #ffffff;
-
-  --text-main: #1c1e21;
-  --text-muted: #65676b;
-
-  --bg-page: #f0f2f5;
-  --bg-card: #ffffff;
-  --nav-bg: rgba(255,255,255,0.9);
-
-  --border-soft: #e4e6eb;
-
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-pill: 999px;
-
-  --shadow-sm: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 12px 30px rgba(0,0,0,0.16);
-
-  --space-1: 6px;
-  --space-2: 12px;
-  --space-3: 16px;
-  --space-4: 24px;
-
-  /* ✅ FIX: define nav height */
-  --nav-height: 72px;
-}
-
-/* home logo */
-.home-logo {
-  width: 120px;
-  height: auto;
-  margin-bottom: 20px;
-  background-color: transparent;
-}
-
-/* =========================================================
-   RESET & BASE
-========================================================= */
-*,
-*::before,
-*::after { box-sizing: border-box; }
-
-html { font-size: 12px; }
-
-body {
-  margin: 0;
-  font-family: "Inter", system-ui, sans-serif;
-  background: var(--bg-page);
-  color: var(--text-main);
-  line-height: 1.6;
-  overflow-x: hidden;
-  padding-top: var(--nav-height);
-  position: relative;
-}
-
-img, video { max-width: 100%; height: auto; }
-
-a {
-  color: var(--primary);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-button {
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-button:active { transform: scale(0.97); }
-
-/* =========================================================
-   LAYOUT SYSTEM (UNCHANGED)
-========================================================= */
-.wrapper {
-  width: 100%;
-  max-width: 100px
-  margin-inline: auto;
-  padding: var(--space-3);
-  background-color: #fdfffd;
-  border-radius: 85px;
-}
-
-.page-wrapper {
-  display: grid;
-  gap: var(--space-3);
-  background-color: hsl(271, 75%, 68%);
-  grid-template-columns: minmax(0, 1fr);
-
-}
-
-@media (min-width: 1100px) {
-  .page-wrapper {
-    grid-template-columns: 280px minmax(0, 1fr) 280px;
-  }
-}
-
-/* =========================================================
-   NAVBAR
-========================================================= */
-.db-nav {
-  position: sticky;
-  top: 0;
-  z-index: 1300;
-}
-
-.db-nav-inner {
-  /* ✅ FIX: match wrapper width */
-  max-width: 1100px;
-  margin-inline: auto;
-
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-
-  background: var(--nav-bg);
-  backdrop-filter: blur(12px);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.db-brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.DreamBook-logo {
-  width: 50px;
-  height: auto;
-  background-color: #d9fdd3;
-  padding-top: 0%;
-}
-.div{
-  color: #030109;
-  font-size: 18px;
-  margin-top: 10px;
-  text-align: justify;
-  margin-left: 30px;
-}
-
-.db-title {
-  font-weight: 800;
-  color: var(--primary);
-}
-
-/* Hamburger */
-.db-hamburger {
-  margin-left: auto;
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-content: center;
-}
-
-.db-hamburger .bar {
-  width: 22px;
-  height: 2px;
-  background: var(--text-main);
-  margin: 3px 0;
-}
-
-/* =========================================================
-   MOBILE NAV (UNCHANGED STRUCTURE)
-========================================================= */
-.nav-links {
-  position: absolute;
-  top: var(--nav-height);
-  left: 0;
-  right: 0;
-  height: calc(100vh - var(--nav-height));
-  background: #fff;
-
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-
-  padding: var(--space-3);
-  overflow-y: auto;
-
-  transform: translateY(-100%);
-  opacity: 0;
-  pointer-events: none;
-  transition: transform .25s ease, opacity .25s ease;
-
-  z-index: 1200;
-}
-
-.nav-links.active {
-  transform: translateY(0);
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Desktop nav */
-@media (min-width: 900px) {
-  .db-hamburger { display: none; }
-
-  .nav-links {
-    position: static;
-    flex-direction: row;
-    background: none;
-    padding: 0;
-    opacity: 1;
-    pointer-events: auto;
-    transform: none;
-    margin-left: auto;
-    height: auto;
-  }
-}
-
-/* =========================================================
-   ACCOUNT DROPDOWN (FIXED)
-========================================================= */
-.dropdown {
-  /* ✅ FIX: anchor dropdown properly */
-  position: relative;
-  display: inline-block;
-}
-
-/* Desktop dropdown */
-@media (min-width: 900px) {
-  .dropdown-content {
-    position: absolute;
-    top: calc(100% + 8px);
-
-    /* ✅ FIX: open on RIGHT */
-    left: 0;
-    right: auto;
-
-    min-width: 200px;
-    background: var(--bg-card);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
-    padding: 6px 0;
-
-    display: none;
-    z-index: 3000;
-
-    /* ✅ FIX: show all items */
-    max-height: none;
-    overflow: visible;
-  }
-
-  .dropdown-content a {
-    padding: 10px 16px;
-    display: block;
-    white-space: nowrap;
-  }
-
-  .dropdown-content.active {
-    display: block;
-  }
-}
-
-/* Mobile dropdown */
-@media (max-width: 899px) {
-  .dropdown-content {
-    /* ✅ FIX: flow inside nav (no overlap) */
-    position: static;
-    display: none;
-    background: transparent;
-    box-shadow: none;
-    padding: 0;
-    margin-top: 6px;
-  }
-
-  .dropdown-content.active {
-    display: block;
-  }
-}
-
-/* =========================================================
-   CARDS
-========================================================= */
-.post-card,
-.comment,
-.dictionary-item {
-  background: var(--bg-card);
-  padding: var(--space-3);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow-sm);
-}
-
-/* =========================================================
-   UTILITIES
-========================================================= */
-.hidden { display: none; }
-.text-muted { color: var(--text-muted); }
-
-footer {
-  text-align: center;
-  padding: var(--space-3);
-  color: var(--text-muted);
-}
-
-/* =========================================================
-   MOBILE NAV OPEN STATE
-========================================================= */
-body.nav-open {
-  overflow: hidden;
-}
- .btn {  background-color: lightgrey;
-  border-radius: 75px;
-  color: green;
-  padding: 10px 20px;
-  font-size: 16px;
- }
-.online-users-list {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-  list-style: none;
-}
-
-.online-dot {
-  width: 8px;
-  height: 8px;
-  background-color: #09b051;
-  border-radius: 50%;
-}
-
-/* Online users list */
-#online-users-list {
-  padding: 0;
-  margin: 10px 0 20px 0;
-}
-
-/* Each online user item */
-#online-users-list li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  list-style: none;
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-
-/* Green dot */
-#online-users-list li::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  background-color: #09b051; /* green */
-  border-radius: 50%;
-  display: inline-block;
-}
-
-/* Username link */
-#online-users-list li a {
-  text-decoration: none;
-  color: #333;
-}
-
-#online-users-list li a:hover {
-  text-decoration: underline;
-}
-
-.sidebar {
-      background: #fff;
-      border-right: 1px solid #ddd;
-      overflow-y: auto;
-      height: 50%;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DreamBook - Connect Instantly</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    /* ==========================
+       LANDING PAGE SPECIFIC
+    ========================== */
+    .hero {
       display: flex;
       flex-direction: column;
-    }
-    .sidebar h2 {
-      background: #075E54;
-      color: white;
-      padding: 15px;
-      margin: 0;
-    }
-    .user-item {
-      padding: 15px;
-      border-bottom: 1px solid #eee;
-    }
-    .user-item a {
-      text-decoration: none;
-      color: #333;
-      font-weight: bold;
-    }
-    .user-item.active {
-      background: #f0f0f0;
-    }
-
-    /* Chat area */
-    .chat-area {
-      display: flex;
-      flex-direction: column;
-      background: #ece5dd;
-    }
-
-    .messages {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-    }
-
-    .bubble {
-      max-width: 60%;
-      padding: 10px 15px;
-      border-radius: 15px;
-      margin-bottom: 10px;
-      display: inline-block;
-      line-height: 1.4;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 20px;
+      background: linear-gradient(135deg, #1877f2, #25d366);
+      color: #fff;
       position: relative;
+      overflow: hidden;
     }
 
-    .me {
-      background: #d9fdd3;
-      align-self: flex-end;
-      border-bottom-right-radius: 0;
+    .hero h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
     }
 
-    .them {
-      background: #fff;
-      border-bottom-left-radius: 0;
+    .hero p {
+      font-size: 1.25rem;
+      max-width: 600px;
+      margin-bottom: 30px;
     }
 
-    .send-box {
+    .hero .cta-btn {
+      padding: 15px 35px;
+      font-size: 18px;
+      border-radius: var(--radius-pill);
+      background: var(--cta-bg);
+      color: var(--cta-color);
+      font-weight: 700;
+      box-shadow: var(--shadow-lg);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .hero .cta-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg), 0 8px 20px rgba(0,0,0,0.2);
+    }
+
+    /* UNIQUE FEATURE: Online Users Pulse Animation */
+    .online-pulse-container {
       display: flex;
-      padding: 15px;
-      background: white;
-      border-top: 1px solid #ccc;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 40px;
+      flex-wrap: wrap;
     }
 
-    .send-box textarea {
-      flex: 1;
-      border-radius: 10px;
-      padding: 10px;
-      resize: none;
+    .online-user {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background-color: #fff;
+      opacity: 0.7;
+      animation: pulse 2s infinite;
     }
 
-    .send-box button {
-      background: #25D366;
-      border: none;
-      color: white;
-      padding: 10px 20px;
-      margin-left: 10px;
-      border-radius: 10px;
-      cursor: pointer;
+    .online-user:nth-child(2) { animation-delay: 0.2s; }
+    .online-user:nth-child(3) { animation-delay: 0.4s; }
+    .online-user:nth-child(4) { animation-delay: 0.6s; }
+    .online-user:nth-child(5) { animation-delay: 0.8s; }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(0.8); opacity: 0.6; }
+      50% { transform: scale(1.2); opacity: 1; }
     }
 
-    .delete-btn {
-      font-size: 12px;
-      margin-top: 3px;
-      color: red;
+    .features {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 40px;
+      max-width: 1000px;
+      margin: 60px auto;
+      padding: 0 20px;
     }
 
-.unread-badge {
-  background: #25d366;
-  color: #fff;
-  border-radius: 12px;
-  padding: 2px 6px;
-  font-size: 11px;
-  margin-left: 6px;
-}
+    @media(min-width: 768px) {
+      .features {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
 
-.receipt {
-  font-size: 11px;
-  opacity: 0.7;
-}
+    .feature-card {
+      background: #fff;
+      padding: 30px 20px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-lg), 0 12px 30px rgba(0,0,0,0.2);
+    }
+
+    .feature-card h3 {
+      margin-bottom: 15px;
+      color: var(--primary);
+    }
+
+    .feature-card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    footer {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      background: var(--bg-card);
+      margin-top: 80px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="db-nav">
+    <div class="db-nav-inner">
+      <div class="db-brand">
+        <img src="/logo.png" alt="DreamBook Logo" class="DreamBook-logo">
+        <span class="db-title">DreamBook</span>
+      </div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#cta">Get Started</a>
+        <a href="#footer">Contact</a>
+      </div>
+      <div class="db-hamburger">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1>Connect Instantly, Anywhere</h1>
+    <p>DreamBook brings friends, family, and communities together. Chat, share, and stay connected in a secure and beautiful environment.</p>
+    <a href="#cta" class="cta-btn">Join Now</a>
+
+    <!-- Unique Feature: Live Online Users Pulse -->
+    <div class="online-pulse-container">
+      <div class="online-user"></div>
+      <div class="online-user"></div>
+      <div class="online-user"></div>
+      <div class="online-user"></div>
+      <div class="online-user"></div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <div class="feature-card">
+      <h3>Real-Time Chat</h3>
+      <p>Send and receive messages instantly with advanced inbox notifications.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Secure & Private</h3>
+      <p>End-to-end encryption ensures your conversations stay private and safe.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Active Community</h3>
+      <p>See who's online and join discussions with live activity indicators.</p>
+    </div>
+  </section>
+
+  <!-- CALL TO ACTION -->
+  <section id="cta" style="text-align:center; margin: 80px 0;">
+    <a href="/signup" class="cta-btn">Sign Up Free</a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer id="footer">
+    &copy; 2025 DreamBook. All rights reserved.
+  </footer>
+
+  <!-- MOBILE HAMBURGER TOGGLE -->
+  <script>
+    const hamburger = document.querySelector('.db-hamburger');
+    const navLinks = document.querySelector('.nav-links');
+
+    hamburger.addEventListener('click', () => {
+      navLinks.classList.toggle('active');
+      document.body.classList.toggle('nav-open');
+    });
+  </script>
+</body>
+</html>
