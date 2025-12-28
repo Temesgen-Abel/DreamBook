@@ -139,14 +139,14 @@ button:active { transform: scale(0.97); }
 .DreamBook-logo {
   width: 36px;
   height: 36px;
+  background-color: #65676b;
 }
 .div{
   color: #030109;
-  font-size: 14px;
+  font-size: 18px;
   margin-top: 10px;
   text-align: justify;
-  margin-left: 1.5px;
-  margin-right: 1.5px;
+  margin-left: 16px;
 }
 
 .db-title {
