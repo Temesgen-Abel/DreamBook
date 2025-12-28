@@ -137,16 +137,16 @@ button:active { transform: scale(0.97); }
 }
 
 .DreamBook-logo {
-  width: 36px;
+  width: 50px;
   height: 36px;
-  background-color: #65676b;
+  background-color: #d9fdd3;
 }
 .div{
   color: #030109;
   font-size: 18px;
   margin-top: 10px;
   text-align: justify;
-  margin-left: 16px;
+  margin-left: out;
 }
 
 .db-title {
