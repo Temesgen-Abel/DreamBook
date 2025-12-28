@@ -94,7 +94,7 @@ button:active { transform: scale(0.97); }
 .page-wrapper {
   display: grid;
   gap: var(--space-3);
-  background-color: #d9fdd3;
+  background-color: hsl(271, 75%, 68%);
   grid-template-columns: minmax(0, 1fr);
 
 }
