@@ -3,36 +3,28 @@
 ========================================================= */
 :root {
   --primary: #1877f2;
-  --secondary: #25d366;
+  --secondary: #42b72a;
   --accent: #ffb703;
-
-  --cta-bg: linear-gradient(135deg, #1877f2, #25d366);
-  --cta-color: #ffffff;
-
-  --text-main: #1c1e21;
-  --text-muted: #65676b;
 
   --bg-page: #f0f2f5;
   --bg-card: #ffffff;
-  --nav-bg: rgba(255,255,255,0.9);
+  --bg-header: #ffffff;
+  --text-main: #1c1e21;
+  --text-muted: #65676b;
 
-  --border-soft: #e4e6eb;
-
-  --radius-sm: 10px;
-  --radius-md: 14px;
+  --border-soft: #ddd;
+  --radius-md: 12px;
   --radius-lg: 18px;
-  --radius-pill: 999px;
-
-  --shadow-sm: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 12px 30px rgba(0,0,0,0.16);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.1);
+  --shadow-lg: 0 6px 20px rgba(0,0,0,0.15);
 
   --space-1: 6px;
   --space-2: 12px;
   --space-3: 16px;
   --space-4: 24px;
 
-  /* ✅ FIX: define nav height */
-  --nav-height: 72px;
+  --nav-height: 64px;
+  --font-family: "Inter", system-ui, sans-serif;
 }
 
 /* home logo */
@@ -54,16 +46,17 @@ html { font-size: 12px; }
 
 body {
   margin: 0;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: var(--font-family);
   background: var(--bg-page);
   color: var(--text-main);
   line-height: 1.6;
   overflow-x: hidden;
-  padding-top: var(--nav-height);
-  position: relative;
 }
 
-img, video { max-width: 100%; height: auto; }
+a { text-decoration: none; color: var(--primary); }
+button { border: none; cursor: pointer; font-family: inherit; }
+button:active { transform: scale(0.97); }
+
 
 a {
   color: var(--primary);
@@ -84,25 +77,20 @@ button:active { transform: scale(0.97); }
    LAYOUT SYSTEM (UNCHANGED)
 ========================================================= */
 .wrapper {
-  width: 100%;
-  max-width: 100px
-  margin-inline: auto;
+  max-width: 900px;
+  margin: 0 auto;
   padding: var(--space-3);
-  background-color: #fdfffd;
-  border-radius: 85px;
 }
 
 .page-wrapper {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
-  background-color: hsl(271, 75%, 68%);
-  grid-template-columns: minmax(0, 1fr);
-
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 768px) {
   .page-wrapper {
-    grid-template-columns: 280px minmax(0, 1fr) 280px;
+    flex-direction: row;
   }
 }
 
@@ -283,16 +271,165 @@ button:active { transform: scale(0.97); }
 }
 
 /* =========================================================
-   CARDS
+   POST CARD
 ========================================================= */
-.post-card,
-.comment,
-.dictionary-item {
+.post-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--border-soft);
+}
+
+.post-card h1, .post-card h2 {
+  margin-top: 0;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.post-card p {
+  color: var(--text-main);
+  margin-bottom: var(--space-2);
+}
+
+/* Reactions section */
+.reactions {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: var(--space-2);
+}
+
+/* Reaction buttons like FB */
+.post-card form button {
+  background: #e4e6eb;
+  border-radius: 20px;
+  padding: 6px 12px;
+  margin-right: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.post-card form button:hover {
+  background: #d8dadf;
+}
+
+/* =========================================================
+   CREATE-POST FORM
+========================================================= */
+.post-form {
   background: var(--bg-card);
   padding: var(--space-3);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-3);
+}
+
+.post-form fieldset {
+  border: none;
+  padding: 0;
+}
+
+.post-form textarea,
+.post-form input[type="text"] {
+  width: 100%;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  font-size: 14px;
+  resize: vertical;
+  margin-bottom: var(--space-2);
+}
+
+.post-form button {
+  background: var(--primary);
+  color: white;
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Error notices */
+.notice {
+  background: #f8d7da;
+  color: #721c24;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-2);
+}
+
+/* =========================================================
+   COMMENTS
+========================================================= */
+.comment-form,
+.comment {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.comment p {
+  margin: 4px 0;
+}
+
+.comment-form textarea {
+  width: 100%;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  resize: vertical;
+  margin-bottom: var(--space-2);
+}
+
+.comment-form button {
+  background: var(--secondary);
+  color: #fff;
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Hidden utility */
+.hidden { display: none; }
+
+/* =========================================================
+   PAGINATION
+========================================================= */
+.pagination {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+  margin: var(--space-3) 0;
+}
+
+.pagination a {
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  color: var(--text-main);
+  transition: background 0.2s;
+}
+.pagination a:hover {
+  background: var(--bg-card);
+}
+.pagination strong {
+  padding: 6px 12px;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+@media (max-width: 767px) {
+  .page-wrapper {
+    flex-direction: column;
+  }
+  .post-card, .post-form, .comment-form {
+    margin: 0 var(--space-2) var(--space-3);
+  }
 }
 
 /* =========================================================
