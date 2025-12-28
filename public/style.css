@@ -1,5 +1,5 @@
 /* =========================================================
-   DESIGN TOKENS
+   DESIGN TOKENS (SOCIAL APP THEME)
 ========================================================= */
 :root {
   --primary: #1877f2;
@@ -31,7 +31,16 @@
   --space-3: 16px;
   --space-4: 24px;
 
+  /* ✅ FIX: define nav height */
   --nav-height: 72px;
+}
+
+/* home logo */
+.home-logo {
+  width: 120px;
+  height: auto;
+  margin-bottom: 20px;
+  background-color: transparent;
 }
 
 /* =========================================================
@@ -54,6 +63,8 @@ body {
   position: relative;
 }
 
+img, video { max-width: 100%; height: auto; }
+
 a {
   color: var(--primary);
   text-decoration: none;
@@ -66,174 +77,230 @@ button {
   cursor: pointer;
   font-family: inherit;
 }
+
 button:active { transform: scale(0.97); }
 
 /* =========================================================
-   CHAT LAYOUT
+   LAYOUT SYSTEM (UNCHANGED)
 ========================================================= */
-.chat-layout {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - var(--nav-height));
+.wrapper {
+  width: 100%;
+  max-width: 100px
+  margin-inline: auto;
+  padding: var(--space-3);
+  background-color: #fdfffd;
+  border-radius: 85px;
 }
 
-@media (min-width: 900px) {
-  .chat-layout {
-    flex-direction: row;
+.page-wrapper {
+  display: grid;
+  gap: var(--space-3);
+  background-color: hsl(271, 75%, 68%);
+  grid-template-columns: minmax(0, 1fr);
+
+}
+
+@media (min-width: 1100px) {
+  .page-wrapper {
+    grid-template-columns: 280px minmax(0, 1fr) 280px;
   }
 }
 
 /* =========================================================
-   SIDEBAR
+   NAVBAR
 ========================================================= */
-.sidebar {
-  background: var(--bg-card);
-  border-right: 1px solid #ddd;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  flex: 0 0 280px;
-  min-height: 100%;
+.db-nav {
+  position: sticky;
+  top: 0;
+  z-index: 1300;
 }
 
-.sidebar h2, .sidebar h3 {
-  background: #075E54;
-  color: #fff;
-  margin: 0;
-  padding: 15px;
-  font-size: 16px;
-}
+.db-nav-inner {
+  /* ✅ FIX: match wrapper width */
+  max-width: 1100px;
+  margin-inline: auto;
 
-#online-users-list {
-  list-style: none;
-  margin: 10px 0;
-  padding: 0;
-}
-
-.user-item {
-  padding: 12px 15px;
-  border-bottom: 1px solid #eee;
-}
-
-.user-item a {
-  text-decoration: none;
-  color: #333;
-  font-weight: bold;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+
+  background: var(--nav-bg);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
-.online-dot {
-  width: 8px;
-  height: 8px;
-  background-color: #09b051;
-  border-radius: 50%;
-  margin-right: 8px;
-  flex-shrink: 0;
+.db-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.DreamBook-logo {
+  width: 50px;
+  height: auto;
+  background-color: #d9fdd3;
+  padding-top: 0%;
+}
+.div{
+  color: #030109;
+  font-size: 18px;
+  margin-top: 10px;
+  text-align: justify;
+  margin-left: 30px;
+}
+
+.db-title {
+  font-weight: 800;
+  color: var(--primary);
+}
+
+/* Hamburger */
+.db-hamburger {
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-content: center;
+}
+
+.db-hamburger .bar {
+  width: 22px;
+  height: 2px;
+  background: var(--text-main);
+  margin: 3px 0;
 }
 
 /* =========================================================
-   CHAT AREA
+   MOBILE NAV (UNCHANGED STRUCTURE)
 ========================================================= */
-.chat-area {
-  flex: 1;
+.nav-links {
+  position: absolute;
+  top: var(--nav-height);
+  left: 0;
+  right: 0;
+  height: calc(100vh - var(--nav-height));
+  background: #fff;
+
   display: flex;
   flex-direction: column;
-  background: #ece5dd;
-  height: 100%;
-}
+  gap: var(--space-2);
 
-.conversation-list {
-  flex: 1;
+  padding: var(--space-3);
   overflow-y: auto;
-  padding: 15px;
-  margin: 0;
-  list-style: none;
+
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform .25s ease, opacity .25s ease;
+
+  z-index: 1200;
 }
 
-.bubble {
-  max-width: 60%;
-  padding: 10px 15px;
-  border-radius: 15px;
-  margin-bottom: 10px;
-  display: inline-block;
-  line-height: 1.4;
+.nav-links.active {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Desktop nav */
+@media (min-width: 900px) {
+  .db-hamburger { display: none; }
+
+  .nav-links {
+    position: static;
+    flex-direction: row;
+    background: none;
+    padding: 0;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    margin-left: auto;
+    height: auto;
+  }
+}
+
+/* =========================================================
+   ACCOUNT DROPDOWN (FIXED)
+========================================================= */
+.dropdown {
+  /* ✅ FIX: anchor dropdown properly */
   position: relative;
+  display: inline-block;
 }
 
-.bubble.them {
-  background: #fff;
-  border-bottom-left-radius: 0;
+/* Desktop dropdown */
+@media (min-width: 900px) {
+  .dropdown-content {
+    position: absolute;
+    top: calc(100% + 8px);
+
+    /* ✅ FIX: open on RIGHT */
+    left: 0;
+    right: auto;
+
+    min-width: 200px;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: 6px 0;
+
+    display: none;
+    z-index: 3000;
+
+    /* ✅ FIX: show all items */
+    max-height: none;
+    overflow: visible;
+  }
+
+  .dropdown-content a {
+    padding: 10px 16px;
+    display: block;
+    white-space: nowrap;
+  }
+
+  .dropdown-content.active {
+    display: block;
+  }
 }
 
-.bubble.me {
-  background: #d9fdd3;
-  align-self: flex-end;
-  border-bottom-right-radius: 0;
-}
+/* Mobile dropdown */
+@media (max-width: 899px) {
+  .dropdown-content {
+    /* ✅ FIX: flow inside nav (no overlap) */
+    position: static;
+    display: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    margin-top: 6px;
+  }
 
-/* Unread badge */
-.unread-badge {
-  background: var(--secondary);
-  color: white;
-  border-radius: 12px;
-  padding: 2px 6px;
-  font-size: 11px;
-  margin-left: 6px;
+  .dropdown-content.active {
+    display: block;
+  }
 }
 
 /* =========================================================
-   SEND BOX
+   CARDS
 ========================================================= */
-.send-box {
-  display: flex;
-  padding: 15px;
+.post-card,
+.comment,
+.dictionary-item {
   background: var(--bg-card);
-  border-top: 1px solid var(--border-soft);
-}
-
-.send-box select,
-.send-box textarea {
-  flex: 1;
-  border-radius: var(--radius-md);
-  padding: 10px;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-soft);
-  resize: none;
-  font-size: 14px;
-}
-
-.send-box select {
-  margin-right: 10px;
-}
-
-.send-box button {
-  background: var(--secondary);
-  color: #fff;
-  border-radius: var(--radius-md);
-  padding: 10px 20px;
-  margin-left: 10px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: transform 0.2s ease;
-}
-
-.send-box button:active {
-  transform: scale(0.97);
+  box-shadow: var(--shadow-sm);
 }
 
 /* =========================================================
-   MESSAGES & SCROLL
+   UTILITIES
 ========================================================= */
-.messages {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-}
+.hidden { display: none; }
+.text-muted { color: var(--text-muted); }
 
-/* =========================================================
-   FOOTER
-========================================================= */
 footer {
   text-align: center;
   padding: var(--space-3);
@@ -241,19 +308,169 @@ footer {
 }
 
 /* =========================================================
-   RESPONSIVE
+   MOBILE NAV OPEN STATE
 ========================================================= */
-@media (max-width: 899px) {
-  .sidebar {
-    flex: 1 0 auto;
-    max-height: 40%;
-  }
-  .chat-area {
-    flex: 1 0 auto;
-    max-height: 60%;
-  }
-  .send-box select,
-  .send-box textarea {
-    font-size: 12px;
-  }
+body.nav-open {
+  overflow: hidden;
+}
+ .btn {  background-color: lightgrey;
+  border-radius: 75px;
+  color: green;
+  padding: 10px 20px;
+  font-size: 16px;
+ }
+.online-users-list {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  list-style: none;
+}
+
+.online-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #09b051;
+  border-radius: 50%;
+}
+
+/* Online users list */
+#online-users-list {
+  padding: 0;
+  margin: 10px 0 20px 0;
+}
+
+/* Each online user item */
+#online-users-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+/* Green dot */
+#online-users-list li::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background-color: #09b051; /* green */
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Username link */
+#online-users-list li a {
+  text-decoration: none;
+  color: #333;
+}
+
+#online-users-list li a:hover {
+  text-decoration: underline;
+}
+
+.sidebar {
+      background: #fff;
+      border-right: 1px solid #ddd;
+      overflow-y: auto;
+      height: 50%;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar h2 {
+      background: #075E54;
+      color: white;
+      padding: 15px;
+      margin: 0;
+    }
+    .user-item {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+    }
+    .user-item a {
+      text-decoration: none;
+      color: #333;
+      font-weight: bold;
+    }
+    .user-item.active {
+      background: #f0f0f0;
+    }
+
+    /* Chat area */
+    .chat-area {
+      display: flex;
+      flex-direction: column;
+      background: #ece5dd;
+    }
+
+    .messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .bubble {
+      max-width: 60%;
+      padding: 10px 15px;
+      border-radius: 15px;
+      margin-bottom: 10px;
+      display: inline-block;
+      line-height: 1.4;
+      position: relative;
+    }
+
+    .me {
+      background: #d9fdd3;
+      align-self: flex-end;
+      border-bottom-right-radius: 0;
+    }
+
+    .them {
+      background: #fff;
+      border-bottom-left-radius: 0;
+    }
+
+    .send-box {
+      display: flex;
+      padding: 15px;
+      background: white;
+      border-top: 1px solid #ccc;
+    }
+
+    .send-box textarea {
+      flex: 1;
+      border-radius: 10px;
+      padding: 10px;
+      resize: none;
+    }
+
+    .send-box button {
+      background: #25D366;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      margin-left: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .delete-btn {
+      font-size: 12px;
+      margin-top: 3px;
+      color: red;
+    }
+
+.unread-badge {
+  background: #25d366;
+  color: #fff;
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 11px;
+  margin-left: 6px;
+}
+
+.receipt {
+  font-size: 11px;
+  opacity: 0.7;
 }
