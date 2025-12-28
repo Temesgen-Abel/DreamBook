@@ -84,7 +84,6 @@ button:active { transform: scale(0.97); }
    LAYOUT SYSTEM (UNCHANGED)
 ========================================================= */
 .wrapper {
-  background-color: #075E54;
   width: 100%;
   max-width: 1100px;
   margin-inline: auto;
@@ -95,6 +94,9 @@ button:active { transform: scale(0.97); }
 .page-wrapper {
   display: grid;
   gap: var(--space-3);
+  background-color: #d9fdd3;
+  grid-template-columns: minmax(0, 1fr);
+  
 }
 
 @media (min-width: 1100px) {
