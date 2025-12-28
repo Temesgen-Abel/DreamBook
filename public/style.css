@@ -462,7 +462,15 @@ body.nav-open {
     }
 
 .unread-badge {
-  color: #25d366;
-  font-size: 12px;
+  background: #25d366;
+  color: #fff;
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 11px;
   margin-left: 6px;
+}
+
+.receipt {
+  font-size: 11px;
+  opacity: 0.7;
 }
