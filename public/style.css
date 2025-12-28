@@ -35,6 +35,14 @@
   --nav-height: 72px;
 }
 
+/* home logo */
+.home-logo {
+  width: 120px;
+  height: auto;
+  margin-bottom: 20px;
+  background-color: transparent;
+}
+
 /* =========================================================
    RESET & BASE
 ========================================================= */
@@ -81,7 +89,7 @@ button:active { transform: scale(0.97); }
   max-width: 1100px;
   margin-inline: auto;
   padding: var(--space-3);
-  
+
 }
 
 .page-wrapper {
