@@ -140,6 +140,12 @@ button:active { transform: scale(0.97); }
   width: 36px;
   height: 36px;
 }
+.div{
+  color: #eee;
+  font-size: 14px;
+  margin-top: 10px;
+  text-align: justify;
+}
 
 .db-title {
   font-weight: 800;
@@ -450,3 +456,4 @@ body.nav-open {
       margin-top: 3px;
       color: red;
     }
+
