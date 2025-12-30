@@ -185,6 +185,17 @@ button:active { transform: scale(0.97); }
   }
 }
 
+.login-form {
+  max-width: 420px;
+  margin: auto;
+  padding: 2rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+
 /* =========================================================
    ACCOUNT DROPDOWN (FIXED)
 ========================================================= */
@@ -203,7 +214,6 @@ button:active { transform: scale(0.97); }
     /* ✅ FIX: open on RIGHT */
     left: 0;
     right: auto;
-
     min-width: 200px;
     background: var(--bg-card);
     border-radius: var(--radius-md);
@@ -245,18 +255,6 @@ button:active { transform: scale(0.97); }
     display: block;
   }
 }
-
-/*==================================================
-login and register form
-====================================================*/
-
-.auth-form{
-  background-color: #86948b;
-  height: auto;
-  width: 150px;
-
-}
-
 
 /* =========================================================
    POST CARD
