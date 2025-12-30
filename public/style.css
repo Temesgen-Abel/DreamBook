@@ -44,7 +44,7 @@ a {
   background: green;
   cursor: pointer;
   font-family: inherit;
-  
+
 }
 
 button:active { transform: scale(0.97); }
@@ -253,7 +253,9 @@ login and register form
 .auth-form{
   background-color: #20c659;
   border-radius: 100px;
-
+  height: auto;
+  width: 24px;
+  margin: auto;
 }
 
 
