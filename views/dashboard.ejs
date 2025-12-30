@@ -30,12 +30,12 @@
   <%- include("includes/header") %>
 
   <main class="wrapper page-wrapper dashboard-page">
-    <h1>Community Dream Posts</h1>
 <form action="/create-post" method="post"> 
+   <h1 style="center">Community Dream Posts</h1>
   <input type="text" name="body" placeholder="Share Your Dream">
   <button class="btn" type="submit">Post</button>
 </form>
-<br>
+
 
     <div class="posts-list">
       <% if (posts.length) { %>
