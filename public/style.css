@@ -252,11 +252,10 @@ login and register form
 
 .auth-form{
   background-color: #86948b;
-  border-radius: 100px;
   height: auto;
-  width: 50px;
+  width: 100px;
   margin: auto;
-  border-radius: 89;
+
 }
 
 
