@@ -39,9 +39,9 @@ a {
   font-weight: 500;
 }
 
-button {
+.btn {
   border: none;
-  background: none;
+  background: green;
   cursor: pointer;
   font-family: inherit;
 }
@@ -252,7 +252,7 @@ login and register form
 .auth-form{
   background-color: #20c659;
   border-radius: 100px;
-  
+
 }
 
 
