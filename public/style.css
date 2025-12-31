@@ -128,6 +128,21 @@ button:active { transform: scale(0.97); }
   background: var(--text-main);
   margin: 3px 0;
 }
+/* =========================================================
+   NAVBAR – Z-INDEX NORMALIZATION (FIX)
+========================================================= */
+.db-nav {
+  z-index: 1000;
+}
+
+.nav-links {
+  z-index: 1100;
+}
+
+.dropdown-content {
+  z-index: 1200;
+}
+
 
 /* =========================================================
    MOBILE NAV
@@ -179,31 +194,61 @@ button:active { transform: scale(0.97); }
   }
 }
 
-/* Desktop nav */
 @media (min-width: 900px) {
-  .db-hamburger { display: none; }
+  .dropdown-content {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 200px;
 
-  .nav-links {
-    position: static;
-    flex-direction: row;
-    background: none;
-    padding: 0;
-    opacity: 1;
-    pointer-events: auto;
-    transform: none;
-    margin-left: auto;
-    height: auto;
+    display: none;
+    z-index: 4000;
+  }
+
+  /* ✅ open ONLY when JS adds .active */
+  .dropdown-content.active {
+    display: block;
   }
 }
 
 /* =========================================================
    ACCOUNT DROPDOWN
 ========================================================= */
+/* =========================================================
+   ACCOUNT DROPDOWN – FIXED & CLEAN
+========================================================= */
+
 .dropdown {
   position: relative;
-  display: block;
-  color: #721c24;
+  display: inline-flex;
+  flex-direction: column;
 }
+
+/* Shared dropdown panel style */
+.dropdown-content {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.dropdown-content a,
+.dropdown-content button {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--text-main);
+}
+
+.dropdown-content a:hover,
+.dropdown-content button:hover {
+  background: #f2f4f7;
+}
+
 
 /* Desktop dropdown */
 @media (min-width: 900px) {
@@ -234,37 +279,31 @@ button:active { transform: scale(0.97); }
 
 /* ✅ MOBILE DROPDOWN FIX */
 @media (max-width: 899px) {
+  .dropdown {
+    width: 100%;
+  }
+
   .dropdown-content {
-    position: fixed;
-    top: 64px;
-    left: 0;
-    right: 0;
-
+    position: static;
     display: none;
-    background: transparent;
-    box-shadow: none;
-    padding: 0;
+
     margin-top: 6px;
-
-    max-height: calc(100svh - 64px);
-    height: auto;
-
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-
-    transform: none;
-    opacity: 0;
-    pointer-events: none;
-
-    z-index: 9999;
+    background: #f8f9fb;
+    border: 1px solid var(--border-soft);
+    box-shadow: none;
   }
 
   .dropdown-content.active {
     display: block;
-    opacity: 1;
-    pointer-events: auto;
+  }
+
+  /* visual separation from other menu items */
+  .dropdown-content a,
+  .dropdown-content button {
+    padding-left: 24px;
   }
 }
+
 
 /* =========================================================
    EVERYTHING ELSE (UNCHANGED)
