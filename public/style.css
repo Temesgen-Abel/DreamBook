@@ -200,7 +200,7 @@ button:active { transform: scale(0.97); }
    ACCOUNT DROPDOWN
 ========================================================= */
 .dropdown {
-  position: absolute;
+  position: fixed;
   display: block;
   background-color: black;
 }
