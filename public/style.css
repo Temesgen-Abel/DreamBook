@@ -203,6 +203,7 @@ button:active { transform: scale(0.97); }
   position: relative;
   display: block;
   background-color: black;
+  color: #721c24;
 }
 
 /* Desktop dropdown */
