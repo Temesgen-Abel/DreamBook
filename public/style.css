@@ -128,21 +128,6 @@ button:active { transform: scale(0.97); }
   background: var(--text-main);
   margin: 3px 0;
 }
-/* =========================================================
-   NAVBAR – Z-INDEX NORMALIZATION (FIX)
-========================================================= */
-.db-nav {
-  z-index: 1000;
-}
-
-.nav-links {
-  z-index: 1100;
-}
-
-.dropdown-content {
-  z-index: 1200;
-}
-
 
 /* =========================================================
    MOBILE NAV
@@ -302,6 +287,20 @@ button:active { transform: scale(0.97); }
   .dropdown-content button {
     padding-left: 24px;
   }
+}
+/* =========================================================
+   NAVBAR – Z-INDEX NORMALIZATION (FIX)
+========================================================= */
+.db-nav {
+  z-index: 1000;
+}
+
+.nav-links {
+  z-index: 1100;
+}
+
+.dropdown-content {
+  z-index: 1200;
 }
 
 
