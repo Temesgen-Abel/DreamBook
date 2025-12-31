@@ -201,7 +201,8 @@ button:active { transform: scale(0.97); }
 ========================================================= */
 .dropdown {
   position: relative;
-  display: inline-block;
+  display: inline;
+  background-color: black;
 }
 
 /* Desktop dropdown */
@@ -212,10 +213,11 @@ button:active { transform: scale(0.97); }
     left: 0;
     min-width: 200px;
 
-    background: var(--bg-card);
+    background: #ffffff;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
     padding: 6px 0;
+    margin-top: 8px;
 
     display: none;
     z-index: 3000;
