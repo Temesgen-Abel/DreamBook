@@ -1,6 +1,6 @@
 /* =========================================================
    DESIGN TOKENS (SOCIAL APP THEME)
-========================================================= *
+========================================================= */
 
 /* home logo */
 .home-logo {
@@ -28,29 +28,29 @@ body {
   overflow-x: hidden;
 }
 
-a { text-decoration: none; color: var(--primary); }
-button { border: none; cursor: pointer; font-family: inherit; }
-button:active { transform: scale(0.97); }
-
-
 a {
   color: var(--primary);
   text-decoration: none;
   font-weight: 500;
 }
 
+button {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button:active { transform: scale(0.97); }
+
 .btn {
   border: none;
   background: green;
   cursor: pointer;
   font-family: inherit;
-
 }
 
-button:active { transform: scale(0.97); }
-
 /* =========================================================
-   LAYOUT SYSTEM (UNCHANGED)
+   LAYOUT SYSTEM
 ========================================================= */
 .wrapper {
   max-width: 900px;
@@ -65,9 +65,7 @@ button:active { transform: scale(0.97); }
 }
 
 @media (min-width: 768px) {
-  .page-wrapper {
-    flex-direction: row;
-  }
+  .page-wrapper { flex-direction: row; }
 }
 
 /* =========================================================
@@ -77,10 +75,10 @@ button:active { transform: scale(0.97); }
   position: sticky;
   top: 0;
   z-index: 1300;
+  overflow: visible; /* ✅ allow dropdowns */
 }
 
 .db-nav-inner {
-  /* ✅ FIX: match wrapper width */
   max-width: 1100px;
   margin-inline: auto;
 
@@ -93,6 +91,7 @@ button:active { transform: scale(0.97); }
   backdrop-filter: blur(12px);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+  overflow: visible; /* ✅ allow dropdowns */
 }
 
 .db-brand {
@@ -105,14 +104,6 @@ button:active { transform: scale(0.97); }
   width: 50px;
   height: auto;
   background-color: #d9fdd3;
-  padding-top: 0%;
-}
-.div{
-  color: #030109;
-  font-size: 18px;
-  margin-top: 10px;
-  text-align: justify;
-  margin-left: 30px;
 }
 
 .db-title {
@@ -127,6 +118,8 @@ button:active { transform: scale(0.97); }
   height: 44px;
   display: grid;
   place-content: center;
+  position: relative;
+  z-index: 10000;
 }
 
 .db-hamburger .bar {
@@ -137,35 +130,53 @@ button:active { transform: scale(0.97); }
 }
 
 /* =========================================================
-   MOBILE NAV (UNCHANGED STRUCTURE)
+   MOBILE NAV
 ========================================================= */
 .nav-links {
   position: absolute;
   top: var(--nav-height);
   left: 0;
   right: 0;
-  height: calc(100vh - var(--nav-height));
-  background: #fff;
 
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-
   padding: var(--space-3);
+
+  background: #fff;
   overflow-y: auto;
 
   transform: translateY(-100%);
   opacity: 0;
   pointer-events: none;
-  transition: transform .25s ease, opacity .25s ease;
 
+  transition: opacity 0.25s ease;
   z-index: 1200;
 }
 
 .nav-links.active {
-  transform: translateY(0);
   opacity: 1;
   pointer-events: auto;
+  transform: none;
+}
+
+/* ✅ MOBILE FIX */
+@media (max-width: 899px) {
+  .nav-links {
+    position: fixed;
+    top: 64px;
+    left: 0;
+    right: 0;
+
+    max-height: calc(100svh - 64px);
+    height: auto;
+
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+
+    transform: none;
+    z-index: 9999;
+  }
 }
 
 /* Desktop nav */
@@ -185,23 +196,10 @@ button:active { transform: scale(0.97); }
   }
 }
 
-.login-form {
-  max-width: 420px;
-  margin: auto;
-  padding: 2rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-  font-size: 16px;
-}
-
-
 /* =========================================================
-   ACCOUNT DROPDOWN (FIXED)
+   ACCOUNT DROPDOWN
 ========================================================= */
 .dropdown {
-  /* ✅ FIX: anchor dropdown properly */
   position: relative;
   display: inline-block;
 }
@@ -211,11 +209,9 @@ button:active { transform: scale(0.97); }
   .dropdown-content {
     position: absolute;
     top: calc(100% + 8px);
-
-    /* ✅ FIX: open on RIGHT */
     left: 0;
-    right: auto;
     min-width: 200px;
+
     background: var(--bg-card);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
@@ -223,39 +219,56 @@ button:active { transform: scale(0.97); }
 
     display: none;
     z-index: 3000;
-
-    /* ✅ FIX: show all items */
-    max-height: none;
-    overflow: visible;
   }
+
+  .dropdown-content.active { display: block; }
 
   .dropdown-content a {
     padding: 10px 16px;
     display: block;
     white-space: nowrap;
   }
-
-  .dropdown-content.active {
-    display: block;
-  }
 }
 
-/* Mobile dropdown */
+/* ✅ MOBILE DROPDOWN FIX */
 @media (max-width: 899px) {
   .dropdown-content {
-    /* ✅ FIX: flow inside nav (no overlap) */
-    position: static;
+    position: fixed;
+    top: 64px;
+    left: 0;
+    right: 0;
+
     display: none;
     background: transparent;
     box-shadow: none;
     padding: 0;
     margin-top: 6px;
+
+    max-height: calc(100svh - 64px);
+    height: auto;
+
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+
+    transform: none;
+    opacity: 0;
+    pointer-events: none;
+
+    z-index: 9999;
   }
 
   .dropdown-content.active {
     display: block;
+    opacity: 1;
+    pointer-events: auto;
   }
 }
+
+/* =========================================================
+   EVERYTHING ELSE (UNCHANGED)
+   Posts, chat, comments, pagination, etc.
+========================================================= */
+/* ——— Your remaining CSS continues exactly as-is ——— */
 
 /* =========================================================
    POST CARD
