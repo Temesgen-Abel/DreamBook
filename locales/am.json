@@ -1,0 +1,69 @@
+{
+  "home": "መነሻ",
+  "contact": "አግኙን",
+  "login": "ግባ",
+  "register": "ተመዝገብ",
+  "welcome": "ወደ DreamBook እንኳን በደህና መጡ",
+  "logout": "ውጣ"
+}
+
+{
+  "dashboardTitle": "የህልም መጽሔትዎ ዳሽቦርድ",
+  "greeting": "ሰላም, <%= username %>!",
+  "noPosts": "እስካሁን ምንም ህልም አልጋረጥኩም።",
+  "createPostPrompt": "አሁን የመጀመሪያዎን ህልም ያጋሩ!",
+  "viewPosts": "የህልሞችዎን ይመልከቱ",
+  "createPost": "ህልም ያጋሩ"
+}
+{
+  "dictionaryTitle": "የህልም መዝገበ-ቃላት A–Z",
+  "searchPlaceholder": "የህልም ትርጉሞችን ፈልጉ...",
+  "noResults": "'<%= query %>' የተመዘገበ ውጤት አልተገኘም። እባክዎ ከዚያ በተጨማሪ ቃል ፈልጉ።",
+  "browseAll": "የህልም ትርጉሞችን እያንዳንዱን ይመልከቱ"
+}
+{
+  "realnessTitle": "የህልም እውነታ ትንበያ",
+  "description": "እንዴት እንደሚመጣቸውን በDream Realness Analysis መጠቀ
+ም ያስተዋውቁ። የህልምዎን ዝርዝሮች ያስገቡ እና ጥቆማዎችን ያግኙ።",
+  "analyzeButton": "ህልም ያስተካክሉ",
+  "Explore dream meanings, search the dream dictionary, and share your dreams with the DreamBook community.": "የህልም ትርጉሞችን ያስሱ, የህልም መዝገበ-ቃላትን ፈልጉ, እና ህልሞቻችንን ከDreamBook  community ጋር ያጋሩ።",
+}
+{
+  "inboxTitle": "የህልም መጽሔትዎ ጣቢያ",
+  "noMessages": "አዲስ መልዶች የሉም።",
+  "checkBackLater": "ከDreamBook  community የሚለኩትን አዳዲስ መልዶች ለማየት በኋላ ደግሞ ይመለከቱ።"
+}
+{
+  "loginTitle": "ወደ DreamBook ግባ",
+  "usernamePlaceholder": "የተጠቃሚ ስም",
+  "passwordPlaceholder": "የይለፍ ቃል",
+  "forgotPassword": "የይለፍ ቃልዎን አጥፋችው?",
+  "noAccountPrompt": "መለያ የለዎትም? አሁን ይመዝገቡ!"
+}
+{
+  "adminTitle": "የአስተዳደር ዳሽቦርድ",
+  "manageUsers": "ተጠቃሚዎችን አስተዳድር",
+  "reviewPosts": "የህልም ጽሁፎችን እንገባ",
+  "siteSettings": "የጣቢያ ቅንብሮች"
+}
+{
+  "createPostTitle": "አዲስ የህልም ጽሁፍ ፍጠር",
+  "dreamContentPlaceholder": "እዚህ ህልምዎን መግለጫ...",
+  "submitButton": "ህልም ያጋሩ",
+  "cancelButton": "ሰርዝ"
+}
+{
+  "contactTitle": "ወደ DreamBook ድጋፍ ይግቡ",
+  "namePlaceholder": "የእርስዎ ስም",
+  "emailPlaceholder": "የእርስዎ ኢሜይል",
+  "messagePlaceholder": "የእርስዎ መልእክት",
+  "sendButton": "መልእክት ላክ"
+}
+{
+  "registerTitle": "ወደ DreamBook ይመዝገቡ",
+  "usernamePlaceholder": "የተጠቃሚ ስም ይምረጡ",
+  "emailPlaceholder": "የእርስዎ ኢሜይል",
+  "passwordPlaceholder": "የይለፍ ቃል ፍጠር",
+  "confirmPasswordPlaceholder": "የይለፍ ቃል አረጋግጥ",
+  "registerButton": "መለያ ፍጠር"
+}

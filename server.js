@@ -129,6 +129,18 @@ CREATE TABLE IF NOT EXISTS users (
 // ===================================================================
 // 3. UTILITIES
 // ===================================================================
+function loadLang(lang) {
+  try {
+    return JSON.parse(
+      fs.readFileSync(path.join(__dirname, "locales", `${lang}.json`), "utf8")
+    );
+  } catch {
+    return JSON.parse(
+      fs.readFileSync(path.join(__dirname, "locales", "en.json"), "utf8")
+    );
+  }
+}
+
 function sanitizeBody(text) {
   text = typeof text === "string" ? text.trim() : "";
   return sanitizeHTML(marked.parse(text), {
@@ -263,6 +275,14 @@ app.use((req, res, next) => {
     req.user?.role === "admin" ? visitCount : null;
   next();
 });
+
+app.use((req, res, next) => {
+  const lang = req.query.lang || "en";
+  res.locals.lang = lang;
+  res.locals.t = loadLang(lang);
+  next();
+});
+
 
 
 // ===================================================================

@@ -17,11 +17,11 @@
 
   <main class="wrapper" style="text-align:center; margin-top:80px;">
  <img src="/images/DreamBook.png" alt="DreamBook logo" class="DreamBook-logo"/>
-          <h1 style="color: blue; font-size: 24px;">Welcome To DreamBook</h1>
+          <h1 style="color: blue; font-size: 24px;"><% t.WelcomeTitle %></h1>
 
-    <h2>Dream Dictionary, Dream analysis & Dream Interpretation Platform</h2>
+    <h2><% t.subtitle %></h2>
 
-    <h3 style="color: #0d1edf; font-size:24px;"> <strong> እንኳን ወደ የህልም መፍቻ ማህበራዊ ድረ-ገጽ በሰላም ተቀላቀሉ!</strong></h3>
+    <h3 style="color: #0d1edf; font-size:24px;"> <strong> <% t.welcomeTitle %></strong></h3>
     <p>
       <div class="div"> 
 
@@ -31,7 +31,7 @@
 ነገር ግን ሁሉም ህልም አዉነት እንዳልሆነና ሁሉም ሰዉ ደግሞ አዉነተኛ ህልም ሊያይ እንደማይችል አስገንዝበዉናል፡፡ ስለሆነም ሰዎች ያዩትን ህልም እዉነተ ነዉ ወይስ ቅዠት የሚለዉን ለመገመት የሚያስችል አመላካች የሆኑ ሃገር በቀል እዉቀት እንዳሏቸዉ ተረድተናል፡፡  
 እንደ አጠቃላይ የጥናቱን ዉጤት ከግምት ዉስጥ በማስገባት የሚከተሉትን አገልግሎት ያለገደብ ለዓለም ህዝብ በዚህ ድረ-ገፅ ማቅረባችንን በታላቅ ደስታ እናበስራለን፡፡
 
-<ol style="1">
+<ol style="1"; text-align:left>
       <li>የህልም መፍቻ ዲክሽነሪ(የሚየዉቁትን ህልም መጨመርና ያዩትን ህልም ትርጉም ማግኘት) ይችላሉ
       <li>ህልሞችን መለጠፍና የተለጠፉትን ህልሞች መተርጎም እና አስተያይት መስጠት ይችላሉ
       <li>ህልምዎን ማስተርጎም እና 
@@ -40,13 +40,19 @@
     </p>
 
     <p style="color:#0d1edf; margin-top:10px; font-size:12px;">
-      Explore dream meanings, search the dream dictionary, and share your dreams with the DreamBook community.
+      <% t.introNote %>
     </p>
 
     <div style="margin-top:30px;">
-      <a href="/register" class="btn">Create Account</a>
-      <a href="/login" class="btn" style="background:#4f76df;">Login</a>
+      <a href="/register?lang=<%= lang %>" class="btn">
+        <%= t.createAccount %>
+      </a>
+
+      <a href="/login?lang=<%= lang %>" class="btn" style="background:#4f76df;">
+        <%= t.login %>
+      </a>
     </div>
+
   </main>
  
 </body>

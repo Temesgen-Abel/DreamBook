@@ -44,7 +44,7 @@
 html { font-size: 12px; }
 
 body {
-  font-family: var(--font-family);
+  font-family: "Noto Sans Ethiopic", Arial, sans-serif;
   background: var(--bg-page);
   color: var(--text-main);
   line-height: 1.6;
