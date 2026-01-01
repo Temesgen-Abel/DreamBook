@@ -493,8 +493,7 @@ button {
    buttons
 ========================================================= */
 .btn {
-  background-color: var(--secondary);
-  color: #fff;
+  background-color: var(--primary);
   padding: 10px 20px;
   border-radius: var(--radius-md);
   font-size: 14px;
