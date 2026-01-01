@@ -1,0 +1,490 @@
+/* =========================================================
+   DESIGN TOKENS (SOCIAL APP THEME)
+========================================================= */
+:root {
+  --primary: #25d366;
+  --secondary: #1877f2;
+  --accent: #ffb703;
+
+  --bg-page: #ece5dd;
+  --bg-card: #ffffff;
+  --bg-chat: #ffffff;
+  --bg-sidebar: #f0f0f0;
+  --nav-bg: rgba(255,255,255,0.85);
+
+  --text-main: #111;
+  --text-muted: #555;
+
+  --border-soft: #ddd;
+
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 6px 20px rgba(0,0,0,0.15);
+
+  --space-2: 12px;
+  --space-3: 16px;
+
+  --nav-height: 64px;
+  --font-family: "Inter", sans-serif;
+}
+
+/* =========================================================
+   RESET & BASE
+========================================================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html { font-size: 12px; }
+
+body {
+  font-family: var(--font-family);
+  background: var(--bg-page);
+  color: var(--text-main);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* =========================================================
+   WRAPPER SYSTEM
+========================================================= */
+.wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .wrapper { max-width: 1100px; }
+}
+
+/* =========================================================
+   NAVBAR (MERGED & CLEAN)
+========================================================= */
+.db-nav {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.db-nav-inner {
+  max-width: 1100px;
+  margin: auto;
+  padding: var(--space-2) var(--space-3);
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  background: var(--nav-bg);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Brand */
+.db-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.DreamBook-logo {
+  width: 40px;
+  height: auto;
+}
+
+.db-title {
+  font-weight: 800;
+  color: var(--secondary);
+}
+
+/* Hamburger */
+.db-hamburger {
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-content: center;
+  z-index: 10000;
+}
+
+.db-hamburger .bar {
+  width: 22px;
+  height: 2px;
+  background: var(--text-main);
+  margin: 3px 0;
+}
+
+/* =========================================================
+   NAV LINKS
+========================================================= */
+.nav-links {
+  position: absolute;
+  top: var(--nav-height);
+  left: 0;
+  right: 0;
+
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+
+  z-index: 1100;
+}
+
+.nav-links.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Desktop */
+@media (min-width: 900px) {
+  .nav-links {
+    position: static;
+    flex-direction: row;
+    background: transparent;
+    opacity: 1;
+    pointer-events: auto;
+    padding: 0;
+  }
+
+  .db-hamburger { display: none; }
+}
+
+/* =========================================================
+   ACCOUNT DROPDOWN (FIXED)
+========================================================= */
+.dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+.dropdown-content {
+  display: none;
+  background: #fff;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  min-width: 200px;
+  overflow: hidden;
+  z-index: 1200;
+}
+
+.dropdown-content a,
+.dropdown-content button {
+  padding: 10px 16px;
+  display: block;
+  text-align: left;
+  width: 100%;
+  color: var(--text-main);
+}
+
+.dropdown-content a:hover,
+.dropdown-content button:hover {
+  background: #f2f4f7;
+}
+
+.dropdown-content.active {
+  display: block;
+}
+
+/* Desktop dropdown */
+@media (min-width: 900px) {
+  .dropdown-content {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+  }
+}
+
+/* Mobile dropdown */
+@media (max-width: 899px) {
+  .dropdown-content {
+    position: static;
+    background: #f8f9fb;
+    box-shadow: none;
+    border: 1px solid var(--border-soft);
+  }
+
+  .dropdown-content a,
+  .dropdown-content button {
+    padding-left: 24px;
+  }
+}
+
+/* =========================================================
+   POST CARD
+========================================================= */
+.post-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--border-soft);
+}
+
+/* =========================================================
+   CHAT LAYOUT (WHATSAPP STYLE)
+========================================================= */
+.chat-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  height: calc(100vh - var(--nav-height));
+  background: var(--bg-page);
+}
+
+.sidebar {
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-soft);
+  overflow-y: auto;
+}
+
+.chat-area {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-chat);
+}
+
+/* Messages */
+.messages,
+#chat-list {
+  flex: 1;
+  padding: var(--space-3);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Bubbles */
+.bubble {
+  max-width: 60%;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+  box-shadow: var(--shadow-sm);
+}
+
+.bubble.me {
+  background: #dcf8c6;
+  align-self: flex-end;
+  border-bottom-right-radius: 0;
+}
+
+.bubble.them {
+  background: #fff;
+  align-self: flex-start;
+  border-bottom-left-radius: 0;
+}
+
+/* Send box */
+.send-box {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-top: 1px solid var(--border-soft);
+}
+
+.send-box textarea {
+  flex: 1;
+  resize: none;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  padding: 8px;
+}
+
+.send-box button {
+  background: var(--primary);
+  color: #fff;
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  font-weight: bold;
+}
+
+/* =========================================================
+   UTILITIES
+========================================================= */
+.hidden { display: none; }
+.text-muted { color: var(--text-muted); }
+
+
+/* =========================================================
+   DREAM DICTIONARY PAGE
+========================================================= */
+
+.dictionary-page {
+  background: linear-gradient(180deg, #f6f8fb, #ece5dd);
+}
+
+/* =========================================================
+   PAGE HEADER
+========================================================= */
+.page-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--secondary);
+  margin-bottom: 8px;
+}
+
+.page-header p {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   ALERTS
+========================================================= */
+.alert {
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.alert.error {
+  background: #fdecea;
+  color: #8a1f17;
+  border: 1px solid #f5c6cb;
+}
+
+.alert.success {
+  background: #e6f9f0;
+  color: #146c43;
+  border: 1px solid #b7ebd4;
+}
+
+/* =========================================================
+   ADD DREAM MEANING
+========================================================= */
+.dictionary-add {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.dictionary-add h2 {
+  font-size: 1.6rem;
+  margin-bottom: 6px;
+  color: var(--text-main);
+}
+
+.dictionary-add p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.dream-analyzer-form label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.dream-analyzer-form input,
+.dream-analyzer-form textarea {
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+.dream-analyzer-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* =========================================================
+   SEARCH SECTION
+========================================================= */
+.dictionary-search {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.dictionary-search h2 {
+  font-size: 1.4rem;
+  margin-bottom: 12px;
+}
+
+.dictionary-search form {
+  display: flex;
+  gap: 10px;
+}
+
+.dictionary-search input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+}
+
+/* Live results */
+.live-results {
+  list-style: none;
+  margin-top: 12px;
+  padding: 0;
+}
+
+.live-results li {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.live-results li:hover {
+  background: #f4f6f8;
+}
+
+/* =========================================================
+   SEARCH RESULTS
+========================================================= */
+.search-results {
+  list-style: none;
+  margin-top: 16px;
+  padding: 0;
+}
+
+.search-results li {
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}

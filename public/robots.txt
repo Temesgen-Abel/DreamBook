@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Sitemap: https://dreambook.com.et/sitemap.xml
+
+User-agent: *
+Disallow: /admin/
