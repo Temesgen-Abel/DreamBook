@@ -330,3 +330,261 @@ button {
 ========================================================= */
 .hidden { display: none; }
 .text-muted { color: var(--text-muted); }
+
+
+/* =========================================================
+   DREAM DICTIONARY PAGE
+========================================================= */
+
+.dictionary-page {
+  background: linear-gradient(180deg, #f6f8fb, #ece5dd);
+}
+
+/* =========================================================
+   PAGE HEADER
+========================================================= */
+.page-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--secondary);
+  margin-bottom: 8px;
+}
+
+.page-header p {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   ALERTS
+========================================================= */
+.alert {
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.alert.error {
+  background: #fdecea;
+  color: #8a1f17;
+  border: 1px solid #f5c6cb;
+}
+
+.alert.success {
+  background: #e6f9f0;
+  color: #146c43;
+  border: 1px solid #b7ebd4;
+}
+
+/* =========================================================
+   ADD DREAM MEANING
+========================================================= */
+.dictionary-add {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.dictionary-add h2 {
+  font-size: 1.6rem;
+  margin-bottom: 6px;
+  color: var(--text-main);
+}
+
+.dictionary-add p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.dream-analyzer-form label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.dream-analyzer-form input,
+.dream-analyzer-form textarea {
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+.dream-analyzer-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* =========================================================
+   SEARCH SECTION
+========================================================= */
+.dictionary-search {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.dictionary-search h2 {
+  font-size: 1.4rem;
+  margin-bottom: 12px;
+}
+
+.dictionary-search form {
+  display: flex;
+  gap: 10px;
+}
+
+.dictionary-search input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+}
+
+/* Live results */
+.live-results {
+  list-style: none;
+  margin-top: 12px;
+  padding: 0;
+}
+
+.live-results li {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.live-results li:hover {
+  background: #f4f6f8;
+}
+
+/* =========================================================
+   SEARCH RESULTS
+========================================================= */
+.search-results {
+  list-style: none;
+  margin-top: 16px;
+  padding: 0;
+}
+
+.search-results li {
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   DICTIONARY LIST
+========================================================= */
+.dictionary-list {
+  margin-bottom: 40px;
+}
+
+.dictionary-list h2 {
+  font-size: 1.8rem;
+  margin-bottom: 16px;
+  color: var(--secondary);
+}
+
+/* Dictionary Card */
+.dictionary-item {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 20px 22px;
+  margin-bottom: 18px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dictionary-item:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Term title */
+.dictionary-item h3 {
+  font-size: 1.4rem;
+  margin-bottom: 10px;
+  color: var(--primary);
+}
+
+/* Meaning text */
+.dictionary-item p,
+.dictionary-item .meaning {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-main);
+}
+
+/* =========================================================
+   ADMIN CONTROLS
+========================================================= */
+.admin-controls {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-soft);
+}
+
+.admin-controls input,
+.admin-controls textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.admin-controls textarea {
+  min-height: 100px;
+}
+
+.btn.small {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.btn.danger {
+  background: #ff6b6b;
+  color: white;
+}
+
+/* =========================================================
+   BACK BUTTON
+========================================================= */
+.dictionary-page form .btn {
+  margin-top: 20px;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+@media (max-width: 768px) {
+  .dictionary-search form {
+    flex-direction: column;
+  }
+
+  .dictionary-item {
+    padding: 18px;
+  }
+
+  .page-header h1 {
+    font-size: 2rem;
+  }
+}
