@@ -488,3 +488,16 @@ button {
   margin-bottom: 10px;
   line-height: 1.5;
 }
+
+/* =========================================================
+   buttons
+========================================================= */
+.btn {
+  background-color: var(--secondary);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}

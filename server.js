@@ -324,6 +324,7 @@ app.get("/admin", mustBeLoggedIn, adminOnly, async (req, res) => {
   } catch (err) {
     console.error("Admin stats error:", err);
     res.render("admin", {
+      visitCount:0,
       userCount: 0,
       postCount: 0,
       commentCount: 0
