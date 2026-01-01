@@ -291,21 +291,46 @@ const io = require("socket.io")(server, { cors: { origin: "*" } });
 app.set("io", io);
 
 // ===================================================================
-// 6. ROUTES (FIXED)
-// ===================================================================
+// 6. ROUTES admin issue only 
 app.get("/admin", mustBeLoggedIn, adminOnly, async (req, res) => {
   try {
-    // Count total users
-    const countResult = await dbGet("SELECT COUNT(*)::int AS userCount FROM users");
-    const userCount = countResult?.userCount || 0;
+//count those who vist the website without registering
+ visitCount++; 
 
-    // Render admin page with the variable
-    res.render("admin", { userCount });
+    // 1️⃣ Run database queries FIRST
+    const userResult = await dbGet(
+      "SELECT COUNT(*)::int AS userCount FROM users"
+    );
+
+    const postResult = await dbGet(
+      "SELECT COUNT(*)::int AS postCount FROM posts"
+    );
+
+    const commentResult = await dbGet(
+      "SELECT COUNT(*)::int AS commentCount FROM comments"
+    );
+
+    // 2️⃣ Extract values safely
+    const userCount = userResult?.userCount || 0;
+    const postCount = postResult?.postCount || 0;
+    const commentCount = commentResult?.commentCount || 0;
+
+    // 3️⃣ Send data to EJS
+    res.render("admin", {
+      userCount,
+      postCount,
+      commentCount
+    });
   } catch (err) {
-    console.error("Error fetching user count:", err);
-    res.render("admin", { userCount: 0 });
+    console.error("Admin stats error:", err);
+    res.render("admin", {
+      userCount: 0,
+      postCount: 0,
+      commentCount: 0
+    });
   }
 });
+
 
 // 6.0 Home Route
 app.get("/", (req, res) => {
