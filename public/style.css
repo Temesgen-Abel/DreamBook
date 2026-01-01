@@ -1,786 +1,403 @@
-/* =========================================================
-   DESIGN TOKENS (SOCIAL APP THEME)
-========================================================= */
-
-/* home logo */
-.home-logo {
-  width: 120px;
-  height: auto;
-  margin-bottom: 20px;
-  background-color: transparent;
+*{margin: 0;
+padding: 0;
 }
 
-/* =========================================================
-   RESET & BASE
-========================================================= */
-*,
-*::before,
-*::after { box-sizing: border-box; }
-
-html { font-size: 12px; }
-
-body {
-  margin: 0;
-  font-family: var(--font-family);
-  background: var(--bg-page);
-  color: var(--text-main);
-  line-height: 1.6;
-  overflow-x: hidden;
-}
-
-a {
-  color: var(--primary);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-button {
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-button:active { transform: scale(0.97); }
-
-.btn {
-  border: none;
-  background: green;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-/* =========================================================
-   LAYOUT SYSTEM
-========================================================= */
 .wrapper {
-  max-width: 900px;
+  width: 100%;
+}
+
+@media only screen and (min-width: 768px) {
+  .wrapper {
+    max-width: 720px;
+    margin: auto;
+    padding: 0 20px;
+  }
+.wrapper{
+  max-width: 600px;
   margin: 0 auto;
-  padding: var(--space-3);
+  padding: 0 20px;
+}
 }
 
-.page-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+@media only screen and  {min-width: 1000px}
+.wrapper {
+ width: 1000px;
 }
 
-@media (min-width: 768px) {
-  .page-wrapper { flex-direction: row; }
-}
-
-/* =========================================================
-   NAVBAR
-========================================================= */
-.db-nav {
-  position: sticky;
-  top: 0;
-  z-index: 1300;
-  overflow: visible; /* ✅ allow dropdowns */
-}
-
-.db-nav-inner {
-  max-width: 1100px;
-  margin-inline: auto;
-
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-
-  background: var(--nav-bg);
-  backdrop-filter: blur(12px);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: visible; /* ✅ allow dropdowns */
-}
-
-.db-brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.DreamBook-logo {
-  width: 50px;
-  height: auto;
-  background-color: #d9fdd3;
-}
-
-.db-title {
-  font-weight: 800;
-  color: var(--primary);
-}
-
-/* Hamburger */
-.db-hamburger {
-  margin-left: auto;
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-content: center;
-  position: relative;
-  z-index: 10000;
-}
-
-.db-hamburger .bar {
-  width: 22px;
-  height: 2px;
-  background: var(--text-main);
-  margin: 3px 0;
-}
-
-/* =========================================================
-   MOBILE NAV
-========================================================= */
-.nav-links {
-  position: absolute;
-  top: var(--nav-height);
-  left: 0;
-  right: 0;
-
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3);
-
-  background: #fff;
-  overflow-y: auto;
-
-  transform: translateY(-100%);
-  opacity: 0;
-  pointer-events: none;
-
-  transition: opacity 0.25s ease;
-  z-index: 1200;
-}
-
-.nav-links.active {
-  opacity: 1;
-  pointer-events: auto;
-  transform: none;
-}
-
-/* ✅ MOBILE FIX */
-@media (max-width: 899px) {
-  .nav-links {
-    position: fixed;
-    top: 64px;
-    left: 0;
-    right: 0;
-
-    max-height: calc(100svh - 64px);
-    height: auto;
-
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-
-    transform: none;
-    z-index: 9999;
-  }
-}
-
-@media (min-width: 900px) {
-  .dropdown-content {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    min-width: 200px;
-
-    display: none;
-    z-index: 4000;
-  }
-
-  /* ✅ open ONLY when JS adds .active */
-  .dropdown-content.active {
-    display: block;
-  }
-}
-
-/* =========================================================
-   ACCOUNT DROPDOWN
-========================================================= */
-/* =========================================================
-   ACCOUNT DROPDOWN – FIXED & CLEAN
-========================================================= */
-
-.dropdown {
-  position: relative;
-  display: inline-flex;
-  flex-direction: column;
-}
-
-/* Shared dropdown panel style */
-.dropdown-content {
-  background: #ffffff;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
-}
-
-.dropdown-content a,
-.dropdown-content button {
-  display: block;
-  width: 100%;
-  padding: 10px 16px;
-  text-align: left;
-  background: none;
-  border: none;
-  font-size: 14px;
-  color: var(--text-main);
-}
-
-.dropdown-content a:hover,
-.dropdown-content button:hover {
-  background: #f2f4f7;
-}
-
-
-/* Desktop dropdown */
-@media (min-width: 900px) {
-  .dropdown-content {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    min-width: 200px;
-
-    background: #ffffff;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
-    padding: 6px 0;
-    margin-top: 8px;
-
-    display: none;
-    z-index: 3000;
-  }
-
-  .dropdown-content.active { display: block; }
-
-  .dropdown-content a {
-    padding: 10px 16px;
-    display: block;
-    white-space: nowrap;
-  }
-}
-
-/* ✅ MOBILE DROPDOWN FIX */
-@media (max-width: 899px) {
-  .dropdown {
-    width: 100%;
-  }
-
-  .dropdown-content {
-    position: static;
-    display: none;
-
-    margin-top: 6px;
-    background: #f8f9fb;
-    border: 1px solid var(--border-soft);
-    box-shadow: none;
-  }
-
-  .dropdown-content.active {
-    display: block;
-  }
-
-  /* visual separation from other menu items */
-  .dropdown-content a,
-  .dropdown-content button {
-    padding-left: 24px;
-  }
-}
-/* =========================================================
-   NAVBAR – Z-INDEX NORMALIZATION (FIX)
-========================================================= */
-.db-nav {
-  z-index: 1000;
-}
-
-.nav-links {
-  z-index: 1100;
-}
-
-.dropdown-content {
-  z-index: 1200;
-}
-
-
-/* =========================================================
-   EVERYTHING ELSE (UNCHANGED)
-   Posts, chat, comments, pagination, etc.
-========================================================= */
-/* ——— Your remaining CSS continues exactly as-is ——— */
-
-/* =========================================================
-   POST CARD
-========================================================= */
-.post-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-3);
-  margin-bottom: var(--space-3);
-  border: 1px solid var(--border-soft);
-}
-
-.post-card h1, .post-card h2 {
-  margin-top: 0;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.post-card p {
-  color: var(--text-main);
-  margin-bottom: var(--space-2);
-}
-
-/* Reactions section */
-.reactions {
-  font-size: 14px;
-  color: var(--text-muted);
-  margin-top: var(--space-2);
-}
-
-/* Reaction buttons like FB */
-.post-card form button {
-  background: #e4e6eb;
-  border-radius: 20px;
-  padding: 6px 12px;
-  margin-right: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-.post-card form button:hover {
-  background: #d8dadf;
-}
-
-/* =========================================================
-   CREATE-POST FORM
-========================================================= */
-.post-form {
-  background: var(--bg-card);
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: var(--space-3);
-}
-
-.post-form fieldset {
-  border: none;
-  padding: 0;
-}
-
-.post-form textarea,
-.post-form input[type="text"] {
-  width: 100%;
-  padding: var(--space-2);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-soft);
-  font-size: 14px;
-  resize: vertical;
-  margin-bottom: var(--space-2);
-}
-
-.post-form button {
-  background: var(--primary);
-  color: white;
-  border-radius: var(--radius-md);
-  padding: 8px 16px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-/* Error notices */
-.notice {
-  background: #f8d7da;
-  color: #721c24;
-  padding: var(--space-2);
-  border-radius: var(--radius-sm);
-  margin-bottom: var(--space-2);
-}
-
-/* =========================================================
-   COMMENTS
-========================================================= */
-.comment-form,
-.comment {
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-2);
-  margin-top: var(--space-2);
-}
-
-.comment p {
-  margin: 4px 0;
-}
-
-.comment-form textarea {
-  width: 100%;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  padding: var(--space-2);
-  resize: vertical;
-  margin-bottom: var(--space-2);
-}
-
-.comment-form button {
-  background: var(--secondary);
-  color: #fff;
-  border-radius: var(--radius-md);
-  padding: 6px 12px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-/* Hidden utility */
-.hidden { display: none; }
-
-/* =========================================================
-   PAGINATION
-========================================================= */
-.pagination {
-  display: flex;
-  gap: var(--space-2);
-  justify-content: center;
-  margin: var(--space-3) 0;
-}
-
-.pagination a {
-  padding: 6px 12px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-soft);
-  color: var(--text-main);
-  transition: background 0.2s;
-}
-.pagination a:hover {
-  background: var(--bg-card);
-}
-.pagination strong {
-  padding: 6px 12px;
-}
-
-/* =========================================================
-   RESPONSIVE
-========================================================= */
-@media (max-width: 767px) {
-  .page-wrapper {
-    flex-direction: column;
-  }
-  .post-card, .post-form, .comment-form {
-    margin: 0 var(--space-2) var(--space-3);
-  }
-}
-
-/* =========================================================
-   UTILITIES
-========================================================= */
-.hidden { display: none; }
-.text-muted { color: var(--text-muted); }
-
-footer {
-  text-align: center;
-  padding: var(--space-3);
-  color: var(--text-muted);
-}
-
-/* =========================================================
-   WHATSAPP-TYPE CHAT STYLING
-========================================================= */
-:root {
-  --primary: #25d366;
-  --bg-page: #ece5dd;
-  --bg-chat: #ffffff;
-  --bg-sidebar: #f0f0f0;
-  --text-main: #111;
-  --text-muted: #555;
-  --bubble-me: #dcf8c6;
-  --bubble-them: #fff;
-  --border-soft: #ddd;
-  --radius-md: 12px;
-  --shadow-sm: 0 2px 6px rgba(0,0,0,0.1);
-  --space-2: 12px;
-  --space-3: 16px;
-}
-
-/* =========================================================
-   LAYOUT
-========================================================= */
-.chat-layout {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  height: calc(100vh - 64px);
-  overflow: hidden;
-  background: var(--bg-page);
-}
-
-.sidebar {
-  background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-soft);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar h2, .sidebar h3 {
-  padding: var(--space-2);
-  margin: 0;
-  background: #075E54;
-  color: white;
-  font-weight: normal;
-}
-
-#online-users-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.user-item {
-  padding: var(--space-2);
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.user-item a {
-  text-decoration: none;
-  color: var(--text-main);
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.user-item.active {
-  background: #d9fdd3;
-}
-
-.online-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #25d366;
-  display: inline-block;
-}
-
-/* =========================================================
-   CHAT AREA
-========================================================= */
-.chat-area {
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-chat);
-  padding: var(--space-3);
-  overflow-y: hidden;
-  position: relative;
-}
-
-/* =========================================================
-   CONVERSATION LIST - Vertical
-========================================================= */
-.conversation-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  overflow-y: auto; /* scrollable vertically */
-  flex: 1;
-  display: flex;
-  flex-direction: column; /* keep vertical */
-}
-
-.conversation-list li {
-  padding: var(--space-2);
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.conversation-list li a {
-  display: block;
-  text-decoration: none;
-  color: var(--text-main);
-}
-
-.conversation-list li a:hover {
-  background: #f0f0f0;
-}
-
-.conversation-list .bubble.them {
-  background: var(--bg-sidebar);
-  border-radius: var(--radius-md);
-  padding: 6px 10px;
+nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 20px 40px;
+  background: rgb(41, 43, 41);
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
+nav a {
+  text-decoration: none;
+  color: var(--muted);
+  margin: 0 12px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+ header nav a.active {
+  font-weight: 600;
+  color: var(--text);
+}}
 
-.unread-badge {
-  background: var(--primary);
-  color: #fff;
-  border-radius: 12px;
-  padding: 2px 6px;
-  font-size: 11px;
-  margin-left: 6px;
-}
-
-/* Mobile override */
-@media (max-width: 768px) {
-  .conversation-list {
-    flex-direction: column; /* force vertical on mobile */
-    overflow-y: auto;
-    overflow-x: hidden; /* prevent horizontal scroll */
-  }
-
-  .conversation-list li {
-    margin-right: 0; /* remove extra spacing from horizontal layout */
-  }
-}
-
-/* Messages container */
-.messages, #chat-list {
-   list-style: none;
-  padding: 0;
-  margin: 0;
-  overflow-y: auto; /* scrollable vertically */
-  flex: 1;
-  display: flex;
-  flex-direction: column; /* keep vertical */
-}
-
-/* Bubbles */
-.bubble {
-  max-width: 60%;
-  padding: var(--space-2);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-2);
-  display: inline-block;
+header .user-menu {
   position: relative;
-  word-wrap: break-word;
-  box-shadow: var(--shadow-sm);
-  line-height: 1.4;
-  font-size: 14px;
+  display: inline-block;
 }
 
-.bubble.me {
-  background: var(--bubble-me);
-  align-self: flex-end;
-  border-bottom-right-radius: 0;
-}
-
-.bubble.them {
-  background: var(--bubble-them);
-  align-self: flex-start;
-  border-bottom-left-radius: 0;
-}
-
-/* Small text in bubble */
-.bubble small {
-  display: block;
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-/* Typing indicator */
-#typing-indicator {
-  font-style: italic;
-  font-size: 13px;
-  color: var(--text-muted);
-  padding: 4px 0;
-}
-
-/* =========================================================
-   SEND BOX
-========================================================= */
-.send-box {
-  display: flex;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  border-top: 1px solid var(--border-soft);
-  background: var(--bg-chat);
-}
-
-.send-box textarea {
-  flex: 1;
-  resize: none;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-soft);
-  padding: 8px;
-  font-size: 14px;
-}
-
-.send-box button {
-  background: var(--primary);
+nav .user-menu button {
+  background: transparent;
   border: none;
-  color: #fff;
-  border-radius: var(--radius-md);
-  padding: 8px 16px;
-  font-weight: bold;
   cursor: pointer;
-  transition: background 0.2s;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+nav .user-menu button:hover {
+  background: rgba(0,0,0,0.06);
 }
 
-.send-box button:hover {
-  background: #20c659;
+/* -------- Colors & Variables -------- */
+:root {
+  --bg: #f6f8fb;
+  --card: #ffffff;
+  --text: #1f2d3d;
+  --muted: #7b8794;
+  --accent: #6ea8fe;
+  --accent-light: #d7e7ff;
+  --danger: #ff6b6b;
+  --radius: 12px;
+  --shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
-/* =========================================================
-   UNREAD BADGE
-========================================================= */
-.unread-badge {
-  background: var(--primary);
+/* -------- Reset -------- */
+.body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  align-content:center;
+
+}
+
+/* -------- Wrapper -------- */
+/* Decorative galaxy section (unchanged) */
+.DreamBook-logo { margin: 0; padding: 0; width: 30px; display: flex; }
+
+/* Background galaxy blocks left intact if used */
+.galaxy-bg { position: fixed; inset: 0; overflow: hidden; z-index: -1; pointer-events: none; background: radial-gradient(#bcb5b5 0%, #0f0fc9 70%); }
+.galaxy-rotate { position: absolute; width: 2000px; height: 2000px; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: 50% 50%; animation: galaxySpin 120s linear infinite; will-change: transform; }
+
+/* star layers — use repeating radial-gradients to draw many small dots */
+.stars, .stars2, .stars3 {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+  background-size: 600px 600px;
+  opacity: 0.9;
+  animation: starDrift 60s linear infinite;
+  will-change: transform;
+}
+/* different textures/speeds for parallax */
+.stars  { background-image: radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 2px); animation-duration: 120s; opacity: 0.85; }
+.stars2 { background-image: radial-gradient(circle, rgba(255,255,255,0.7) 1px, transparent 2px); background-size: 400px 400px; animation-duration: 90s; opacity: 0.6; transform: translateZ(0); }
+.stars3 { background-image: radial-gradient(circle, rgba(255,255,255,0.55) 1px, transparent 2px); background-size: 260px 260px; animation-duration: 70s; opacity: 0.45; }
+
+/* drift and spin */
+@keyframes starDrift {
+  from { transform: translate3d(0,0,0) }
+  to   { transform: translate3d(-1500px,1500px,0) }
+}
+@keyframes galaxySpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* debug helper: temporarily make stars obvious while testing */
+.galaxy-bg.debug { background: rgba(0,0,0,0.2); outline: 2px dashed rgba(255,255,255,0.06); }
+
+/* moonlight effect */
+.moon {
+  position: absolute; /* place inside .galaxy-rotate */
+  right: 10%;
+  top: 15%;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  box-shadow: 0 0 60px rgba(255,255,255,0.5), 0 0 120px rgba(180,180,255,0.25);
+  background: radial-gradient(circle at 30% 30%, #f5f5f5, #d0d0d0, #888);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===============================
+   DreamBook — Single Post Page
+   Clean + Isolated + Beautiful
+   =============================== */
+
+.single-post-page {
+  --bg: #f6f8fb;
+  --card: #ffffff;
+  --text: #00070f;
+  --muted: #7b8794;
+  --accent: #6ea8fe;
+  --accent-light: #d7e7ff;
+  --danger: #ff6b6b;
+  --radius: 12px;
+  --shadow: 0 4px 14px rgba(244, 235, 235, 0.08);
+  font-family: "Inter", sans-serif;
+  background: var(--bg);
+  padding: 40px 0;
+  background-color: #f6f5f1;
+}
+
+/* ----- Wrapper ----- */
+.single-post-page .single-post-wrapper {
+  max-width: 760px;
+  margin: auto;
+  padding: 0 20px;
+}
+
+/* ----- Post Card ----- */
+.single-post-page .post-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 25px;
+  box-shadow: var(--shadow);
+  margin-bottom: 25px;
+}
+
+.single-post-page .post-card h1 {
+  margin-top: 0;
+  font-size: 2rem;
+  color: var(--text);
+}
+
+.single-post-page .post-body {
+  margin: 15px 0;
+  font-size: 1.15rem;
+}
+
+.single-post-page .post-date {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* ----- Reaction Line ----- */
+.single-post-page .reactions {
+  margin-top: 18px;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+/* ----- Buttons ----- */
+.single-post-page button,
+.single-post-page .btn {
+  background: var(--accent);
+  border: none;
+  padding: 8px 16px;
   color: #fff;
-  border-radius: 12px;
-  padding: 2px 6px;
-  font-size: 11px;
-  margin-left: 6px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: 0.15s ease;
 }
 
-/* =========================================================
-   RESPONSIVE
-========================================================= */
-@media (max-width: 768px) {
-  .chat-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    height: 150px;
-    overflow-x: auto;
-    display: flex;
-    flex-direction: row;
-    border-right: none;
-    border-bottom: 1px solid var(--border-soft);
-  }
-
-  .sidebar h2, .sidebar h3 {
-    display: none;
-  }
-
-  .user-item {
-    flex: 0 0 auto;
-    border: none;
-    padding: 8px;
-  }
-
-  .messages, #chat-list {
-    padding: var(--space-2);
-  }
+.single-post-page button:hover {
+  background: #5595ff;
 }
+
+.single-post-page .danger {
+  background: var(--danger);
+}
+
+.single-post-page .danger:hover {
+  background: #ff5252;
+}
+
+/* ----- Edit Post Form ----- */
+.single-post-page #post-edit-form textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid #ccd2da;
+  font-size: 1rem;
+}
+
+/* ===============================
+   DREAMBOOK — UNIVERSAL DROPDOWN
+   CLEAN + NO CONFLICTS
+=================================*/
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+  z-index: 50; /* stays above comment box */
+}
+
+.dot-menu {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+
+.dot-menu:hover {
+  background: rgba(0,0,0,0.06);
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 24px;
+  background: var(--card);
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 8px;
+  min-width: 150px;
+  padding: 6px 0;
+  box-shadow: rgb(6, 6, 6);
+  z-index: 9999;
+}
+
+.dropdown-menu button,
+.dropdown-menu form button {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 0.92rem;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.dropdown-menu button:hover {
+  background: rgba(7, 66, 52, 0.05);
+}
+
+.dropdown-menu .delete {
+  color: var(--danger);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Chat-admin* /
+
+<style>
+    body {
+      background: #e5ddd5;
+      font-family: Arial;
+      margin: 0;
+    }
+
+    .chat-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      height: 90vh;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 20px auto;
+      max-width: 1100px;
+      background: white;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: #fff;
+      border-right: 1px solid #ddd;
+      overflow-y: auto;
+    }
+    .sidebar h2 {
+      background: #075E54;
+      color: white;
+      padding: 15px;
+      margin: 0;
+    }
+    .user-item {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+    }
+    .user-item a {
+      text-decoration: none;
+      color: #333;
+      font-weight: bold;
+    }
+    .user-item.active {
+      background: #f0f0f0;
+    }
+
+    /* Chat area */
+    .chat-area {
+      display: flex;
+      flex-direction: column;
+      background: #ece5dd;
+    }
+
+    .messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .bubble {
+      max-width: 60%;
+      padding: 10px 15px;
+      border-radius: 15px;
+      margin-bottom: 10px;
+      display: inline-block;
+      line-height: 1.4;
+      position: relative;
+    }
+
+    .me {
+      background: #d9fdd3;
+      align-self: flex-end;
+      border-bottom-right-radius: 0;
+    }
+
+    .them {
+      background: #fff;
+      border-bottom-left-radius: 0;
+    }
+
+    .send-box {
+      display: flex;
+      padding: 15px;
+      background: white;
+      border-top: 1px solid #ccc;
+    }
+
+    .send-box textarea {
+      flex: 1;
+      border-radius: 10px;
+      padding: 10px;
+      resize: none;
+    }
+
+    .send-box button {
+      background: #25D366;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      margin-left: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
 
     .delete-btn {
       font-size: 12px;
       margin-top: 3px;
       color: red;
     }
+  </style>
 
-.unread-badge {
-  background: #25d366;
-  color: #fff;
-  border-radius: 12px;
-  padding: 2px 6px;
-  font-size: 11px;
-  margin-left: 6px;
-}
-
-.receipt {
-  font-size: 11px;
-  opacity: 0.7;
-}
