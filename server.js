@@ -13,6 +13,7 @@ const path = require("path");
 const http = require("http");
 const fs = require("fs");
 
+
 const app = express();
 
 // ===================================================================
@@ -131,13 +132,12 @@ CREATE TABLE IF NOT EXISTS users (
 // ===================================================================
 function loadLang(lang) {
   try {
-    return JSON.parse(
-      fs.readFileSync(path.join(__dirname, "locales", `${lang}.json`), "utf8")
-    );
-  } catch {
-    return JSON.parse(
-      fs.readFileSync(path.join(__dirname, "locales", "en.json"), "utf8")
-    );
+    const filePath = path.join(__dirname, "lang", `${lang}.json`);
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch (err) {
+    console.error(`❌ Language file error: ${lang}.json`);
+    console.error(err.message);
+    return {};
   }
 }
 

@@ -3,67 +3,46 @@
   "contact": "አግኙን",
   "login": "ግባ",
   "register": "ተመዝገብ",
-  "welcome": "ወደ DreamBook እንኳን በደህና መጡ",
-  "logout": "ውጣ"
-}
+  "logout": "ውጣ",
 
-{
+  "welcomeTitle": "ወደ DreamBook እንኳን በደህና መጡ",
+  "subtitle": "የህልም መዝገበ-ቃላት፣ ትንተና እና ትርጓሜ",
+  "introNote": "የህልም ትርጉሞችን ያስሱ፣ መዝገበ-ቃላቱን ፈልጉ እና ህልሞቻችሁን ከ DreamBook community ጋር ያጋሩ።",
+
   "dashboardTitle": "የህልም መጽሔትዎ ዳሽቦርድ",
   "greeting": "ሰላም, <%= username %>!",
-  "noPosts": "እስካሁን ምንም ህልም አልጋረጥኩም።",
+  "noPosts": "እስካሁን ምንም ህልም አላጋራሁም።",
   "createPostPrompt": "አሁን የመጀመሪያዎን ህልም ያጋሩ!",
-  "viewPosts": "የህልሞችዎን ይመልከቱ",
-  "createPost": "ህልም ያጋሩ"
-}
-{
+  "viewPosts": "ህልሞችዎን ይመልከቱ",
+  "createPost": "ህልም ያጋሩ",
+
   "dictionaryTitle": "የህልም መዝገበ-ቃላት A–Z",
   "searchPlaceholder": "የህልም ትርጉሞችን ፈልጉ...",
-  "noResults": "'<%= query %>' የተመዘገበ ውጤት አልተገኘም። እባክዎ ከዚያ በተጨማሪ ቃል ፈልጉ።",
-  "browseAll": "የህልም ትርጉሞችን እያንዳንዱን ይመልከቱ"
-}
-{
+  "noResults": "'<%= query %>' ውጤት አልተገኘም።",
+  "browseAll": "ሁሉንም የህልም ትርጉሞች ይመልከቱ",
+
   "realnessTitle": "የህልም እውነታ ትንበያ",
-  "description": "እንዴት እንደሚመጣቸውን በDream Realness Analysis መጠቀ
-ም ያስተዋውቁ። የህልምዎን ዝርዝሮች ያስገቡ እና ጥቆማዎችን ያግኙ።",
+  "description": "Dream Realness Analysis በመጠቀም ህልሞችዎ ምን ያህል እውነተኛ እንደሆኑ ያስተውሉ።",
   "analyzeButton": "ህልም ያስተካክሉ",
-  "Explore dream meanings, search the dream dictionary, and share your dreams with the DreamBook community.": "የህልም ትርጉሞችን ያስሱ, የህልም መዝገበ-ቃላትን ፈልጉ, እና ህልሞቻችንን ከDreamBook  community ጋር ያጋሩ።",
-}
-{
-  "inboxTitle": "የህልም መጽሔትዎ ጣቢያ",
-  "noMessages": "አዲስ መልዶች የሉም።",
-  "checkBackLater": "ከDreamBook  community የሚለኩትን አዳዲስ መልዶች ለማየት በኋላ ደግሞ ይመለከቱ።"
-}
-{
+
+  "inboxTitle": "የ DreamBook መልዕክት ሳጥን",
+  "noMessages": "አዲስ መልዕክቶች የሉም።",
+  "checkBackLater": "በኋላ ደግሞ ይመለሱ።",
+
   "loginTitle": "ወደ DreamBook ግባ",
   "usernamePlaceholder": "የተጠቃሚ ስም",
   "passwordPlaceholder": "የይለፍ ቃል",
-  "forgotPassword": "የይለፍ ቃልዎን አጥፋችው?",
-  "noAccountPrompt": "መለያ የለዎትም? አሁን ይመዝገቡ!"
-}
-{
+  "forgotPassword": "የይለፍ ቃልዎን ረሱ?",
+  "noAccountPrompt": "መለያ የለዎትም? አሁን ይመዝገቡ!",
+
   "adminTitle": "የአስተዳደር ዳሽቦርድ",
   "manageUsers": "ተጠቃሚዎችን አስተዳድር",
-  "reviewPosts": "የህልም ጽሁፎችን እንገባ",
-  "siteSettings": "የጣቢያ ቅንብሮች"
-}
-{
-  "createPostTitle": "አዲስ የህልም ጽሁፍ ፍጠር",
-  "dreamContentPlaceholder": "እዚህ ህልምዎን መግለጫ...",
-  "submitButton": "ህልም ያጋሩ",
-  "cancelButton": "ሰርዝ"
-}
-{
-  "contactTitle": "ወደ DreamBook ድጋፍ ይግቡ",
-  "namePlaceholder": "የእርስዎ ስም",
-  "emailPlaceholder": "የእርስዎ ኢሜይል",
-  "messagePlaceholder": "የእርስዎ መልእክት",
-  "sendButton": "መልእክት ላክ"
-}
-{
-  "registerTitle": "ወደ DreamBook ይመዝገቡ",
-  "usernamePlaceholder": "የተጠቃሚ ስም ይምረጡ",
-  "emailPlaceholder": "የእርስዎ ኢሜይል",
-  "passwordPlaceholder": "የይለፍ ቃል ፍጠር",
-  "confirmPasswordPlaceholder": "የይለፍ ቃል አረጋግጥ",
-  "registerButton": "መለያ ፍጠር"
+  "reviewPosts": "ህልሞችን ገምግም",
+  "siteSettings": "የጣቢያ ቅንብሮች",
+
+  "contactTitle": "DreamBook ድጋፍ",
+  "namePlaceholder": "ስም",
+  "emailPlaceholder": "ኢሜይል",
+  "messagePlaceholder": "መልዕክት",
+  "sendButton": "መልዕክት ላክ"
 }
