@@ -23,17 +23,23 @@
       </button>
 
       <!-- NAV LINKS -->
-      <div class="nav-links" id="navLinks" role="menubar" aria-hidden="true">
-        <a role="menuitem" href="/dictionary">Dream Dictionary</a>
-        <a role="menuitem" href="/dream-realness">Dream Analyzer</a>
-        <a role="menuitem" href="/dashboard">Public Posts</a>
-        <a role="menuitem" class="db-cta" href="/create-post">Post Your Dream</a>
-        <a role="menuitem" href="/inbox">Inbox</a>
-        <a role="menuitem" href="/notifications">Notifications</a>
-        <a role="menuitem" href="/admin">Admin Panel</a>
-      
+      <div class="nav-links" id="navLinks" aria-hidden="true">
+        <a href="/dictionary"><%= t.dictionaryTitle %></a>
+        <a href="/dream-realness"><%= t.realnessTitle %></a>
+        <a href="/dashboard"><%= t.dashboardTitle %></a>
+        <a class="db-cta" href="/create-post"><%= t.createPost %></a>
+        <a href="/inbox"><%= t.inboxTitle %></a>
 
- 
+        <% if (user && user.role === "admin") { %>
+          <a href="/admin"><%= t.adminTitle %></a>
+        <% } %>
+
+        <!-- LANGUAGE SWITCH -->
+        <span class="lang-switch">
+          <a href="<%= request.path %>?lang=en">English</a> |
+          <a href="<%= request.path %>?lang=am">አማርኛ</a>
+        </span>
+
         <!-- ACCOUNT DROPDOWN -->
         <div class="dropdown">
           <button
@@ -46,15 +52,16 @@
             Account ▾
           </button>
 
-          <div class="dropdown-content" id="accountMenu" role="menu" aria-hidden="true">
+          <div class="dropdown-content" id="accountMenu">
             <% if (user) { %>
-              <a role="menuitem" href="/logout"><%= user.username %> · Logout</a>
+              <a href="/logout"><%= user.username %> · <%= t.logout %></a>
             <% } else { %>
-              <a role="menuitem" href="/register">Signup</a>
-              <a role="menuitem" href="/login">Login</a>
+              <a href="/register"><%= t.register %></a>
+              <a href="/login"><%= t.login %></a>
             <% } %>
           </div>
         </div>
+
       </div>
     </div>
   </nav>
