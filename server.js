@@ -546,6 +546,10 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
       currentPage: page,
       totalPages,
       countReactions,
+      user: req.user,
+      request: req,      // <--- Pass req here
+      lang: req.query.lang || "en",
+      lang: req.query.lang || "am",
       // SEO (dashboard should be NOINDEX)
       title: "DreamBook Community Dashboard",
       description: "Browse dreams shared by the DreamBook community.",
