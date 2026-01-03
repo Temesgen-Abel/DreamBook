@@ -21,7 +21,7 @@
     <p class="post-date">
       Dream shared by <strong><%= post.username %></strong>
       on
-      <time datetime="<%= isValidDate ? postDate.toISOString() : '' %>">
+      <time createdDate="<%= isValidDate ? postDate.toISOString() : '' %>">
         <%= isValidDate ? postDate.toLocaleDateString() : "createdDate" %>
       </time>
     </p>
@@ -31,7 +31,7 @@
     </div>
 
     <!-- Reactions -->
-    <form style="font-size:24px" action="/post/<%= post.id %>/reactions" method="POST">
+    <form style="font-size: 44px;" action="/post/<%= post.id %>/reactions" method="POST">
       <button name="reaction" value="like">👍 Like</button>
       <button name="reaction" value="dislike">👎 Dislike</button>
       <button type="button"
