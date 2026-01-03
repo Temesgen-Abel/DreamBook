@@ -31,7 +31,7 @@
 
   <main class="wrapper page-wrapper dashboard-page">
 <form action="/create-post" method="post"> 
-   <h1 style="center">Community Dream Posts</h1>
+   <h1>Community Dream Posts</h1>
   <input type="text" name="body" placeholder="Share Your Dream">
   <button class="btn" type="submit">Post</button>
 </form>
@@ -42,7 +42,7 @@
         <% posts.forEach(post => { %>
           <article class="post-card">
             <h2><a href="/post/<%= post.id %>"><%= post.username %>'s Dream</a></h2>
-            <p class="font-size: 16"><%- post.body %></p>
+            <p><%- post.body %></p>
 
             <div class="reactions">
               👍 <%= countReactions.get(post.id)?.likes || 0 %> • 👎 <%= countReactions.get(post.id)?.dislikes || 0 %>
