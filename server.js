@@ -13,7 +13,6 @@ const path = require("path");
 const http = require("http");
 const fs = require("fs");
 
-
 const app = express();
 
 // ===================================================================
@@ -22,7 +21,7 @@ const app = express();
 let pool;
 async function createPoolOrExit() {
   const conn = process.env.DATABASE_URL || process.env.PG_CONNECTION;
-  
+
   if (!conn) {
     console.error("ERROR: Missing DATABASE_URL or PG_CONNECTION");
     process.exit(1);
@@ -132,7 +131,7 @@ CREATE TABLE IF NOT EXISTS users (
 // ===================================================================
 function loadLang(lang) {
   try {
-    const filePath = path.join(__dirname, "lang", `${lang}.json`);
+    const filePath = path.resolve(__dirname, "lang", `${lang}.json`);
     return JSON.parse(fs.readFileSync(filePath, "utf8"));
   } catch (err) {
     console.error(`❌ Language file error: ${lang}.json`);
@@ -169,10 +168,11 @@ function newResetToken() {
   return crypto.randomBytes(20).toString("hex");
 }
 
-/* ===== FIX: ROLE-BASED ADMIN CHECK ===== */
-function adminOnly(req, res, next) {
-  if (!req.user || req.user.role !== "admin") {
-    return res.status(403).render("/login", {
+/* ===== ROLE-BASED ADMIN CHECK ===== */
+function mustBeAdmin(req, res, next) {
+  if (!req.user) return res.redirect("/login");
+  if (req.user.role !== "admin") {
+    return res.status(403).render("403", {
       message: "Admin access required."
     });
   }
@@ -181,7 +181,7 @@ function adminOnly(req, res, next) {
 
 // ===================================================================
 // 4. MIDDLEWARE
-
+// ===================================================================
 async function authMiddleware(req, res, next) {
   const token = req.cookies?.DreamBookApp;
   req.user = null;
@@ -217,18 +217,7 @@ function mustBeLoggedIn(req, res, next) {
   next();
 }
 
-function mustBeAdmin(req, res, next) {
-  if (!req.user) return res.redirect("/login");
-  if (req.user.role !== "admin") {
-    return res.status(403).render("403", {
-      message: "Admin access required."
-    });
-  }
-  next();
-}
-
 //unread middleware
-
 async function unreadMiddleware(req, res, next) {
   if (!req.user) {
     res.locals.unreadCount = 0;
@@ -260,9 +249,7 @@ async function unreadMiddleware(req, res, next) {
   next();
 }
 
-
-// 4.1 VISITOR COUNTER (FIXED & SAFE)
-// ===================================================================
+// 4.1 VISITOR COUNTER
 let visitCount = 0;
 
 app.use((req, res, next) => {
@@ -283,12 +270,9 @@ app.use((req, res, next) => {
   next();
 });
 
-
-
 // ===================================================================
 // 5. EXPRESS + SOCKET.IO SETUP
 // ===================================================================
-
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
@@ -297,7 +281,6 @@ app.use(express.static("public"));
 app.use(cookieParser());
 app.set("trust proxy", 1);
 
-/* ===== FIX: AUTH FIRST ===== */
 app.use(authMiddleware);
 app.use(unreadMiddleware);
 
@@ -309,15 +292,11 @@ app.use((req, _, next) => {
 const server = http.createServer(app);
 const io = require("socket.io")(server, { cors: { origin: "*" } });
 app.set("io", io);
-
 // ===================================================================
+// 6. ROUTES
 // 6. ROUTES admin issue only 
-app.get("/admin", mustBeLoggedIn, adminOnly, async (req, res) => {
+app.get("/admin", mustBeAdmin, async (req, res) => {
   try {
-//count those who vist the website without registering
- visitCount++; 
-
-    // 1️⃣ Run database queries FIRST
     const userResult = await dbGet(
       "SELECT COUNT(*)::int AS userCount FROM users"
     );
@@ -330,28 +309,22 @@ app.get("/admin", mustBeLoggedIn, adminOnly, async (req, res) => {
       "SELECT COUNT(*)::int AS commentCount FROM comments"
     );
 
-    // 2️⃣ Extract values safely
-    const userCount = userResult?.userCount || 0;
-    const postCount = postResult?.postCount || 0;
-    const commentCount = commentResult?.commentCount || 0;
-
-    // 3️⃣ Send data to EJS
     res.render("admin", {
-      userCount,
-      postCount,
-      commentCount
+      userCount: userResult?.userCount || 0,
+      postCount: postResult?.postCount || 0,
+      commentCount: commentResult?.commentCount || 0
+      // visitCount is already available via res.locals
     });
+
   } catch (err) {
     console.error("Admin stats error:", err);
     res.render("admin", {
-      visitCount:0,
       userCount: 0,
       postCount: 0,
       commentCount: 0
     });
   }
 });
-
 
 // 6.0 Home Route
 app.get("/", (req, res) => {
@@ -412,24 +385,9 @@ app.get("/logout", (req, res) => {
 
 
 //6.3 admin login route
-app.get("/admin-login", (_, res) => res.render("admin-login", { errors: [], error: null }));
 
-app.post("/admin-login", async (req, res) => {
-  const username = req.body.username.trim();
-  const password = req.body.password.trim();
-
-  if (username !== process.env.ADMIN_USERNAME || password !== process.env.ADMIN_PASSWORD) {
-    return res.render("admin-login", { errors: [], error: "Invalid admin credentials" });
-  }
-
-  const adminUser = await dbGet("SELECT * FROM users WHERE username=$1", [username]);
-
-  res.cookie("DreamBookApp", signToken(adminUser), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict"
-  });
-  res.redirect("/dashboard");
+app.post("/login", async (req, res) => {
+  // check username/password from users table
 });
 
 
@@ -471,7 +429,12 @@ app.post("/register", async (req, res) => {
   );
 
   // Log user in (cookie with token)
-  res.cookie("DreamBookApp", signToken(newUser));
+  res.cookie("DreamBookApp", signToken(newUser)), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict"
+  };
+
   res.redirect("/dashboard");
 });
 
@@ -1108,7 +1071,7 @@ app.get("/dictionary/live", async (req, res) => {
     [`${q}%`]
   );
 
-  res.json(result.rows);
+  res.json(result);
 });
 // 6.19. NOTIFICATIONS
 // ===================================================================
@@ -1298,7 +1261,7 @@ async function ensureAdmin() {
 
 // ===================================================================
 // 8. START SERVER
-
+// ===================================================================
 (async () => {
   await createPoolOrExit();
   await initDb();
