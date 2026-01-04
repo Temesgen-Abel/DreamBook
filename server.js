@@ -116,12 +116,12 @@ CREATE TABLE IF NOT EXISTS users (
   `);
 
   await dbRun(`
-      CREATE TABLE dictionary (
+    CREATE TABLE IF NOT EXISTS dictionary (
       id SERIAL PRIMARY KEY,
       term_en TEXT,
       meaning_en TEXT,
       term_am TEXT,
-      meaning_am TEXT,
+      meaning_am TEXT
     );
   `);
 
