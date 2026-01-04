@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <%- include("includes/head") %>
+  <%- include("includes/head") %>
 </head>
+
 <body>
 
   <!-- GALAXY BACKGROUND -->
@@ -16,31 +17,98 @@
   </div>
 
   <main class="wrapper" style="text-align:center; margin-top:80px;">
- <img src="/images/DreamBook.png" alt="DreamBook logo" class="DreamBook-logo"/>
-          <h1 style="color: blue; font-size: 24px;"><% t.WelcomeTitle %></h1>
 
-    <h2><% t.subtitle %></h2>
+    <img src="/images/DreamBook.png"
+         alt="DreamBook logo"
+         class="DreamBook-logo" />
 
-    <h3 style="color: #0d1edf; font-size:24px;"> <strong> <% t.welcomeTitle %></strong></h3>
-    <p>
-      <div class="div"> 
+    <h1 style="color: blue; font-size: 24px;">
+      <%= t.welcomeTitle %>
+    </h1>
 
-ይህ ድረ-ገፅ የተፈጠረዉ ጥልቅ ሳይንሳዊ ጥናት ከተደረጋ በኋላ ነዉ፡፡ በዚህ አጋጣሚ ጥናቱን እንዲካሄድ ድሬዳዋ ዩንቨርስቲ ላደረገዉ አስተዋፅኦ ከልብ የመነጨ ምስጋና ይገባዋል፡፡ 
-ጥናቱ የተካሄደዉ ኢትዮጵያ ላይ በተለይም ምስራቅ ኢትዮጵያ ሲሆን፣ በጥናቱ ወቅት የኢትዮጵያ ህዘብ ህልም በእለት ከዕለት ኑሯቸዉ ዉስት ትልቅ ተፅኖ እንዳለዉ መረዳት ተችሏል፡፡ 
-በጥናቱ ተሳታፊ የነበሩ ሰዎች እንዳስረዱት በህልማቸዉ አማካኝነት ወደፊት ሚሆነዉን ብቻ ሳይሆን ለታመሙት በሽታ መድሃኒት በህልማቸዉ አይተዉ እንደዳኑ  ልምዳቸዉን አጋርተዉናል፡፡ 
-ነገር ግን ሁሉም ህልም አዉነት እንዳልሆነና ሁሉም ሰዉ ደግሞ አዉነተኛ ህልም ሊያይ እንደማይችል አስገንዝበዉናል፡፡ ስለሆነም ሰዎች ያዩትን ህልም እዉነተ ነዉ ወይስ ቅዠት የሚለዉን ለመገመት የሚያስችል አመላካች የሆኑ ሃገር በቀል እዉቀት እንዳሏቸዉ ተረድተናል፡፡  
-እንደ አጠቃላይ የጥናቱን ዉጤት ከግምት ዉስጥ በማስገባት የሚከተሉትን አገልግሎት ያለገደብ ለዓለም ህዝብ በዚህ ድረ-ገፅ ማቅረባችንን በታላቅ ደስታ እናበስራለን፡፡
+    <h2>
+      <%= t.subtitle %>
+    </h2>
 
-<ol style="1">
-      <li>የህልም መፍቻ ዲክሽነሪ(የሚየዉቁትን ህልም መጨመርና ያዩትን ህልም ትርጉም ማግኘት) ይችላሉ
-      <li>ህልሞችን መለጠፍና የተለጠፉትን ህልሞች መተርጎም እና አስተያይት መስጠት ይችላሉ
-      <li>ህልምዎን ማስተርጎም እና 
-      <li>ያዩትን ህልም እዉነተኝነት መገመት ይችላሉ፡፡  
-</ol>    
-    </p>
+    <h3 style="color:#0d1edf; font-size:24px;">
+      <strong><%= t.welcomeTitle %></strong>
+    </h3>
+
+    <!-- Amharic Content -->
+    <div style="text-align:left; max-width:900px; margin:0 auto;">
+
+      <p>
+        ይህ ድረ-ገፅ የተፈጠረዉ ጥልቅ ሳይንሳዊ ጥናት ከተደረጋ በኋላ ነዉ፡፡
+        በዚህ አጋጣሚ ጥናቱን እንዲካሄድ ድሬዳዋ ዩንቨርስቲ ላደረገዉ አስተዋፅኦ
+        ከልብ የመነጨ ምስጋና ይገባዋል፡፡
+      </p>
+
+      <p>
+        ጥናቱ የተካሄደዉ ኢትዮጵያ ላይ በተለይም ምስራቅ ኢትዮጵያ ሲሆን፣
+        በጥናቱ ወቅት የኢትዮጵያ ህዝብ ህልም በእለት ከዕለት ኑሯቸዉ
+        ዉስጥ ትልቅ ተፅኖ እንዳለዉ መረዳት ተችሏል፡፡
+      </p>
+
+      <p>
+        በጥናቱ ተሳታፊ የነበሩ ሰዎች እንዳስረዱት በህልማቸዉ
+        አማካኝነት ወደፊት ሚሆነዉን ብቻ ሳይሆን
+        ለታመሙት በሽታ መድሃኒት በህልማቸዉ
+        አይተዉ እንደዳኑ ልምዳቸዉን አጋርተዉናል፡፡
+      </p>
+
+      <p>
+        ነገር ግን ሁሉም ህልም አዉነት እንዳልሆነና
+        ሁሉም ሰዉ ደግሞ አዉነተኛ ህልም ሊያይ
+        እንደማይችል አስገንዝበዉናል፡፡
+      </p>
+
+      <p>
+        ስለሆነም ሰዎች ያዩትን ህልም እዉነተ
+        ነዉ ወይስ ቅዠት የሚለዉን ለመገመት
+        የሚያስችል አመላካች የሆኑ
+        ሃገር በቀል እዉቀት እንዳሏቸዉ
+        ተረድተናል፡፡
+      </p>
+
+      <p>
+        እንደ አጠቃላይ የጥናቱን ዉጤት
+        ከግምት ዉስጥ በማስገባት
+        የሚከተሉትን አገልግሎት
+        ያለገደብ ለዓለም ህዝብ
+        በዚህ ድረ-ገፅ ማቅረባችንን
+        በታላቅ ደስታ እናበስራለን፡፡
+      </p>
+
+      <ol>
+        <li>
+          የህልም መፍቻ ዲክሽነሪ
+          (የሚያውቁትን ህልም መጨመርና
+          ያዩትን ህልም ትርጉም ማግኘት)
+          ይችላሉ፡፡
+        </li>
+        <li>
+          ህልሞችን መለጠፍና
+          የተለጠፉትን ህልሞች
+          መተርጎም እና
+          አስተያይት መስጠት
+          ይችላሉ፡፡
+        </li>
+        <li>
+          ህልምዎን ማስተርጎም
+          ይችላሉ፡፡
+        </li>
+        <li>
+          ያዩትን ህልም
+          እዉነተኝነት
+          መገመት
+          ይችላሉ፡፡
+        </li>
+      </ol>
+
+    </div>
 
     <p style="color:#0d1edf; margin-top:10px; font-size:12px;">
-      <% t.introNote %>
+      <%= t.introNote %>
     </p>
 
     <div style="margin-top:30px;">
@@ -48,15 +116,15 @@
         <%= t.createAccount %>
       </a>
 
-      <a href="/login?lang=<%= lang %>" class="btn" style="background:#4f76df;">
+      <a href="/login?lang=<%= lang %>"
+         class="btn"
+         style="background:#4f76df;">
         <%= t.login %>
       </a>
     </div>
 
   </main>
- 
-</body>
- <%- include("includes/footer") %>
+
+</body>  
+<%- include("includes/footer") %>
 </html>
-
-
