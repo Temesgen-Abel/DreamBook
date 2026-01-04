@@ -1093,6 +1093,25 @@ app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
   res.redirect("/dictionary?success=added");
 });
 
+//dictionary translate route
+app.post("/dictionary/:id/translate", mustBeLoggedIn, async (req, res) => {
+  const { term, meaning, lang } = req.body;
+
+  if (lang === "am") {
+    await dbRun(
+      "UPDATE dictionary SET term_am=$1, meaning_am=$2 WHERE id=$3",
+      [term, meaning, req.params.id]
+    );
+  } else {
+    await dbRun(
+      "UPDATE dictionary SET term_en=$1, meaning_en=$2 WHERE id=$3",
+      [term, meaning, req.params.id]
+    );
+  }
+
+  res.redirect("/dictionary?success=updated");
+});
+
 // -----------------------------
 // POST /dictionary/:id/edit
 // -----------------------------

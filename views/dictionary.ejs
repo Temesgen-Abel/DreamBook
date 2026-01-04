@@ -121,7 +121,7 @@
         <!-- ADMIN CONTROLS -->
         <% if (user && user.role === "admin") { %>
           <button class="btn small" onclick="toggleAdmin('<%= t.id %>')">
-            Admin Options
+            Admin Controls ⚙️
           </button>
 
           <div class="admin-controls" id="admin-<%= t.id %>" style="display:none;">
@@ -189,6 +189,7 @@
   }
 </script>
 
-<%- include("includes/footer") %>
+
 </body>
+<%- include("includes/footer") %>
 </html>
