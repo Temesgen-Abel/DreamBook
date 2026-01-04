@@ -1094,29 +1094,33 @@ app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
 });
 
 //dictionary translate route
-app.post("/dictionary/:id/translate", mustBeLoggedIn, async (req, res) => {
-  const { term, meaning, lang } = req.body;
+app.get("/dictionary/:id/translate", mustBeLoggedIn, async (req, res) => {
+  const { id } = req.params;
+  const { to } = req.query;
 
-  if (lang === "am") {
-    await dbRun(
-      "UPDATE dictionary SET term_am=$1, meaning_am=$2 WHERE id=$3",
-      [term, meaning, req.params.id]
-    );
-  } else {
-    await dbRun(
-      "UPDATE dictionary SET term_en=$1, meaning_en=$2 WHERE id=$3",
-      [term, meaning, req.params.id]
-    );
-  }
+  const entry = await dbGet(
+    "SELECT * FROM dictionary WHERE id = $1",
+    [id]
+  );
 
-  res.redirect("/dictionary?success=updated");
+  if (!entry) return res.status(404).send("Not found");
+
+  res.render("dictionary/translate", {
+    entry,
+    lang: to // am or en
+  });
 });
+
 
 // -----------------------------
 // POST /dictionary/:id/edit
 // -----------------------------
-app.post("/dictionary/:id/edit", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
+app.post("/dictionary/:id/translate", mustBeLoggedIn, async (req, res) => {
   const { term, meaning, lang } = req.body;
+
+  if (!["am", "en"].includes(lang)) {
+    return res.status(400).send("Invalid language");
+  }
 
   if (lang === "am") {
     await dbRun(
@@ -1136,7 +1140,7 @@ app.post("/dictionary/:id/edit", mustBeLoggedIn, mustBeAdmin, async (req, res) =
 // -----------------------------
 // POST /dictionary/:id/delete
 // -----------------------------
-app.post("/:id/delete", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
+app.post("/dictionary/:id/delete", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
   await dbRun("DELETE FROM dictionary WHERE id=$1", [req.params.id]);
   res.redirect("/dictionary?success=deleted");
 });
