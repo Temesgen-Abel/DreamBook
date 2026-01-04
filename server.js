@@ -1011,7 +1011,7 @@ app.post("/chat-admin/:id", mustBeAdmin, async (req, res) => {
 // ================================
 // Dictionary Routes
 // -----------------------------
-app.get("/", mustBeLoggedIn, async (req, res) => {
+app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
   const searchQuery = req.query.q?.trim() || "";
   const lang = req.query.lang || "en";
 
@@ -1048,7 +1048,7 @@ app.get("/", mustBeLoggedIn, async (req, res) => {
 // -----------------------------
 // POST /dictionary/add
 // -----------------------------
-app.post("/add", mustBeLoggedIn, async (req, res) => {
+app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
   const { term, meaning, lang } = req.body;
 
   const errors = [];
