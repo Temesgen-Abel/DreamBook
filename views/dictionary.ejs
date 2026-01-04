@@ -121,7 +121,7 @@
         <!-- ADMIN CONTROLS -->
         <% if (user && user.role === "admin") { %>
           <button class="btn small" onclick="toggleAdmin('<%= t.id %>')">
-            Admin Controls ⚙️
+           ⚙️
           </button>
 
           <div class="admin-controls" id="admin-<%= t.id %>" style="display:none;">
@@ -130,6 +130,9 @@
               <input name="term" value="<%= lang === 'am' ? t.term_am : t.term_en %>" required>
               <textarea name="meaning" required><%= lang === 'am' ? t.meaning_am : t.meaning_en %></textarea>
               <button type="submit" class="btn small">Update</button>
+               <% if (success === "updated") { %>
+          <div class="alert success"> Successfully updated✔️</div>
+            <% } %>
             </form>
 
             <form
