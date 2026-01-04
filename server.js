@@ -116,11 +116,13 @@ CREATE TABLE IF NOT EXISTS users (
   `);
 
   await dbRun(`
-    CREATE TABLE IF NOT EXISTS dictionary (
+      CREATE TABLE dictionary (
       id SERIAL PRIMARY KEY,
-      term TEXT,
-      meaning TEXT
-    )
+      term_en TEXT,
+      meaning_en TEXT,
+      term_am TEXT,
+      meaning_am TEXT,
+    );
   `);
 
   console.log("✔ Database schema initialized");
@@ -249,7 +251,7 @@ async function unreadMiddleware(req, res, next) {
   next();
 }
 
-// 4.1 VISITOR COUNTER
+// 4.1 VISITOR COUNTER middleware
 let visitCount = 0;
 
 app.use((req, res, next) => {
@@ -262,6 +264,8 @@ app.use((req, res, next) => {
     req.user?.role === "admin" ? visitCount : null;
   next();
 });
+
+//language middleware
 
 app.use((req, res, next) => {
   const lang = req.query.lang || "en";
@@ -1005,126 +1009,139 @@ app.post("/chat-admin/:id", mustBeAdmin, async (req, res) => {
 });
 
 // ================================
-// 6.18. Routes for the dictionary
-// ================================
-
-// GET /dictionary - show dictionary and handle search
-app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
+// Dictionary Routes
+// -----------------------------
+app.get("/", mustBeLoggedIn, async (req, res) => {
   const searchQuery = req.query.q?.trim() || "";
+  const lang = req.query.lang || "en";
 
-  // Fetch terms based on search query or show all
   const terms = searchQuery
     ? await dbQuery(
-        "SELECT * FROM dictionary WHERE term ILIKE $1 OR meaning ILIKE $1 ORDER BY term ASC",
+        `
+        SELECT *
+        FROM dictionary
+        WHERE term_en ILIKE $1
+           OR meaning_en ILIKE $1
+           OR term_am ILIKE $1
+           OR meaning_am ILIKE $1
+        ORDER BY COALESCE(term_en, term_am) ASC
+        `,
         [`%${searchQuery}%`]
       )
-    : await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
+    : await dbQuery(
+        "SELECT * FROM dictionary ORDER BY COALESCE(term_en, term_am) ASC"
+      );
 
   res.render("dictionary", {
     terms,
     user: req.user,
     errors: [],
     success: req.query.success || "",
-    searchQuery, // ✅ pass searchQuery to EJS
+    searchQuery,
+    lang,
     title: "Dream Dictionary | Dream Meanings & Interpretation",
     description: "Browse the dream dictionary A–Z to discover dream meanings.",
     canonical: "https://dreambook.com.et/dictionary"
   });
 });
 
-// POST /dictionary/add - add a new term
-app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
-  const term = req.body.term?.trim();
-  const meaning = req.body.meaning?.trim();
-  const errors = [];
+// -----------------------------
+// POST /dictionary/add
+// -----------------------------
+app.post("/add", mustBeLoggedIn, async (req, res) => {
+  const { term, meaning, lang } = req.body;
 
+  const errors = [];
   if (!term) errors.push("Dream symbol is required.");
   if (!meaning) errors.push("Dream meaning is required.");
 
   if (errors.length) {
-    const terms = await dbQuery("SELECT * FROM dictionary ORDER BY term ASC");
+    const terms = await dbQuery(
+      "SELECT * FROM dictionary ORDER BY COALESCE(term_en, term_am) ASC"
+    );
     return res.render("dictionary", {
       terms,
       user: req.user,
       errors,
       success: "",
-      searchQuery: ""
+      searchQuery: "",
+      lang
     });
   }
 
-  await dbRun("INSERT INTO dictionary (term, meaning) VALUES ($1,$2)", [term, meaning]);
+  const data = {
+    term_en: null,
+    meaning_en: null,
+    term_am: null,
+    meaning_am: null
+  };
+
+  if (lang === "en") {
+    data.term_en = term;
+    data.meaning_en = meaning;
+  } else if (lang === "am") {
+    data.term_am = term;
+    data.meaning_am = meaning;
+  }
+
+  await dbRun(
+    `INSERT INTO dictionary (term_en, meaning_en, term_am, meaning_am)
+     VALUES ($1, $2, $3, $4)`,
+    [data.term_en, data.meaning_en, data.term_am, data.meaning_am]
+  );
+
   res.redirect("/dictionary?success=added");
 });
 
-// POST /dictionary/:id/edit - edit a term (admin only)
-app.post("/dictionary/:id/edit", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
-  await dbRun(
-    "UPDATE dictionary SET term=$1, meaning=$2 WHERE id=$3",
-    [req.body.term, req.body.meaning, req.params.id]
-  );
+// -----------------------------
+// POST /dictionary/:id/edit
+// -----------------------------
+app.post("/:id/edit", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
+  const { term, meaning, lang } = req.body;
+
+  if (lang === "am") {
+    await dbRun(
+      "UPDATE dictionary SET term_am=$1, meaning_am=$2 WHERE id=$3",
+      [term, meaning, req.params.id]
+    );
+  } else {
+    await dbRun(
+      "UPDATE dictionary SET term_en=$1, meaning_en=$2 WHERE id=$3",
+      [term, meaning, req.params.id]
+    );
+  }
+
   res.redirect("/dictionary?success=updated");
 });
 
-// POST /dictionary/:id/delete - delete a term (admin only)
-app.post("/dictionary/:id/delete", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
+// -----------------------------
+// POST /dictionary/:id/delete
+// -----------------------------
+app.post("/:id/delete", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
   await dbRun("DELETE FROM dictionary WHERE id=$1", [req.params.id]);
   res.redirect("/dictionary?success=deleted");
 });
 
-// GET /dictionary/live - live search API
-app.get("/dictionary/live", async (req, res) => {
+// -----------------------------
+// GET /dictionary/live
+// -----------------------------
+app.get("/live", async (req, res) => {
   const q = req.query.q?.trim();
+  const lang = req.query.lang || "en";
+
   if (!q) return res.json([]);
 
   const result = await dbQuery(
-    "SELECT term FROM dictionary WHERE term ILIKE $1 LIMIT 8",
+    `
+    SELECT id, term_en, term_am
+    FROM dictionary
+    WHERE term_en ILIKE $1 OR term_am ILIKE $1
+    ORDER BY COALESCE(term_en, term_am)
+    LIMIT 8
+    `,
     [`${q}%`]
   );
-
-  res.json(result);
-});
-// 6.19. NOTIFICATIONS
-// ===================================================================
-app.get("/notifications", mustBeLoggedIn, async (req, res) => {
-  const me = req.user.id;
-
-  const list = await dbQuery(`
-    SELECT m.*, u.username AS sendername
-    FROM messages m
-    JOIN users u ON u.id = m.senderid
-    WHERE m.receiverid=$1
-    ORDER BY m.createdAt DESC
-  `, [me]);
-
-  const view = path.join(__dirname, "views", "notifications.ejs");
-
-  if (fs.existsSync(view)) {
-    return res.render("notifications", { notifications: list, user: req.user });
-  }
-
-  // Fallback
-  let html = "<h1>Notifications</h1>";
-  if (!list.length) html += "<p>No notifications.</p>";
-  else {
-    html += "<ul>";
-    for (const n of list)
-      html += `<li><strong>${sanitizeHTML(n.sendername)}</strong>: ${sanitizeHTML(n.message)} (${n.createdat})</li>`;
-    html += "</ul>";
-  }
-  res.send(html);
-});
-
-app.post("/notifications/mark-all-read", mustBeLoggedIn, async (req, res) => {
-  await dbRun("UPDATE messages SET is_read=true WHERE receiverid=$1", [req.user.id]);
-  res.redirect("/notifications");
-});
-
-app.get("/notifications/unread-count", mustBeLoggedIn, async (req, res) => {
-  const row = await dbGet(
-    "SELECT COUNT(*)::int AS count FROM messages WHERE receiverid=$1 AND is_read=false",
-    [req.user.id]
-  );
-  res.json({ unread: row?.count || 0 });
+  
 });
 
 //6.20. dream analyzer
