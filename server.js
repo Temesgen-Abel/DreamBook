@@ -159,7 +159,7 @@ function sanitizeBody(text) {
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  throw new Error("JWTSECRET missing in environment variables");
+  throw new Error("JJWT_SECRET missing in environment variables");
 }
 
 function signToken(user) {
