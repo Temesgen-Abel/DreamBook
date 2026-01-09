@@ -15,6 +15,14 @@ const fs = require("fs");
 
 const app = express();
 
+//backup schedule
+const cron = require("node-cron");
+
+cron.schedule("0 2 * * *", () => {
+  require("./backup");
+});
+
+
 // ===================================================================
 // 1. DATABASE SETUP
 // ===================================================================
