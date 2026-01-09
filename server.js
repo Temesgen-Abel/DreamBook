@@ -29,15 +29,6 @@ cron.schedule("0 2 * * *", () => {
 let pool;
 async function createPoolOrExit() {
   const conn = process.env.DATABASE_URL || process.env.PG_CONNECTION;
-  //temporary debug logs
-  try {
-  const parsed = new URL(conn);
-  console.log("DB DEBUG → host:", parsed.host);
-  console.log("DB DEBUG → user:", parsed.username);
-} catch (e) {
-  console.error("DB DEBUG → invalid connection string");
-}
-//end debug logs
 
   if (!conn) {
     console.error("ERROR: Missing DATABASE_URL or PG_CONNECTION");
