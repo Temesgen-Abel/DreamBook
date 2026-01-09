@@ -1122,7 +1122,7 @@ app.get("/dictionary/:id/translate", mustBeLoggedIn, async (req, res) => {
 // -----------------------------
 // POST /dictionary/:id/edit
 // -----------------------------
-app.post("/dictionary/:id/translate", mustBeLoggedIn, async (req, res) => {
+app.post("/dictionary/:id/edit", mustBeLoggedIn, async (req, res) => {
   const { term, meaning, lang } = req.body;
 
   if (!["am", "en"].includes(lang)) {
