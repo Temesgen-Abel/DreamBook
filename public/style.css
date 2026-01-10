@@ -101,6 +101,9 @@
   padding: 1.5em;
   margin: 1em;
   float: column;
+  border-radius: 95px;
+  border: 2px solid green;
+  content: center;
 }
 
 .input{
