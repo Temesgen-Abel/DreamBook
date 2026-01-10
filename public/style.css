@@ -103,12 +103,12 @@
   float: column;
 }
 
-.input-field{
+.input{
   width: 100%;
   padding: 0.5em;
   margin: 0.5em 0;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
+  border: 1px solid green;
+  border-radius: 100px;
 }
 
 
