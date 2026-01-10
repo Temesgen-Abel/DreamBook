@@ -96,11 +96,19 @@
   login & register pages
 ================================ */
 .login-form{
-  width: 1500px;
+  width: 500px;
   height: 340px;
   padding: 1.5em;
   margin: 1em;
   float: column;
+}
+
+.input-field{
+  width: 100%;
+  padding: 0.5em;
+  margin: 0.5em 0;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
 }
 
 
