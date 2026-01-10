@@ -103,7 +103,7 @@
   float: column;
   border-radius: 95px;
   border: 2px solid green;
-  content: center;
+  align-content:  center;
 }
 
 .input{
