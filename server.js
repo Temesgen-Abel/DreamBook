@@ -192,7 +192,7 @@ function mustBeAdmin(req, res, next) {
 // 4. MIDDLEWARE
 // ===================================================================
 async function authMiddleware(req, res, next) {
-  const token = req.cookies?.DreamBookApp;
+  const token = req.cookies?.eDreamBookApp;
   req.user = null;
 
   if (!token) {
@@ -347,8 +347,8 @@ app.get("/admin", mustBeAdmin, async (req, res) => {
 app.get("/", (req, res) => {
   if (req.user) return res.redirect("/dashboard");
   res.render("homepage", {
-    title: "DreamBook | Dream Dictionary, Dream Meanings & Interpretation",
-    description: "Explore dream meanings, search the dream dictionary, and share your dreams on DreamBook.",
+    title: "eDreamBook | Dream Dictionary, Dream Meanings & Interpretation",
+    description: "Explore dream meanings, search the dream dictionary, and share your dreams on eDreamBook.",
     canonical: "https://dreambook.com.et/"
   });
 });
@@ -386,7 +386,7 @@ app.post("/login", async (req, res) => {
   //issue JWT
   const token = signToken(user);
   
-  res.cookie("DreamBookApp", token, {
+  res.cookie("eDreamBookApp", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict"
@@ -396,7 +396,7 @@ app.post("/login", async (req, res) => {
 
 // 6.2 Logout Route
 app.get("/logout", (req, res) => {
-    res.clearCookie("DreamBookApp");
+    res.clearCookie("eDreamBookApp");
     res.redirect("/");
   });
 
@@ -446,12 +446,11 @@ app.post("/register", async (req, res) => {
   );
 
   // Log user in (cookie with token)
-  res.cookie("DreamBookApp", signToken(newUser)), {
+  res.cookie("eDreamBookApp", signToken(newUser), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict"
-  };
-
+  });
   res.redirect("/dashboard");
 });
 
@@ -568,8 +567,8 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
       lang: req.query.lang || "en",
       lang: req.query.lang || "am",
       // SEO (dashboard should be NOINDEX)
-      title: "DreamBook Community Dashboard",
-      description: "Browse dreams shared by the DreamBook community.",
+      title: "eDreamBook Community Dashboard",
+      description: "Browse dreams shared by the eDreamBook community.",
       canonical: "https://dreambook.com.et/dashboard"
     });
 
@@ -583,8 +582,8 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
 app.get("/create-post", mustBeLoggedIn, (_, res) => res.render("create-post", {
   errors: [],
   
-  title: "Post a Dream | DreamBook",
-  description: "Share your dream experience with the DreamBook community.",
+  title: "Post a Dream | eDreamBook",
+  description: "Share your dream experience with the eDreamBook community.",
   canonical: "https://dreambook.com.et/create-post"
 }));
 
@@ -602,7 +601,7 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
   // ❌ If validation fails, re-render with errors
   if (errors.length) {
     return res.render("create-post", {
-      title: "Create Post | DreamBook",
+      title: "Create Post | eDreamBook",
       user: req.user,
       errors
     });
@@ -678,7 +677,7 @@ app.get("/post/:id", async (req, res) => {
       filterUserHTML: sanitizeBody,
 
       // SEO variables
-      title: `${post.title} – Dream Meaning, analysis & Interpretation | DreamBook`,
+      title: `${post.title} – Dream Meaning, analysis & Interpretation | eDreamBook`,
       description: post.body.replace(/<[^>]*>/g, "").substring(0, 160).trim() + "…",
       canonical: `https://dreambook.com.et/post/${post.id}`
     });

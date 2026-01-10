@@ -5,12 +5,12 @@
   "register": "Register",
   "logout": "Logout",
 
-  "welcomeTitle": "Welcome To DreamBook",
+  "welcomeTitle": "Welcome To eDreamBook",
   "subtitle": "Dream Dictionary, Dream Analysis & Dream Interpretation Platform",
-  "introNote": "Explore dream meanings, search the dream dictionary, and share your dreams with the DreamBook community.",
+  "introNote": "Explore dream meanings, search the dream dictionary, and share your dreams with the eDreamBook community.",
   "createAccount": "Create Account",
 
-  "dashboardTitle": "Your DreamBook Dashboard",
+  "dashboardTitle": "Your eDreamBook Dashboard",
   "greeting": "Hello, <%= username %>!",
   "noPosts": "You haven't shared any dreams yet.",
   "createPostPrompt": "Share your first dream now!",
@@ -28,9 +28,9 @@
 
   "inboxTitle": "Your DreamBook Inbox",
   "noMessages": "You have no new messages.",
-  "checkBackLater": "Check back later for updates from the DreamBook community.",
+  "checkBackLater": "Check back later for updates from the eDreamBook community.",
 
-  "loginTitle": "Login to DreamBook",
+  "loginTitle": "Login to eDreamBook",
   "usernamePlaceholder": "Username",
   "passwordPlaceholder": "Password",
   "forgotPassword": "Forgot your password?",
@@ -46,13 +46,13 @@
   "submitButton": "Share Dream",
   "cancelButton": "Cancel",
 
-  "contactTitle": "Contact DreamBook Support",
+  "contactTitle": "Contact eDreamBook Support",
   "namePlaceholder": "Your Name",
   "emailPlaceholder": "Your Email",
   "messagePlaceholder": "Your Message",
   "sendButton": "Send Message",
 
-  "registerTitle": "Register for DreamBook",
+  "registerTitle": "Register for eDreamBook",
   "usernamePlaceholderRegister": "Choose a Username",
   "emailPlaceholderRegister": "Your Email",
   "passwordPlaceholderRegister": "Create a Password",
@@ -69,12 +69,12 @@
   "headerRegister": "Register",
   "headerLogout": "Logout",
 
-  "footerText": "© 2024 DreamBook. All rights reserved.",
+  "footerText": "© 2024 eDreamBook. All rights reserved.",
   "footerPrivacy": "Privacy Policy",
   "footerTerms": "Terms of Service",
   "footerContact": "Contact Us",
 
   "headTitle": "<%= title %>",
-  "metaDescription": "Discover the meanings of your dreams with DreamBook. Explore our dream dictionary, analyze dream realness, and share your dreams with a vibrant community.",
-  "metaKeywords": "dream dictionary, dream meanings, dream analysis, dream interpretation, share dreams, DreamBook"
+  "metaDescription": "Discover the meanings of your dreams with eDreamBook. Explore our dream dictionary, analyze dream realness, and share your dreams with a vibrant community.",
+  "metaKeywords": "dream dictionary, dream meanings, dream analysis, dream interpretation, share dreams, eDreamBook"
 }

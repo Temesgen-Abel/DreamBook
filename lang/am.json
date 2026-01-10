@@ -5,9 +5,9 @@
   "register": "ተመዝገብ",
   "logout": "ውጣ",
 
-  "welcomeTitle": "ወደ DreamBook እንኳን በደህና መጡ",
+  "welcomeTitle": "ወደ eDreamBook እንኳን በደህና መጡ",
   "subtitle": "የህልም መዝገበ-ቃላት፣ ትንተና እና ትርጓሜ",
-  "introNote": "የህልም ትርጉሞችን ያስሱ፣ መዝገበ-ቃላቱን ፈልጉ እና ህልሞቻችሁን ከ DreamBook community ጋር ያጋሩ።",
+  "introNote": "የህልም ትርጉሞችን ያስሱ፣ መዝገበ-ቃላቱን ፈልጉ እና ህልሞቻችሁን ከ  community ጋር ያጋሩ።",
 
   "dashboardTitle": "የህልም መጽሔትዎ ዳሽቦርድ",
   "greeting": "ሰላም, <%= username %>!",
@@ -25,11 +25,11 @@
   "description": "Dream Realness Analysis በመጠቀም ህልሞችዎ ምን ያህል እውነተኛ እንደሆኑ ያስተውሉ።",
   "analyzeButton": "ህልም ያስተካክሉ",
 
-  "inboxTitle": "የ DreamBook መልዕክት ሳጥን",
+  "inboxTitle": "የ eDreamBook መልዕክት ሳጥን",
   "noMessages": "አዲስ መልዕክቶች የሉም።",
   "checkBackLater": "በኋላ ደግሞ ይመለሱ።",
 
-  "loginTitle": "ወደ DreamBook ግባ",
+  "loginTitle": "ወደ eDreamBook ግባ",
   "usernamePlaceholder": "የተጠቃሚ ስም",
   "passwordPlaceholder": "የይለፍ ቃል",
   "forgotPassword": "የይለፍ ቃልዎን ረሱ?",
