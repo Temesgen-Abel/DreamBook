@@ -112,7 +112,10 @@
   margin: 0.5em 0;
   border: 1px solid green;
   border-radius: 100px;
+  font-size: 16px;
+  line-height: 1.5;
 }
+
 
 
 /* =========================================================
@@ -120,7 +123,7 @@
 DESIGN TOKENS (SOCIAL APP THEME)
 ========================================================= */
 :root {
-  --primary: #25d366;
+  --primary: #1ea952; /* darker, WCAG-safe */
   --secondary: #1877f2;
   --accent: #ffb703;
 
@@ -159,7 +162,7 @@ DESIGN TOKENS (SOCIAL APP THEME)
   padding: 0;
 }
 
-html { font-size: 12px; }
+html { font-size: 16px; }
 
 body {
   font-family: "Noto Sans Ethiopic", Arial, sans-serif;
@@ -251,7 +254,15 @@ button {
   height: 2px;
   background: var(--text-main);
   margin: 3px 0;
+  background: rgba(0,0,0,0.08);
+
 }
+
+.db-hamburger:focus-visible {
+  background: rgba(0,0,0,0.08);
+}
+
+
 
 /* =========================================================
    NAV LINKS
@@ -454,9 +465,13 @@ button {
    DREAM DICTIONARY PAGE
 ========================================================= */
 
-.dictionary-page {
-  background: linear-gradient(180deg, #f6f8fb, #ece5dd);
+.dictionary-page,
+.post-card,
+.search-results li {
+  line-height: 1.7;
+  font-size: 16px;
 }
+
 
 /* =========================================================
    PAGE HEADER
@@ -485,7 +500,7 @@ button {
   padding: 14px 18px;
   border-radius: var(--radius-md);
   margin-bottom: 20px;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .alert.error {
@@ -518,7 +533,7 @@ button {
 }
 
 .dictionary-add p {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text-muted);
   margin-bottom: 16px;
 }
@@ -536,7 +551,7 @@ button {
   border: 1px solid var(--border-soft);
   padding: 10px 12px;
   margin-bottom: 14px;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .dream-analyzer-form textarea {
@@ -582,7 +597,7 @@ button {
 .live-results li {
   padding: 8px 10px;
   border-bottom: 1px solid var(--border-soft);
-  font-size: 14px;
+  font-size: 16px;
   cursor: pointer;
 }
 
@@ -613,7 +628,12 @@ button {
 .btn {
   padding: 10px 20px;
   border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 600;
+  min-height: 44px;
+  min-width: 44px;
   transition: background-color 0.3s ease;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
 }
