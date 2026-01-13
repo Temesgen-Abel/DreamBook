@@ -230,8 +230,8 @@ button {
 }
 
 .DreamBook-logo {
-  width: 34px;
-  height: 35px;
+  width: auto;
+  height: auto;
 }
 
 .db-title {
