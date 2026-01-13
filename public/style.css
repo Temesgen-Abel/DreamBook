@@ -229,9 +229,9 @@ button {
   gap: 10px;
 }
 
-.eDreamBook-logo {
-  width: 40px;
-  height: auto;
+.DreamBook-logo {
+  width: 24px;
+  height: 24px;
 }
 
 .db-title {
