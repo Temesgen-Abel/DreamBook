@@ -104,6 +104,7 @@
   border-radius: 95px;
   border: 2px solid green;
  float: center;
+ display: flex;
 }
 
 .input{
