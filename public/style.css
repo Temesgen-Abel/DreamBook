@@ -104,8 +104,6 @@
   border-radius: 95px;
   border: 2px solid green;
   float: center;
-  display: flex;
-
 }
 
 .input{
@@ -263,8 +261,6 @@ button {
 .db-hamburger:focus-visible {
   background: rgba(0,0,0,0.08);
 }
-
-
 
 /* =========================================================
    NAV LINKS
