@@ -1,6 +1,8 @@
-
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic&display=swap" rel="stylesheet">
 
 <style>
@@ -9,26 +11,34 @@
   }
 </style>
 
-
 <%
   const pageTitle =
     typeof title !== "undefined"
       ? title
-      : "eDreamBook – Dreams Interpretation, Analyzer & Dictionary";
+      : "eDreamBook – Dream Meaning, Interpretation & Dictionary | ህልሜ";
 
   const pageDescription =
     typeof description !== "undefined"
       ? description
-      : "Explore dream meanings, dream analyzer, and dream interpretation on eDreamBook.";
+      : "Discover dream meanings, interpretations, and symbols. በeDreamBook ላይ የህልም ትርጉም፣ መፍቻ እና መርመራ ያግኙ።";
 %>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title><%= pageTitle %></title>
 <meta name="description" content="<%= pageDescription %>">
 
 <link rel="canonical" href="https://dreambook.com.et<%= typeof canonical !== 'undefined' ? canonical : '' %>">
+
+<!-- Open Graph -->
+<meta property="og:title" content="<%= pageTitle %>">
+<meta property="og:description" content="<%= pageDescription %>">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://dreambook.com.et<%= typeof canonical !== 'undefined' ? canonical : '' %>">
+<meta property="og:image" content="https://dreambook.com.et/og-image.jpg">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="<%= pageTitle %>">
+<meta name="twitter:description" content="<%= pageDescription %>">
 
 <link rel="stylesheet" href="/style.css">
 <link rel="icon" href="/favicon.ico">
