@@ -10,23 +10,23 @@
   "introNote": "Explore dream meanings, search the dream dictionary, and share your dreams with the eDreamBook community.",
   "createAccount": "Create Account",
 
-  "dashboardTitle": "Your eDreamBook Dashboard",
+  "dashboardTitle": "Posted Dreams",
   "greeting": "Hello, <%= username %>!",
   "noPosts": "You haven't shared any dreams yet.",
   "createPostPrompt": "Share your first dream now!",
   "viewPosts": "View Your Dreams",
   "createPost": "Share a Dream",
 
-  "dictionaryTitle": "Dream Dictionary A–Z",
+  "dictionaryTitle": "Dream Dictionary",
   "searchPlaceholder": "Search dream meanings...",
   "noResults": "No results found for '<%= query %>'. Please try another term.",
   "browseAll": "Browse All Dream Meanings",
 
-  "realnessTitle": "Dream Realness Analysis",
+  "realnessTitle": "Dream Analyzer",
   "description": "Understand how real your dreams feel with our Dream Realness Analysis tool. Input your dream details to get insights.",
   "analyzeButton": "Analyze Dream",
 
-  "inboxTitle": "Your DreamBook Inbox",
+  "inboxTitle": "Inbox",
   "noMessages": "You have no new messages.",
   "checkBackLater": "Check back later for updates from the eDreamBook community.",
 
@@ -36,12 +36,12 @@
   "forgotPassword": "Forgot your password?",
   "noAccountPrompt": "Don't have an account? Register now!",
 
-  "adminTitle": "Admin Dashboard",
+  "adminTitle": "Admin",
   "manageUsers": "Manage Users",
   "reviewPosts": "Review Dream Posts",
   "siteSettings": "Site Settings",
 
-  "createPostTitle": "Create a New Dream Post",
+  "createPostTitle": "Post a Dream",
   "dreamContentPlaceholder": "Describe your dream here...",
   "submitButton": "Share Dream",
   "cancelButton": "Cancel",

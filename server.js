@@ -1045,7 +1045,7 @@ app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
     success: req.query.success || "",
     searchQuery,
     lang,
-    title: "Dream Dictionary | Dream Meanings & Interpretation",
+    title: "Dream Dictionary | Dream symbols & meanings A–Z | eDreamBook",
     description: "Browse the dream dictionary A–Z to discover dream meanings.",
     canonical: "https://dreambook.com.et/dictionary"
   });
