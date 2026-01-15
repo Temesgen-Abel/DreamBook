@@ -23,11 +23,11 @@
 
       <!-- NAV LINKS -->
       <div class="nav-links" id="navLinks" aria-hidden="true">
-        <a style="color:rgb(2, 50, 2)"   href="/dictionary"><%= t.dictionaryTitle %></a>
-        <a href="/dream-realness"><%= t.realnessTitle %></a>
-        <a href="/dashboard"><%= t.dashboardTitle %></a>
-        <a class="db-cta" href="/create-post"><%= t.createPost %></a>
-        <a href="/inbox"><%= t.inboxTitle %></a>
+        <a style="background-color:rgb(68, 10, 131)"   href="/dictionary"><%= t.dictionaryTitle %></a>
+        <a style="background-color:rgb(68, 10, 131)"  href="/dream-realness"><%= t.realnessTitle %></a>
+        <a style="background-color:rgb(68, 10, 131)"  href="/dashboard"><%= t.dashboardTitle %></a>
+        <a style="background-color:rgb(68, 10, 131)"  class="db-cta" href="/create-post"><%= t.createPost %></a>
+        <a style="background-color:rgb(68, 10, 131)" href="/inbox"><%= t.inboxTitle %></a>
 
         <% if (user && user.role === "admin") { %>
           <a href="/admin"><%= t.adminTitle %></a>
