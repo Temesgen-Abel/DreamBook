@@ -12,6 +12,8 @@ const sanitizeHTML = require("sanitize-html");
 const path = require("path");
 const http = require("http");
 const fs = require("fs");
+const { SitemapStream, streamToPromise } = require("sitemap");
+const { Readable } = require("stream");
 
 const app = express();
 
@@ -1229,6 +1231,55 @@ app.post("/dream-realness", (req, res) => {
     notifications: []
   });
 });
+
+//Site map route
+
+app.get("/sitemap.xml", async (req, res) => {
+  try {
+    res.setHeader("Content-Type", "application/xml");
+
+    const hostname = "https://dreambook.com"; // change to your domain
+
+    // ✅ Public routes from header
+    const staticPages = [
+      { url: "/", changefreq: "daily", priority: 1.0 },
+      { url: "/dictionary", changefreq: "weekly", priority: 0.8 },
+      { url: "/dream-realness", changefreq: "weekly", priority: 0.8 },
+      { url: "/register", changefreq: "monthly", priority: 0.4 },
+      { url: "/login", changefreq: "monthly", priority: 0.4 },
+    ];
+
+    // 🔹 Optional: dynamic public content (example: dictionary words, posts)
+     const words = await Dictionary.find({ isPublic: true });
+    words.forEach(word => {
+    staticPages.push({
+        url: `/dictionary/${word.slug}`,
+        changefreq: "weekly",
+        priority: 0.6,
+        lastmod: word.updatedAt,
+      });
+    });
+  } catch (err) {
+    console.error("Sitemap error:", err);
+    res.status(500).end();
+  }
+});
+  let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+  sitemap += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+  staticPages.forEach(page => {
+    sitemap += `  <url>\n`;
+    sitemap += `    <loc>${hostname}${page.url}</loc>\n`;
+    if (page.lastmod) {
+      sitemap += `    <lastmod>${new Date(page.lastmod).toISOString()}</lastmod>\n`;
+    }
+  });
+    sitemap += `    <changefreq>${page.changefreq}</changefreq>\n`;
+    sitemap += `    <priority>${page.priority}</priority>\n`;
+    sitemap += `  </url>\n`;
+  sitemap += `</urlset>`;
+
+  res.send(sitemap);
+  
 
 // ===================================================================
 // 7. SOCKET.IO USERS ONLINE
