@@ -1264,6 +1264,7 @@ app.get("/sitemap.xml", async (req, res) => {
     res.status(500).end();
   }
 });
+  const staticPages = [];
   let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;
   sitemap += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
   staticPages.forEach(page => {
@@ -1279,7 +1280,6 @@ app.get("/sitemap.xml", async (req, res) => {
   sitemap += `</urlset>`;
 
   res.send(sitemap);
-  
 
 // ===================================================================
 // 7. SOCKET.IO USERS ONLINE
