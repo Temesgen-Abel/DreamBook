@@ -290,6 +290,11 @@ button {
   opacity: 1;
   pointer-events: auto;
 }
+.ni li a:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+}
+
 
 /* Desktop */
 @media (min-width: 900px) {
