@@ -1274,6 +1274,7 @@ app.get("/sitemap.xml", async (req, res) => {
       sitemap += `    <lastmod>${new Date(page.lastmod).toISOString()}</lastmod>\n`;
     }
   });
+  const page = [];
     sitemap += `    <changefreq>${page.changefreq}</changefreq>\n`;
     sitemap += `    <priority>${page.priority}</priority>\n`;
     sitemap += `  </url>\n`;
