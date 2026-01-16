@@ -1232,29 +1232,6 @@ app.post("/dream-realness", (req, res) => {
   });
 });
 
-//Site map route
-
-app.get('/sitemap.xml', (req, res) => {
-  try {
-    res.set('Content-Type', 'application/xml');
-
-    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://dreambook.com.et/</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-</urlset>`;
-
-    res.status(200).send(sitemap);
-  } catch (err) {
-    console.error('Sitemap error:', err);
-    res.status(500).end();
-  }
-});
-
-
 // ===================================================================
 // 7. SOCKET.IO USERS ONLINE
 // ===================================================================
@@ -1339,6 +1316,13 @@ async function ensureAdmin() {
     console.log("✔ Admin already exists");
   }
 }
+//sitemap route
+app.get('/sitemap.xml', (req, res) => {
+  res.set('Content-Type', 'application/xml');
+  res.status(200).send(
+    '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>'
+  );
+});
 
 // ===================================================================
 // 8. START SERVER
