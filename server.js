@@ -1234,51 +1234,26 @@ app.post("/dream-realness", (req, res) => {
 
 //Site map route
 
-app.get("/sitemap.xml", async (req, res) => {
+app.get('/sitemap.xml', (req, res) => {
   try {
-    res.setHeader("Content-Type", "application/xml");
+    res.set('Content-Type', 'application/xml');
 
-    const hostname = "https://dreambook.com"; // change to your domain
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://dreambook.com.et/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>`;
 
-    // ✅ Public routes from header
-    const staticPages = [
-      { url: "/", changefreq: "daily", priority: 1.0 },
-      { url: "/dictionary", changefreq: "weekly", priority: 0.8 },
-      { url: "/dream-realness", changefreq: "weekly", priority: 0.8 },
-      { url: "/register", changefreq: "monthly", priority: 0.4 },
-      { url: "/login", changefreq: "monthly", priority: 0.4 },
-    ];
-
-    // 🔹 Optional: dynamic public content (example: dictionary words, posts)
-     const words = await Dictionary.find({ isPublic: true });
-    words.forEach(word => {
-    staticPages.push({
-        url: `/dictionary/${word.slug}`,
-        changefreq: "weekly",
-        priority: 0.6,
-        lastmod: word.updatedAt,
-      });
-    });
+    res.status(200).send(sitemap);
   } catch (err) {
-    console.error("Sitemap error:", err);
+    console.error('Sitemap error:', err);
     res.status(500).end();
   }
 });
-  const staticPages = [];
-  let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-  sitemap += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
-  staticPages.forEach(page => {
-    sitemap += `  <url>\n`;
-    sitemap += `    <loc>${hostname}${page.url}</loc>\n`;
-    if (page.lastmod) {
-      sitemap += `    <lastmod>${new Date(page.lastmod).toISOString()}</lastmod>\n`;
-    }
-  });
-  const page = [];
-    sitemap += `    <changefreq>${page.changefreq}</changefreq>\n`;
-    sitemap += `    <priority>${page.priority}</priority>\n`;
-    sitemap += `  </url>\n`;
-  sitemap += `</urlset>`;
+
 
 // ===================================================================
 // 7. SOCKET.IO USERS ONLINE
