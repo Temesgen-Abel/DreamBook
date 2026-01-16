@@ -1317,11 +1317,36 @@ async function ensureAdmin() {
   }
 }
 //sitemap route
-app.get('/sitemap.xml', (req, res) => {
-  res.set('Content-Type', 'application/xml');
-  res.status(200).send(
-    '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>'
-  );
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    res.set('Content-Type', 'application/xml');
+
+    const urls = [
+      'https://dreambook.com.et/',
+      'https://dreambook.com.et/login',
+      'https://dreambook.com.et/register',
+      'https://dreambook.com.et/dictionary',
+      'https://dreambook.com.et/dream-realness'
+      // Add more static URLs as needed
+    ];
+
+    const body = urls.map(url => `
+  <url>
+    <loc>${url}</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>`).join('');
+
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${body}
+</urlset>`;
+
+    res.status(200).send(sitemap);
+  } catch (err) {
+    console.error('Sitemap error:', err);
+    res.status(500).end();
+  }
 });
 
 // ===================================================================
