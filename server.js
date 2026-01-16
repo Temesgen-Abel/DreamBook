@@ -1279,7 +1279,6 @@ app.get("/sitemap.xml", async (req, res) => {
     sitemap += `    <priority>${page.priority}</priority>\n`;
     sitemap += `  </url>\n`;
   sitemap += `</urlset>`;
-
   res.send(sitemap);
 
 // ===================================================================
