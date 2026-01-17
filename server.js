@@ -307,8 +307,6 @@ app.use((req, _, next) => {
   next();
 });
 
-app.use(sitemap)
-
 
 const server = http.createServer(app);
 const io = require("socket.io")(server, { cors: { origin: "*" } });
