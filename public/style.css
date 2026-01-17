@@ -339,37 +339,6 @@ button {
 }
 
 /* =========================================================
-   RESPONSIVE FIX (MOBILE FRIENDLY)
-========================================================= */
-@media (max-width: 768px) {
-  .nav-links {
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: var(--space-3);
-  }
-
-  .ni {
-    width: 100%;
-    max-width: 280px;
-  }
-}
-
-
-/* Desktop */
-@media (min-width: 900px) {
-  .nav-links {
-    position: static;
-    flex-direction: row;
-    background: transparent;
-    opacity: 1;
-    pointer-events: auto;
-    padding: 0;
-  }
-
-  .db-hamburger { display: none; }
-}
-
-/* =========================================================
    ACCOUNT DROPDOWN (FIXED)
 ========================================================= */
 .dropdown {
