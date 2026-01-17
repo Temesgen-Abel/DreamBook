@@ -374,14 +374,7 @@ button {
   display: block;
 }
 
-/* Desktop dropdown */
-@media (min-width: 900px) {
-  .dropdown-content {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-  }
-}
+
 
 /* Mobile dropdown */
 @media (max-width: 899px) {
