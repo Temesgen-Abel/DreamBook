@@ -31,15 +31,13 @@
         <% if (user && user.role === "admin") { %>
           <a href="/admin"><%= t.adminTitle %></a>
         <% } %>
-
-        <!-- LANGUAGE SWITCH -->
-        <span class="lang-switch">
+        <span class="ni">
           <a href="<%= request.path %>?lang=en">English</a> |
           <a href="<%= request.path %>?lang=am">አማርኛ</a>
         </span>
 
         <!-- ACCOUNT DROPDOWN -->
-        <div class="dropdown">
+        <div class="ni">
           <button
             class="dropbtn"
             id="accountBtn"
