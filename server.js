@@ -299,7 +299,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static("public"));
 app.use(cookieParser());
 app.set("trust proxy", 1);
-
 app.use(authMiddleware);
 app.use(unreadMiddleware);
 
@@ -308,12 +307,14 @@ app.use((req, _, next) => {
   next();
 });
 
+app.use(sitemap)
+
+
 const server = http.createServer(app);
 const io = require("socket.io")(server, { cors: { origin: "*" } });
 app.set("io", io);
-// ===================================================================
+
 // 6. ROUTES
-// 6. ROUTES admin issue only 
 app.get("/admin", mustBeAdmin, async (req, res) => {
   try {
     const userResult = await dbGet(

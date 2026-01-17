@@ -263,43 +263,92 @@ button {
 }
 
 /* =========================================================
-   NAV LINKS
+ /* =========================================================
+   NAV LINKS – PREMIUM STYLE
 ========================================================= */
+
 .nav-links {
   position: absolute;
   top: var(--nav-height);
   left: 0;
   right: 0;
 
-  background: #1b0462;
+  background: linear-gradient(135deg, #1b0462, #3b1fa6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3);
+  gap: var(--space-3);
+  padding: var(--space-4);
+
   width: 100%;
-  float: right;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.45);
 
   opacity: 0;
+  transform: translateY(-20px);
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: all 0.35s ease;
+
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
 
   z-index: 1100;
 }
 
 .nav-links.active {
   opacity: 1;
+  transform: translateY(0);
   pointer-events: auto;
 }
-.ni{
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
-  border-radius: 90px;
-  background-color: #96989b;
-  border: none;
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
+
+/* =========================================================
+   NAV ITEM STYLE
+========================================================= */
+
+.ni {
+  background: linear-gradient(145deg, #ffffff, #d9dbe0);
   color: #1b0462;
+
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: none;
+
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-align: center;
+
+  box-shadow:
+    0 6px 15px rgba(0, 0, 0, 0.25),
+    inset 0 1px 2px rgba(255, 255, 255, 0.8);
+
+  transition: 
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease,
+    color 0.25s ease;
+
+  cursor: pointer;
 }
+
+/* Hover / Focus Effects */
+.ni:hover,
+.ni:focus {
+  transform: translateY(-4px) scale(1.03);
+  background: linear-gradient(145deg, #ffd86f, #ffb703);
+  color: #1b0462;
+
+  box-shadow:
+    0 12px 30px rgba(255, 183, 3, 0.5),
+    0 0 15px rgba(255, 183, 3, 0.6);
+}
+
+/* Active (Click) Effect */
+.ni:active {
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35);
+}
+
 
 
 /* Desktop */
