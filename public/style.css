@@ -289,7 +289,9 @@ button {
   transition: all 0.35s ease;
   z-index: 1100;
 }
-
+.menu-toggle {
+  display: none; /* hidden on desktop by default */
+}
 /* =========================================================
    NAV ITEM BUTTONS
 ========================================================= */
