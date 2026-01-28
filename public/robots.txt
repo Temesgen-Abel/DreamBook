@@ -1,6 +1,17 @@
 User-agent: *
 Allow: /
-Sitemap: https://dreambook.com.et/sitemap.xml
 
-User-agent: *
+# Allow CSS, JS, and images
+Allow: /public/
+Allow: /assets/
+Allow: /images/
+Allow: /css/
+Allow: /js/
+Allow: /dashboard/
+
+# Block only private areas
 Disallow: /admin/
+Disallow: /login/
+Disallow: /dashboard/
+
+Sitemap: https://yourdomain.com/sitemap.xml
