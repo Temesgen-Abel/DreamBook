@@ -14,4 +14,4 @@ Disallow: /admin/
 Disallow: /login/
 Disallow: /dashboard/
 
-Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://dreambook.com.et/sitemap.xml
