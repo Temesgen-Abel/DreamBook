@@ -1,17 +1,12 @@
 User-agent: *
 Allow: /
 
-# Allow CSS, JS, and images
-Allow: /public/
-Allow: /assets/
-Allow: /images/
-Allow: /css/
-Allow: /js/
-Allow: /dashboard/
+# Block low-SEO value pages
+Disallow: /login
+Disallow: /register
+Disallow: /password-reset
+Disallow: /logout
+Disallow: /admin
 
-# Block only private areas
-Disallow: /admin/
-Disallow: /login/
-Disallow: /dashboard/
-
+# Sitemap location
 Sitemap: https://dreambook.com.et/sitemap.xml

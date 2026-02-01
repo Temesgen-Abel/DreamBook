@@ -1,17 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang === 'am' ? 'am' : 'en' %>">
 <head>
   <%- include("includes/head") %>
+
+  <!-- SEO Fallbacks (in case head.ejs is minimal) -->
+  <title>Dream Dictionary & Dream Interpretation Platform | eDreamBook</title>
+  <meta name="description"
+    content="Explore dream meanings, analyze dream realness, and share dreams on eDreamBook — a digital dream dictionary and dream interpretation platform integrating indigenous knowledge." />
 </head>
 
-<main class="landing">
+<body>
 
-  <!-- HERO SECTION -->
-  <section class="hero">
-    <img src="/images/DreamBook.png" alt="DreamBook logo" class="hero-logo" />
+<main class="landing" id="main-content">
 
-    <h1><%= t.welcomeTitle %></h1>
-    <p class="hero-subtitle"><%= t.subtitle %></p>
+  <!-- ================= HERO SECTION ================= -->
+  <section class="hero" aria-labelledby="hero-title">
+    <img
+      src="/images/DreamBook.png"
+      alt="eDreamBook dream dictionary logo"
+      class="hero-logo"
+      loading="eager"
+    />
+
+    <!-- PRIMARY SEO HEADING -->
+    <h1 id="hero-title">
+      Dream Dictionary & Dream Interpretation Platform
+    </h1>
+
+    <!-- SEO-RICH DESCRIPTION -->
+    <p class="hero-subtitle">
+      Explore dream meanings, analyze dream realness, and share dreams using
+      eDreamBook — a digital dream dictionary and dream interpretation platform
+      inspired by scientific and indigenous knowledge.
+    </p>
 
     <div class="hero-actions">
       <a href="/register?lang=<%= lang %>" class="btn primary">
@@ -23,8 +44,37 @@
     </div>
   </section>
 
-  <!-- FEATURES -->
-  <section class="features">
+  <!-- ================= SEO CONTENT BLOCK ================= -->
+  <section class="seo-content" aria-labelledby="seo-title">
+    <h2 id="seo-title">
+      Dream Meanings, Dream Analysis, and Indigenous Knowledge
+    </h2>
+
+    <p>
+      eDreamBook is an online dream dictionary designed to help users understand
+      dream meanings, dream symbols, and dream interpretation through both
+      scientific research and indigenous knowledge systems.
+    </p>
+
+    <p>
+      Users can record dreams, analyze dream realness, explore cultural dream
+      interpretations, and share personal dream experiences with a growing
+      community of dream researchers and enthusiasts.
+    </p>
+
+    <p>
+      Start by browsing the <a href="/dictionary">dream dictionary</a>,
+      using the <a href="/dream-realness">dream analysis tool</a>,
+      or <a href="/create-post">sharing your dreams</a> online.
+    </p>
+  </section>
+
+  <!-- ================= FEATURES ================= -->
+  <section class="features" aria-labelledby="features-title">
+    <h2 id="features-title" class="visually-hidden">
+      eDreamBook Features
+    </h2>
+
     <div class="feature-card">
       <h3>📖 የህልም መፍቻ መዝገበ ቃላት</h3>
       <p>ያዩትን ህልም ትርጉም ያግኙ፣ ያውቁትን ያካትቱ</p>
@@ -46,19 +96,24 @@
     </div>
   </section>
 
-  <!-- ABOUT -->
-  <section class="about">
-    <h2>ስለ eDreamBook</h2>
+  <!-- ================= ABOUT ================= -->
+  <section class="about" aria-labelledby="about-title">
+    <h2 id="about-title">ስለ eDreamBook</h2>
+
     <p>
-      ይህ ፕሮጀክት በኢትዮጵያ በተለይም በምስራቅ ኢትዮጵያ
-      በተደረገ ጥልቅ ሳይንሳዊ ጥናት ላይ የተመሰረተ ነው።
-      ህልም በየዕለቱ ሕይወታችን ያለውን ተፅዕኖ ለመረዳት
-      እና ሀገር በቀል እውቀትን ለዓለም ማቅረብ ይረዳል።
+      eDreamBook በኢትዮጵያ በተለይም በምስራቅ ኢትዮጵያ የተደረገ
+      ጥልቅ ሳይንሳዊ ጥናት ላይ የተመሰረተ ዲጂታል የህልም መዝገበ ቃላት
+      እና የህልም ትርጓሜ መድረክ ነው።
+    </p>
+
+    <p>
+      ይህ መድረክ ህልም በየዕለቱ ሕይወታችን ላይ ያለውን ተፅዕኖ
+      ለመረዳት እና ሀገር በቀል እውቀትን ለዓለም ማቅረብ ይረዳል።
     </p>
   </section>
 
-  <!-- FINAL CTA -->
-  <section class="cta">
+  <!-- ================= FINAL CTA ================= -->
+  <section class="cta" aria-label="Create an eDreamBook account">
     <a href="/register?lang=<%= lang %>" class="btn primary large">
       አካውንት ፍጠር
     </a>
@@ -66,6 +121,6 @@
 
 </main>
 
-</body>  
 <%- include("includes/footer") %>
+</body>
 </html>
