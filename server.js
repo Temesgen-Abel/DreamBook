@@ -770,15 +770,15 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 //vedeo counceling routes 
 
-app.get("/video-counseling", mustBeLoggedIn, (req, res) => {
-  res.render("video-counseling", {
-    title: "Video Counseling Services | eDreamBook",
-    description: "Access professional video counseling services to explore your dreams and mental well-being.",
-    canonical: "https://dreambook.com.et/video-counseling"
+app.get("/counseling", mustBeLoggedIn, (req, res) => {
+  res.render("counseling", {
+    title: "Counseling Services | eDreamBook",
+    description: "Access professional counseling services to explore your dreams and mental well-being.",
+    canonical: "https://dreambook.com.et/counseling"
   });
 });
 
-app.post("/video-counseling", mustBeLoggedIn, (req, res) => {
+app.post("/counseling", mustBeLoggedIn, (req, res) => {
   // Handle video counseling request submission
   res.render("video-counseling-confirmation", {
     title: "Video Counseling Request Received | eDreamBook",
