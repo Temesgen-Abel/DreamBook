@@ -1368,10 +1368,10 @@ app.get('/sitemap.xml', async (req, res) => {
 
     const urls = [
       'https://dreambook.com.et/',
-      'https://dreambook.com.et/login',
-      'https://dreambook.com.et/register',
       'https://dreambook.com.et/dictionary',
-      'https://dreambook.com.et/dream-realness'
+      'https://dreambook.com.et/dream-realness',
+      'https://dreambook.com.et/create-post',
+      'https://dreambook.com.et/dashboard'
       // Add more static URLs as needed
     ];
 
