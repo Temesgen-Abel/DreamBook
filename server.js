@@ -768,6 +768,26 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
   res.redirect(`/post/${comment.postid}`);
 });
 
+//vedeo counceling routes 
+
+app.get("/video-counseling", mustBeLoggedIn, (req, res) => {
+  res.render("video-counseling", {
+    title: "Video Counseling Services | eDreamBook",
+    description: "Access professional video counseling services to explore your dreams and mental well-being.",
+    canonical: "https://dreambook.com.et/video-counseling"
+  });
+});
+
+app.post("/video-counseling", mustBeLoggedIn, (req, res) => {
+  // Handle video counseling request submission
+  res.render("video-counseling-confirmation", {
+    title: "Video Counseling Request Received | eDreamBook",
+    description: "Your request for video counseling has been received. We will contact you soon.",
+    canonical: "https://dreambook.com.et/video-counseling"
+  });
+});
+
+
 
 // ===================================================================
 // 6.13. REACTIONS
