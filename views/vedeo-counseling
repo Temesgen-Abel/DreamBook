@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Video Counseling</title>
+</head>
+<body>
+
+<h2>Video Counseling Room</h2>
+<p>Room ID: <%= roomId %></p>
+
+<video id="localVideo" autoplay muted></video>
+<video id="remoteVideo" autoplay></video>
+
+<script>
+  const ROOM_ID = "<%= roomId %>";
+</script>
+
+<script src="/js/webrtc.js"></script>
+
+</body>
+</html>

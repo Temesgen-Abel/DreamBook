@@ -134,8 +134,17 @@ CREATE TABLE IF NOT EXISTS users (
     );
   `);
 
-  console.log("✔ Database schema initialized");
+await dbRun(`
+  CREATE TABLE IF NOT EXISTS counseling_sessions (
+    id SERIAL PRIMARY KEY,
+    counselor_id INTEGER REFERENCES users(id),
+    client_id INTEGER REFERENCES users(id),
+    room_id TEXT UNIQUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
+`);
 }
+
 
 // ===================================================================
 // 3. UTILITIES
@@ -770,20 +779,37 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 //vedeo counceling routes 
 
-app.get("/counseling", mustBeLoggedIn, (req, res) => {
+app.get("/counseling", mustBeLoggedIn, async (req, res) => {
+  const counselors = await db.query(
+    "SELECT id, username FROM users WHERE role = 'counselor'"
+  );
+
   res.render("counseling", {
     title: "Counseling Services | eDreamBook",
-    description: "Access professional counseling services to explore your dreams and mental well-being.",
-    canonical: "https://dreambook.com.et/counseling"
+    description: "Access professional counseling services.",
+    canonical: "https://dreambook.com.et/counseling",
+    counselors: counselors.rows,
+    lang: req.session.lang || "en"
   });
 });
 
+
 app.post("/counseling", mustBeLoggedIn, (req, res) => {
-  // Handle video counseling request submission
-  res.render("counseling", {
-    title: "Video Counseling Request Received | eDreamBook",
-    description: "Your request for video counseling has been received. We will contact you soon.",
-    canonical: "https://dreambook.com.et/video-counseling"
+  const { counselorId } = req.body;
+
+  // Create unique room
+  const roomId = `counsel-${req.user.id}-${counselorId}`;
+
+  res.redirect(`/video-counseling/${roomId}`);
+});
+
+// Video counseling room
+
+app.get("/video-counseling/:roomId", mustBeLoggedIn, (req, res) => {
+  res.render("video-counseling", {
+    title: "Video Counseling | eDreamBook",
+    roomId: req.params.roomId,
+    lang: req.session.lang || "en"
   });
 });
 

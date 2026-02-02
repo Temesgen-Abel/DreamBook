@@ -10,22 +10,23 @@
 
 <div class="chat-layout">
 
-  <!-- vedeo counciling-->
-  <div class="vedeo-counceling">
-    <h1>vedeo-counceling</h1>
+  <div class="video-counseling">
+    <h1>Video Counseling</h1>
 
-    
     <form action="/counseling" method="POST">
-        <select name="counselorId" required>
-            <option value="">Select counselor</option>
-            <% counselors.forEach(c => { %>
-            <option value="<%= c.id %>"><%= c.username %></option>
-            <% }) %>
-        </select>
-        <button class="btn">Start Vedeo Counceling</button>
+      <select name="counselorId" required>
+        <option value="">Select counselor</option>
+
+        <% counselors.forEach(c => { %>
+          <option value="<%= c.id %>"><%= c.username %></option>
+        <% }) %>
+      </select>
+
+      <button class="btn">Start Video Counseling</button>
     </form>
 
-
-    <h3>Online Users</h3>
-    <ul id="online-users-list"></ul>
   </div>
+</div>
+
+</body>
+</html>
