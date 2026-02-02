@@ -9,14 +9,12 @@
 <%- include('includes/header') %>
 
 <div class="chat-layout">
-
   <div class="video-counseling">
     <h1>Video Counseling</h1>
 
     <form action="/counseling" method="POST">
       <select name="counselorId" required>
         <option value="">Select counselor</option>
-
         <% counselors.forEach(c => { %>
           <option value="<%= c.id %>"><%= c.username %></option>
         <% }) %>
@@ -24,7 +22,6 @@
 
       <button class="btn">Start Video Counseling</button>
     </form>
-
   </div>
 </div>
 

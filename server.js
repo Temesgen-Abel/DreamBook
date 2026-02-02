@@ -800,7 +800,11 @@ app.post("/counseling", mustBeLoggedIn, (req, res) => {
   // Create unique room
   const roomId = `counsel-${req.user.id}-${counselorId}`;
 
-  res.redirect(`/video-counseling/${roomId}`);
+  res.render("video-counseling", {
+  roomId,
+  userId: req.user.id,
+  lang
+});
 });
 
 // Video counseling room
@@ -1280,13 +1284,18 @@ app.post("/dream-realness", (req, res) => {
 // ===================================================================
 // 7. SOCKET.IO USERS ONLINE
 // ===================================================================
+// ===================================================================
+// 7. SOCKET.IO (USERS ONLINE + CHAT + WEBRTC SIGNALING)
+// ===================================================================
 const userSockets = new Map(); // userId -> Set of socket IDs
 const lastSeen = new Map();    // userId -> ISO timestamp
 
 io.on("connection", socket => {
-  console.log("Socket connected:", socket.id);
+  console.log("🔌 Socket connected:", socket.id);
 
-  // When user joins
+  // ---------------------------------------------------------------
+  // USER PRESENCE / ONLINE STATUS
+  // ---------------------------------------------------------------
   socket.on("join_room", userId => {
     userId = Number(userId);
     if (!userId) return;
@@ -1301,14 +1310,15 @@ io.on("connection", socket => {
 
     lastSeen.set(userId, new Date().toISOString());
 
-    // Emit updated online users list
     io.emit("online_users", [...userSockets.keys()].map(id => ({
       id,
       lastSeen: lastSeen.get(id)
     })));
   });
 
-  // Typing events
+  // ---------------------------------------------------------------
+  // TYPING INDICATORS
+  // ---------------------------------------------------------------
   socket.on("typing", data => {
     const rid = Number(data?.receiverId);
     if (!rid) return;
@@ -1321,9 +1331,70 @@ io.on("connection", socket => {
     io.to(`user_${rid}`).emit("stop_typing", data);
   });
 
-  // Disconnect
+  // ---------------------------------------------------------------
+  // 🔴 WEBRTC SIGNALING (VIDEO COUNSELING)
+  // ---------------------------------------------------------------
+
+  // Join a video call room (appointment-based)
+  socket.on("join_call", ({ roomId, userId }) => {
+    if (!roomId) return;
+
+    socket.join(`call_${roomId}`);
+    socket.callRoomId = roomId;
+
+    console.log(`🎥 User ${userId} joined call ${roomId}`);
+
+    // Notify other peer
+    socket.to(`call_${roomId}`).emit("peer_joined", {
+      socketId: socket.id,
+      userId
+    });
+  });
+
+  // Offer
+  socket.on("webrtc_offer", ({ roomId, offer }) => {
+    socket.to(`call_${roomId}`).emit("webrtc_offer", {
+      offer,
+      from: socket.id
+    });
+  });
+
+  // Answer
+  socket.on("webrtc_answer", ({ roomId, answer }) => {
+    socket.to(`call_${roomId}`).emit("webrtc_answer", {
+      answer,
+      from: socket.id
+    });
+  });
+
+  // ICE Candidate
+  socket.on("webrtc_ice_candidate", ({ roomId, candidate }) => {
+    socket.to(`call_${roomId}`).emit("webrtc_ice_candidate", {
+      candidate,
+      from: socket.id
+    });
+  });
+
+  // Leave call explicitly
+  socket.on("leave_call", () => {
+    if (socket.callRoomId) {
+      socket.to(`call_${socket.callRoomId}`).emit("peer_left", socket.id);
+      socket.leave(`call_${socket.callRoomId}`);
+      socket.callRoomId = null;
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // DISCONNECT
+  // ---------------------------------------------------------------
   socket.on("disconnect", () => {
     const uid = socket.userId;
+
+    // Handle WebRTC leave
+    if (socket.callRoomId) {
+      socket.to(`call_${socket.callRoomId}`).emit("peer_left", socket.id);
+    }
+
     if (!uid) return;
 
     const set = userSockets.get(uid);
@@ -1331,6 +1402,7 @@ io.on("connection", socket => {
       set.delete(socket.id);
       if (!set.size) userSockets.delete(uid);
     }
+
     lastSeen.set(uid, new Date().toISOString());
 
     io.emit("online_users", [...userSockets.keys()].map(id => ({
