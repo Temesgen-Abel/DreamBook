@@ -780,7 +780,7 @@ app.get("/counseling", mustBeLoggedIn, (req, res) => {
 
 app.post("/counseling", mustBeLoggedIn, (req, res) => {
   // Handle video counseling request submission
-  res.render("video-counseling-confirmation", {
+  res.render("counseling", {
     title: "Video Counseling Request Received | eDreamBook",
     description: "Your request for video counseling has been received. We will contact you soon.",
     canonical: "https://dreambook.com.et/video-counseling"
