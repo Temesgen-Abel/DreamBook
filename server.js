@@ -794,29 +794,23 @@ app.get("/counseling", mustBeLoggedIn, async (req, res) => {
 });
 
 
+const { v4: uuidv4 } = require("uuid");
+
 app.post("/counseling", mustBeLoggedIn, (req, res) => {
-  const { counselorId } = req.body;
-
-  // Create unique room
-  const roomId = `counsel-${req.user.id}-${counselorId}`;
-
-  res.render("video-counseling", {
-  roomId,
-  userId: req.user.id,
-  lang
+  const roomId = uuidv4(); // unique session
+  res.redirect(`/video-counseling/${roomId}`);
 });
-});
+
 
 // Video counseling room
 
 app.get("/video-counseling/:roomId", mustBeLoggedIn, (req, res) => {
   res.render("video-counseling", {
-    title: "Video Counseling | eDreamBook",
     roomId: req.params.roomId,
-    lang: req.session.lang || "en"
+    userId: req.user.id,
+    lang: req.lang
   });
 });
-
 
 
 // ===================================================================
