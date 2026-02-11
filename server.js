@@ -163,6 +163,17 @@ await dbRun(`
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
 `);
+// Room counselors 
+await dbRun(`
+CREATE TABLE IF NOT EXITS counselors (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(150),
+  specialty VARCHAR(150),
+  bio TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+`)
 }
 
 // ===================================================================
@@ -800,6 +811,7 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
+    const db = pool;
     const rooms = await db.query("SELECT * FROM rooms");
     const counselors = await db.query("SELECT * FROM counselors");
 
