@@ -784,10 +784,10 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   res.render("video-counseling", { rooms: rooms.rows });
 });
 
-  res.render("counseling", {
-    title: "Counseling Services | eDreamBook",
-    description: "Access professional counseling services.",
-    canonical: "https://dreambook.com.et/counseling",
+  res.render("video-counseling", {
+    title: "Video Counseling | eDreamBook",
+    description: "Access professional video counseling services.",
+    canonical: "https://dreambook.com.et/video-counseling",
     counselors: counselors.rows,
     lang: req.session.lang || "en"
   });
