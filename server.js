@@ -780,9 +780,9 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 //vedeo counceling routes 
 
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
-  const counselors = await db.query(
-    "SELECT id, username FROM users WHERE role = 'counselor'"
-  );
+  const rooms = await pool.query("SELECT * FROM rooms");
+  res.render("video-counseling", { rooms: rooms.rows });
+});
 
   res.render("counseling", {
     title: "Counseling Services | eDreamBook",
@@ -791,7 +791,6 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
     counselors: counselors.rows,
     lang: req.session.lang || "en"
   });
-});
 
 
 const { randomUUID } = require('crypto');
