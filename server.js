@@ -794,10 +794,13 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
 });
 
 
-const { v4: uuidv4 } = require("uuid");
+const { randomUUID } = require('crypto');
 
-app.post("/counseling", mustBeLoggedIn, (req, res) => {
-  const roomId = uuidv4(); // unique session
+const id = randomUUID();
+
+
+app.post("/video-counseling", mustBeLoggedIn, (req, res) => {
+  const roomId = id; // unique session
   res.redirect(`/video-counseling/${roomId}`);
 });
 
