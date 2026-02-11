@@ -800,6 +800,7 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
+    const db = pool;
     const rooms = await db.query("SELECT * FROM rooms");
     const counselors = await db.query("SELECT * FROM counselors");
 
