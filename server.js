@@ -824,8 +824,22 @@ const { randomUUID } = require('crypto');
 const id = randomUUID();
 
 
-app.post("/video-counseling", mustBeLoggedIn, (req, res) => {
-  const roomId = id; // unique session
+app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
+  const { counselorId } = req.body;
+  const roomId = crypto.randomUUID();
+
+  // Save room in database
+  const room = await db.query(
+    "INSERT INTO rooms (id, name) VALUES ($1, $2) RETURNING *",
+    [roomId, `Session-${roomId.substring(0, 8)}`]
+  );
+
+  await db.query(
+    `INSERT INTO video_counseling (counselor_id, client_id, room_id)
+     VALUES ($1, $2, $3)`,
+    [counselorId, req.user.id, roomId]
+  );
+
   res.redirect(`/video-counseling/${roomId}`);
 });
 
