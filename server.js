@@ -134,15 +134,24 @@ CREATE TABLE IF NOT EXISTS users (
     );
   `);
 
-await dbRun(`
-  CREATE TABLE IF NOT EXISTS counseling_sessions (
-    id SERIAL PRIMARY KEY,
-    counselor_id INTEGER REFERENCES users(id),
-    client_id INTEGER REFERENCES users(id),
-    room_id TEXT UNIQUE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-  );
-`);
+  await dbRun(`
+    CREATE TABLE IF NOT EXISTS video-counseling (
+      id SERIAL PRIMARY KEY,
+      counselor_id INTEGER REFERENCES users(id),
+      client_id INTEGER REFERENCES users(id),
+      room_id TEXT UNIQUE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  await dbRun(`
+    CREATE TABLE IF NOT EXISTS rooms (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
 }
 
 
