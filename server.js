@@ -134,32 +134,35 @@ CREATE TABLE IF NOT EXISTS users (
     );
   `);
 
-  await dbRun(`
-    CREATE TABLE IF NOT EXISTS video_counseling (
-      id SERIAL PRIMARY KEY,
-      counselor_id INTEGER REFERENCES users(id),
-      client_id INTEGER REFERENCES users(id),
-      room_id TEXT UNIQUE,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    );
-  `);
+  // Video counseling sessions
+await dbRun(`
+  CREATE TABLE IF NOT EXISTS video_counseling (
+    id SERIAL PRIMARY KEY,
+    counselor_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    client_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
+`);
 
-  await dbRun(`
-    CREATE TABLE IF NOT EXISTS rooms (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      name VARCHAR(255),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
+// Rooms table
+await dbRun(`
+  CREATE TABLE IF NOT EXISTS rooms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+`);
 
-  await dbRun(`
-  CREATE TABLE room_participants (
-      id SERIAL PRIMARY KEY,
-      room_id VARCHAR(255) REFERENCES rooms(room_id) ON DELETE CASCADE,
-      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-      joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
- `)  
+// Room participants
+await dbRun(`
+  CREATE TABLE IF NOT EXISTS room_participants (
+    id SERIAL PRIMARY KEY,
+    room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+`);
 }
 
 // ===================================================================
