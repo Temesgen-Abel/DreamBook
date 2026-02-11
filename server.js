@@ -779,7 +779,7 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 //vedeo counceling routes 
 
-app.get("/counseling", mustBeLoggedIn, async (req, res) => {
+app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   const counselors = await db.query(
     "SELECT id, username FROM users WHERE role = 'counselor'"
   );
