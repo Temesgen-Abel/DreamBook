@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS users (
   `);
 
   await dbRun(`
-    CREATE TABLE IF NOT EXISTS video-counseling (
+    CREATE TABLE IF NOT EXISTS video_counseling (
       id SERIAL PRIMARY KEY,
       counselor_id INTEGER REFERENCES users(id),
       client_id INTEGER REFERENCES users(id),
