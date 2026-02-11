@@ -812,7 +812,6 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
-    const db = pool;
     const rooms = await db.query("SELECT * FROM rooms");
     const counselors = await db.query("SELECT * FROM counselors");
 
@@ -822,7 +821,7 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
       canonical: "https://dreambook.com.et/video-counseling",
       rooms: rooms.rows,
       counselors: counselors.rows,
-      lang: req.session.lang || "en"
+      lang: "en" // default language since no session
     });
 
   } catch (err) {
@@ -830,6 +829,7 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
     res.status(500).send("Server Error");
   }
 });
+
 
 
 const { randomUUID } = require('crypto');
