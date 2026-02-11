@@ -159,10 +159,8 @@ CREATE TABLE IF NOT EXISTS users (
       user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
       joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
- `)
-  
+ `)  
 }
-
 
 // ===================================================================
 // 3. UTILITIES
