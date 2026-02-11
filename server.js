@@ -780,17 +780,24 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 //vedeo counceling routes 
 
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
-  const rooms = await pool.query("SELECT * FROM rooms");
-  res.render("video-counseling", { rooms: rooms.rows });
-});
+  try {
+    const rooms = await pool.query("SELECT * FROM rooms");
+    const counselors = await pool.query("SELECT * FROM counselors");
 
-  res.render("video-counseling", {
-    title: "Video Counseling | eDreamBook",
-    description: "Access professional video counseling services.",
-    canonical: "https://dreambook.com.et/video-counseling",
-    counselors: counselors.rows,
-    lang: req.session.lang || "en"
-  });
+    res.render("video-counseling", {
+      title: "Video Counseling | eDreamBook",
+      description: "Access professional video counseling services.",
+      canonical: "https://dreambook.com.et/video-counseling",
+      rooms: rooms.rows,
+      counselors: counselors.rows,
+      lang: req.session.lang || "en"
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+});
 
 
 const { randomUUID } = require('crypto');
