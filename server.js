@@ -152,6 +152,15 @@ CREATE TABLE IF NOT EXISTS users (
     );
   `);
 
+  await dbRun(`
+  CREATE TABLE room_participants (
+      id SERIAL PRIMARY KEY,
+      room_id VARCHAR(255) REFERENCES rooms(room_id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+ `)
+  
 }
 
 
@@ -681,9 +690,9 @@ app.get("/post/:id", async (req, res) => {
     const reactions = await dbGet(
       `SELECT
          COALESCE(SUM(CASE WHEN type='like' THEN 1 ELSE 0 END),0) AS likes,
-         COALESCE(SUM(CASE WHEN type='dislike' THEN 1 ELSE 0 END),0) AS dislikes
-       FROM reactions
-       WHERE postid=$1`,
+        COALESCE(SUM(CASE WHEN type='dislike' THEN 1 ELSE 0 END),0) AS dislikes
+        FROM reactions
+        WHERE postid=$1`,
       [postId]
     );
 
@@ -790,8 +799,8 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
-    const rooms = await pool.query("SELECT * FROM rooms");
-    const counselors = await pool.query("SELECT * FROM counselors");
+    const rooms = await db.query("SELECT * FROM rooms");
+    const counselors = await db.query("SELECT * FROM counselors");
 
     res.render("video-counseling", {
       title: "Video Counseling | eDreamBook",
