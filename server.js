@@ -164,8 +164,9 @@ await dbRun(`
   );
 `);
 // Room counselors 
+// Room counselors 
 await dbRun(`
-CREATE TABLE IF NOT EXITS counselors (
+CREATE TABLE IF NOT EXISTS counselors (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   email VARCHAR(150),
