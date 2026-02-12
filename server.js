@@ -809,23 +809,19 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 //vedeo counceling routes 
 
-// =======================================================
-// VIDEO COUNSELING HOME
-// =======================================================
-
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
-
-    const rooms = await pool.query("SELECT * FROM rooms ORDER BY created_at DESC");
-
-    const counselors = await pool.query("SELECT * FROM counselors ORDER BY name ASC");
+    const counselors = await pool.query(
+      "SELECT * FROM counselors ORDER BY name ASC"
+    );
 
     res.render("video-counseling", {
       title: "Video Counseling | eDreamBook",
       description: "Access professional video counseling services.",
       canonical: "https://dreambook.com.et/video-counseling",
-      rooms: rooms.rows,
       counselors: counselors.rows,
+      roomId: null,
+      userId: null,
       lang: "en"
     });
 
@@ -837,36 +833,59 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
 
 
 app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
-  try {
+  const client = await pool.connect();
 
+  try {
     const { counselorId } = req.body;
+
+    if (!counselorId) {
+      return res.status(400).send("Counselor is required");
+    }
+
+    // Check counselor exists
+    const counselorCheck = await client.query(
+      "SELECT id FROM counselors WHERE id = $1",
+      [counselorId]
+    );
+
+    if (counselorCheck.rowCount === 0) {
+      return res.status(404).send("Counselor not found");
+    }
+
     const roomId = crypto.randomUUID();
 
+    await client.query("BEGIN");
+
     // Create room
-    await pool.query(
+    await client.query(
       "INSERT INTO rooms (id, name) VALUES ($1, $2)",
       [roomId, `Session-${roomId.substring(0, 8)}`]
     );
 
-    // Save counseling session
-    await pool.query(
+    // Save session
+    await client.query(
       `INSERT INTO video_counseling (counselor_id, client_id, room_id)
        VALUES ($1, $2, $3)`,
       [counselorId, req.session.user.id, roomId]
     );
 
-    // Add participants
-    await pool.query(
+    // Add client participant
+    await client.query(
       `INSERT INTO room_participants (room_id, user_id)
        VALUES ($1, $2)`,
       [roomId, req.session.user.id]
     );
 
+    await client.query("COMMIT");
+
     res.redirect(`/video-counseling/${roomId}`);
 
   } catch (err) {
-    console.error("Create video session error:", err);
+    await client.query("ROLLBACK");
+    console.error("Create session error:", err);
     res.status(500).send("Failed to create session");
+  } finally {
+    client.release();
   }
 });
 
@@ -875,19 +894,33 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
 
 app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
   try {
+    const { roomId } = req.params;
 
-    res.render("video-room", {
-      roomId: req.params.roomId,
+    // Check if room exists
+    const roomCheck = await pool.query(
+      "SELECT id FROM rooms WHERE id = $1",
+      [roomId]
+    );
+
+    if (roomCheck.rowCount === 0) {
+      return res.status(404).send("Room not found");
+    }
+
+    res.render("video-counseling", {
+      title: "Live Session | eDreamBook",
+      description: "Secure live counseling session.",
+      canonical: "",
+      counselors: [],
+      roomId,
       userId: req.session.user.id,
       lang: "en"
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Room load error:", err);
     res.status(500).send("Room load error");
   }
 });
-
 
 
 // ===================================================================

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="<%= lang %>">
+<head>
+  <%- include('includes/head') %>
+  <link rel="stylesheet" href="/style.css">
+
+  <% if (roomId) { %>
+  <style>
+    .videos {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    video {
+      width: 45%;
+      min-width: 280px;
+      background: #000;
+      border-radius: 10px;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    .controls {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .controls button {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .end-btn {
+      background: #d9534f;
+      color: white;
+    }
+
+    .mute-btn {
+      background: #0275d8;
+      color: white;
+    }
+  </style>
+  <% } %>
+</head>
+
+<body>
+<%- include('includes/header') %>
+
+<div class="chat-layout">
+  <div class="video-counseling">
+
+    <% if (!roomId) { %>
+
+      <!-- ========================= -->
+      <!-- COUNSELOR SELECTION PAGE -->
+      <!-- ========================= -->
+
+      <h1>Video Counseling</h1>
+
+      <form action="/video-counseling" method="POST">
+        <select name="counselorId" required>
+          <option value="">Select counselor</option>
+          <% counselors.forEach(c => { %>
+            <option value="<%= c.id %>">
+              <%= c.name || c.username %>
+            </option>
+          <% }) %>
+        </select>
+
+        <button class="btn">Start Video Counseling</button>
+      </form>
+
+    <% } else { %>
+
+      <!-- ========================= -->
+      <!-- LIVE VIDEO CALL PAGE -->
+      <!-- ========================= -->
+
+      <h1>Live Video Counseling</h1>
+
+      <p id="status">Waiting for other participant...</p>
+
+      <div class="videos">
+        <video id="localVideo" autoplay muted playsinline></video>
+        <video id="remoteVideo" autoplay playsinline></video>
+      </div>
+
+      <div class="controls">
+        <button class="mute-btn" id="muteBtn">Mute</button>
+        <button class="end-btn" id="endBtn">End Call</button>
+      </div>
+
+      <!-- Socket.IO -->
+      <script src="/socket.io/socket.io.js"></script>
+
+      <script>
+        const socket = io();
+
+        const roomId = "<%= roomId %>";
+        const userId = "<%= userId %>";
+
+        const statusText = document.getElementById("status");
+        const localVideo = document.getElementById("localVideo");
+        const remoteVideo = document.getElementById("remoteVideo");
+        const muteBtn = document.getElementById("muteBtn");
+        const endBtn = document.getElementById("endBtn");
+
+        let localStream;
+        let isCaller = false;
+        let isMuted = false;
+
+        const peer = new RTCPeerConnection({
+          iceServers: [
+            { urls: "stun:stun.l.google.com:19302" }
+          ]
+        });
+
+        // ===============================
+        // Get Camera & Microphone
+        // ===============================
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          .then(stream => {
+            localStream = stream;
+            localVideo.srcObject = stream;
+
+            stream.getTracks().forEach(track => {
+              peer.addTrack(track, stream);
+            });
+          })
+          .catch(err => {
+            alert("Camera/Microphone permission denied.");
+            console.error(err);
+          });
+
+        // ===============================
+        // Remote Stream
+        // ===============================
+        peer.ontrack = event => {
+          remoteVideo.srcObject = event.streams[0];
+          statusText.innerText = "Connected";
+        };
+
+        // ===============================
+        // ICE Candidates
+        // ===============================
+        peer.onicecandidate = event => {
+          if (event.candidate) {
+            socket.emit("webrtc_ice_candidate", {
+              roomId,
+              candidate: event.candidate
+            });
+          }
+        };
+
+        // ===============================
+        // Join Room
+        // ===============================
+        socket.emit("join_call", { roomId, userId });
+
+        socket.on("peer_joined", async () => {
+          if (!isCaller) {
+            isCaller = true;
+
+            const offer = await peer.createOffer();
+            await peer.setLocalDescription(offer);
+
+            socket.emit("webrtc_offer", {
+              roomId,
+              offer
+            });
+          }
+        });
+
+        socket.on("webrtc_offer", async ({ offer }) => {
+          await peer.setRemoteDescription(new RTCSessionDescription(offer));
+          const answer = await peer.createAnswer();
+          await peer.setLocalDescription(answer);
+
+          socket.emit("webrtc_answer", {
+            roomId,
+            answer
+          });
+        });
+
+        socket.on("webrtc_answer", async ({ answer }) => {
+          await peer.setRemoteDescription(new RTCSessionDescription(answer));
+        });
+
+        socket.on("webrtc_ice_candidate", async ({ candidate }) => {
+          try {
+            await peer.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (err) {
+            console.error("ICE error:", err);
+          }
+        });
+
+        socket.on("peer_left", () => {
+          remoteVideo.srcObject = null;
+          statusText.innerText = "Participant left the call.";
+        });
+
+        // ===============================
+        // Mute Button
+        // ===============================
+        muteBtn.addEventListener("click", () => {
+          if (!localStream) return;
+
+          isMuted = !isMuted;
+          localStream.getAudioTracks().forEach(track => {
+            track.enabled = !isMuted;
+          });
+
+          muteBtn.innerText = isMuted ? "Unmute" : "Mute";
+        });
+
+        // ===============================
+        // End Call
+        // ===============================
+        endBtn.addEventListener("click", () => {
+          if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+          }
+
+          peer.close();
+          socket.disconnect();
+
+          window.location.href = "/video-counseling";
+        });
+      </script>
+
+    <% } %>
+
+  </div>
+</div>
+
+</body>
+</html>
