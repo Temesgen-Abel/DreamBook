@@ -136,12 +136,11 @@ CREATE TABLE IF NOT EXISTS users (
 
   // Video counseling sessions
 await dbRun(`
-  CREATE TABLE IF NOT EXISTS video_counseling (
-    id SERIAL PRIMARY KEY,
-    counselor_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    client_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+  CREATE TABLE IF NOT EXISTS counselors (
+  id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  specialty VARCHAR(150),
+  bio TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
 `);
 
@@ -810,11 +809,16 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 //vedeo counceling routes 
 
+// =======================================================
+// VIDEO COUNSELING HOME
+// =======================================================
+
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
-    const db = pool
-    const rooms = await db.query("SELECT * FROM rooms");
-    const counselors = await db.query("SELECT * FROM counselors");
+
+    const rooms = await pool.query("SELECT * FROM rooms ORDER BY created_at DESC");
+
+    const counselors = await pool.query("SELECT * FROM counselors ORDER BY name ASC");
 
     res.render("video-counseling", {
       title: "Video Counseling | eDreamBook",
@@ -822,51 +826,68 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
       canonical: "https://dreambook.com.et/video-counseling",
       rooms: rooms.rows,
       counselors: counselors.rows,
-      lang: "en" // default language since no session
+      lang: "en"
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Video counseling load error:", err);
     res.status(500).send("Server Error");
   }
 });
 
 
-
-const { randomUUID } = require('crypto');
-
-const id = randomUUID();
-
-
 app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
-  const { counselorId } = req.body;
-  const roomId = crypto.randomUUID();
+  try {
 
-  // Save room in database
-  const room = await db.query(
-    "INSERT INTO rooms (id, name) VALUES ($1, $2) RETURNING *",
-    [roomId, `Session-${roomId.substring(0, 8)}`]
-  );
+    const { counselorId } = req.body;
+    const roomId = crypto.randomUUID();
 
-  await db.query(
-    `INSERT INTO video_counseling (counselor_id, client_id, room_id)
-     VALUES ($1, $2, $3)`,
-    [counselorId, req.user.id, roomId]
-  );
+    // Create room
+    await pool.query(
+      "INSERT INTO rooms (id, name) VALUES ($1, $2)",
+      [roomId, `Session-${roomId.substring(0, 8)}`]
+    );
 
-  res.redirect(`/video-counseling/${roomId}`);
+    // Save counseling session
+    await pool.query(
+      `INSERT INTO video_counseling (counselor_id, client_id, room_id)
+       VALUES ($1, $2, $3)`,
+      [counselorId, req.session.user.id, roomId]
+    );
+
+    // Add participants
+    await pool.query(
+      `INSERT INTO room_participants (room_id, user_id)
+       VALUES ($1, $2)`,
+      [roomId, req.session.user.id]
+    );
+
+    res.redirect(`/video-counseling/${roomId}`);
+
+  } catch (err) {
+    console.error("Create video session error:", err);
+    res.status(500).send("Failed to create session");
+  }
 });
 
 
 // Video counseling room
 
-app.get("/video-counseling/:roomId", mustBeLoggedIn, (req, res) => {
-  res.render("video-counseling", {
-    roomId: req.params.roomId,
-    userId: req.user.id,
-    lang: req.lang
-  });
+app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
+  try {
+
+    res.render("video-room", {
+      roomId: req.params.roomId,
+      userId: req.session.user.id,
+      lang: "en"
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Room load error");
+  }
 });
+
 
 
 // ===================================================================
