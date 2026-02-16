@@ -805,28 +805,28 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 });
 
 //vedeo counceling routes 
-
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
-    const counselors = await pool.query(
-      "SELECT * FROM counselors ORDER BY name ASC"
-    );
+    const result = await pool.query("SELECT id, username FROM users");
 
+    res.render("video-counseling", {
+      users: result.rows
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
     res.render("video-counseling", {
       title: "Video Counseling | eDreamBook",
       description: "Access professional video counseling services.",
       canonical: "https://dreambook.com.et/video-counseling",
-      counselors: counselors.rows,
+      users: result.rows,
       roomId: null,
       userId: null,
       lang: "en"
     });
-
-  } catch (err) {
-    console.error("Video counseling load error:", err);
-    res.status(500).send("Server Error");
-  }
-});
 
 
 app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
