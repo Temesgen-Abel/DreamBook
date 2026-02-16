@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
@@ -228,8 +227,6 @@ function mustBeAdmin(req, res, next) {
   }
   next();
 }
-
-// ===================================================================
 // 4. MIDDLEWARE
 // ===================================================================
 async function authMiddleware(req, res, next) {

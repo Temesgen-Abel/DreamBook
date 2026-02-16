@@ -70,14 +70,11 @@
 
       <form action="/video-counseling" method="POST">
         <select name="counselorId" required>
-          <option value="">Select counselor</option>
-          <% counselors.forEach(c => { %>
-            <option value="<%= c.id %>">
-              <%= c.name || c.username %>
-            </option>
-          <% }) %>
+          <option value="">Select user</option>
+          <% users.forEach(u => { %>
+          <option value="<%= u.id %>"><%= u.username %></option>
+        <% }) %>
         </select>
-
         <button class="btn">Start Video Counseling</button>
       </form>
 
