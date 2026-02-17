@@ -825,19 +825,27 @@ app.get("/video-counseling", mustBeLoggedIn, async (_, res) => {
 });
 
 
+const crypto = require("crypto");
+
 app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   const client = await pool.connect();
 
   try {
     const { counselorId } = req.body;
+    const clientId = req.session.user.id;
 
+    // 1️⃣ Validate selection
     if (!counselorId) {
-      return res.status(400).send("Counselor is required");
+      return res.status(400).send("No counselor selected");
     }
 
-    // Check counselor exists
+    if (parseInt(counselorId) === clientId) {
+      return res.status(400).send("You cannot select yourself");
+    }
+
+    // 2️⃣ Check counselor exists
     const counselorCheck = await client.query(
-      "SELECT id FROM counselors WHERE id = $1",
+      "SELECT id FROM users WHERE id = $1",
       [counselorId]
     );
 
@@ -849,24 +857,24 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
 
     await client.query("BEGIN");
 
-    // Create room
+    // 3️⃣ Create room
     await client.query(
-      "INSERT INTO rooms (id, name) VALUES ($1, $2)",
+      "INSERT INTO rooms (id, name, created_at) VALUES ($1, $2, NOW())",
       [roomId, `Session-${roomId.substring(0, 8)}`]
     );
 
-    // Save session
+    // 4️⃣ Save counseling session
     await client.query(
-      `INSERT INTO video_counseling (counselor_id, client_id, room_id)
-       VALUES ($1, $2, $3)`,
-      [counselorId, req.session.user.id, roomId]
+      `INSERT INTO video_sessions (room_id, counselor_id, client_id, status)
+       VALUES ($1, $2, $3, 'active')`,
+      [roomId, counselorId, clientId]
     );
 
-    // Add client participant
+    // 5️⃣ Add participants
     await client.query(
       `INSERT INTO room_participants (room_id, user_id)
-       VALUES ($1, $2)`,
-      [roomId, req.session.user.id]
+       VALUES ($1, $2), ($1, $3)`,
+      [roomId, counselorId, clientId]
     );
 
     await client.query("COMMIT");
