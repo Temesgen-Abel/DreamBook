@@ -353,14 +353,15 @@ const io = require("socket.io")(server, { cors: { origin: "*" } });
 app.set("io", io);
 
 // 6. ROUTES
-app.get("/admin", mustBeAdmin, async (req, res) => {
+// 6. ROUTES
+app.get("/admin", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
   try {
 
     // Total users
-    const usersResult = await pool.query("SELECT COUNT(*) FROM users");
-    const userCount = parseInt(usersResult.rows[0].count);
+    const usersCountResult = await pool.query("SELECT COUNT(*) FROM users");
+    const userCount = parseInt(usersCountResult.rows[0].count);
 
-    // Active users (if you have is_active column)
+    // Active users
     let activeUsers = 0;
     try {
       const activeResult = await pool.query(
@@ -371,7 +372,7 @@ app.get("/admin", mustBeAdmin, async (req, res) => {
       console.log("No is_active column found. Skipping active users count.");
     }
 
-    // Counselors (if role column exists)
+    // Counselors count
     let counselorCount = 0;
     try {
       const counselorResult = await pool.query(
@@ -382,11 +383,17 @@ app.get("/admin", mustBeAdmin, async (req, res) => {
       console.log("No role column found. Skipping counselor count.");
     }
 
+    // 🚨 THIS IS WHAT YOU WERE MISSING
+    const usersResult = await pool.query(
+      "SELECT id, username, email, role FROM users ORDER BY id ASC"
+    );
+
     res.render("admin", {
       title: "Admin Dashboard | DreamBook",
       userCount,
       activeUsers,
-      counselorCount
+      counselorCount,
+      users: usersResult.rows   // ⚠️ VERY IMPORTANT
     });
 
   } catch (err) {
