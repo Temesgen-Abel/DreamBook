@@ -861,15 +861,21 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 //vedeo counceling routes 
 
-app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
+aapp.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
+    // 🔐 Safety check
+    if (!req.session || !req.session.user) {
+      return res.redirect("/login");
+    }
+
+    const currentUser = req.session.user;
     let result;
 
-    if (req.session.user.role === "user") {
+    if (currentUser.role === "user") {
       result = await pool.query(
         "SELECT id, username FROM users WHERE role = 'counselor'"
       );
-    } else if (req.session.user.role === "counselor") {
+    } else if (currentUser.role === "counselor") {
       result = await pool.query(
         "SELECT id, username FROM users WHERE role = 'user'"
       );
@@ -880,23 +886,26 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
     res.render("video-counseling", {
       users: result.rows,
       roomId: null,
-      userId: null,
+      userId: currentUser.id,
       lang: "en"
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Video Counseling GET error:", err);
     res.status(500).send("Server error");
   }
 });
-
 
 app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   const client = await pool.connect();
 
   try {
-    const { counselorId } = req.body;
+    if (!req.session || !req.session.user) {
+      return res.redirect("/login");
+    }
+
     const currentUser = req.session.user;
+    const { counselorId } = req.body;
 
     if (!counselorId) {
       return res.status(400).send("No user selected");
@@ -906,30 +915,48 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
       return res.status(400).send("You cannot select yourself");
     }
 
-    // Get selected user
+    await client.query("BEGIN");
+
+    // 🔎 Get selected user
     const targetResult = await client.query(
       "SELECT id, role FROM users WHERE id = $1",
       [counselorId]
     );
 
     if (targetResult.rowCount === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).send("User not found");
     }
 
     const targetUser = targetResult.rows[0];
 
-    // 🔐 VALID ROLE COMBINATION CHECK
+    // 🔐 Validate correct role pairing
     const validCombination =
       (currentUser.role === "user" && targetUser.role === "counselor") ||
       (currentUser.role === "counselor" && targetUser.role === "user");
 
     if (!validCombination) {
+      await client.query("ROLLBACK");
       return res.status(403).send("Invalid session pairing.");
     }
 
-    const roomId = crypto.randomUUID();
+    // 🛑 Prevent duplicate active session
+    const existingSession = await client.query(
+      `SELECT * FROM video_sessions
+       WHERE counselor_id = $1 AND client_id = $2 AND status = 'active'`,
+      [
+        currentUser.role === "counselor" ? currentUser.id : targetUser.id,
+        currentUser.role === "user" ? currentUser.id : targetUser.id
+      ]
+    );
 
-    await client.query("BEGIN");
+    if (existingSession.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).send("An active session already exists.");
+    }
+
+    // 🎯 Create room
+    const roomId = crypto.randomUUID();
 
     await client.query(
       "INSERT INTO rooms (id, name, created_at) VALUES ($1, $2, NOW())",
@@ -958,12 +985,13 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
 
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error(err);
+    console.error("Video Counseling POST error:", err);
     res.status(500).send("Failed to create session");
   } finally {
     client.release();
   }
 });
+
 
 
 // Video counseling room
