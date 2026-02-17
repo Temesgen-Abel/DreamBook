@@ -861,7 +861,7 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 //vedeo counceling routes 
 
-aapp.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
+app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
     // 🔐 Safety check
     if (!req.session || !req.session.user) {
