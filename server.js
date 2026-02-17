@@ -353,7 +353,7 @@ const io = require("socket.io")(server, { cors: { origin: "*" } });
 app.set("io", io);
 
 // 6. ROUTES
-// 6. ROUTES
+
 app.get("/admin", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
   try {
 
