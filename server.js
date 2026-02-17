@@ -397,43 +397,66 @@ app.get("/admin", mustBeAdmin, async (req, res) => {
 
 // Admin promote route
 
-app.post("/admin/promote/:id", mustBeAdmin, async (req, res) => {
-  const userId = req.params.id;
+app.post("/admin/promote/:id", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
 
-  await pool.query(
-    "UPDATE users SET role = 'counselor' WHERE id = $1",
-    [userId]
-  );
+    await pool.query(
+      "UPDATE users SET role = 'counselor' WHERE id = $1 AND role = 'user'",
+      [userId]
+    );
 
-  res.redirect("/admin");
+    res.redirect("/admin");
+
+  } catch (err) {
+    console.error("Promote error:", err);
+    res.status(500).send("Failed to promote user");
+  }
 });
+
 
 // Admin demote route
-app.post("/admin/demote/:id", mustBeAdmin, async (req, res) => {
-  const userId = req.params.id;
+app.post("/admin/demote/:id", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
 
-  await pool.query(
-    "UPDATE users SET role = 'user' WHERE id = $1",
-    [userId]
-  );
+    await pool.query(
+      "UPDATE users SET role = 'user' WHERE id = $1 AND role = 'counselor'",
+      [userId]
+    );
 
-  res.redirect("/admin");
+    res.redirect("/admin");
+
+  } catch (err) {
+    console.error("Demote error:", err);
+    res.status(500).send("Failed to demote user");
+  }
 });
 
+
 // Admin delete user route
-app.post("/admin/delete/:id", mustBeAdmin, async (req, res) => {
-  const userId = req.params.id;
+app.post("/admin/delete/:id", mustBeLoggedIn, mustBeAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
 
-  if (parseInt(userId) === req.user.id) {
-    return res.status(400).send("You cannot delete yourself.");
+    // Prevent deleting admin
+    const check = await pool.query(
+      "SELECT role FROM users WHERE id = $1",
+      [userId]
+    );
+
+    if (check.rows[0]?.role === "admin") {
+      return res.status(403).send("Cannot delete admin");
+    }
+
+    await pool.query("DELETE FROM users WHERE id = $1", [userId]);
+
+    res.redirect("/admin");
+
+  } catch (err) {
+    console.error("Delete error:", err);
+    res.status(500).send("Failed to delete user");
   }
-
-  await pool.query(
-    "DELETE FROM users WHERE id = $1",
-    [userId]
-  );
-
-  res.redirect("/admin");
 });
 
 
@@ -870,7 +893,7 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
       return res.redirect("/login");
     }
 
-    const currentUser = req.user;   // ✅ FIXED
+    const currentUser = req.user;  
 ;
     let result;
 
