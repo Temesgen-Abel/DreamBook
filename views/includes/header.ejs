@@ -29,7 +29,7 @@
         <a class="ni"  href="/create-post"><%= t.createPost %></a>
         <a class="ni"  href="/inbox"><%= t.inboxTitle %></a>
         <a class="ni"  href="/video-counseling"><%= t.counselingTitle %></a>
-        <!-- <% if (user && user.role === "admin") { %> <a href="/admin"><%= t.adminTitle %></a> <% } %> -->
+        <% if (user && user.role === "admin") { %> <a href="/admin"><%= t.adminTitle %></a> <% } %> 
         <span class="ni">
           <a href="<%= request.path %>?lang=en">English</a> |
           <a href="<%= request.path %>?lang=am">አማርኛ</a>

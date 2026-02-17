@@ -227,6 +227,8 @@ function mustBeAdmin(req, res, next) {
   }
   next();
 }
+
+
 // 4. MIDDLEWARE
 // ===================================================================
 async function authMiddleware(req, res, next) {
@@ -351,6 +353,9 @@ app.set("io", io);
 // 6. ROUTES
 app.get("/admin", mustBeAdmin, async (req, res) => {
   try {
+    const usersResult = await pool.query(
+      "SELECT id, username, email, role, created_at FROM users ORDER BY id DESC"
+    );
     const userResult = await dbGet(
       "SELECT COUNT(*)::int AS userCount FROM users"
     );
@@ -364,21 +369,71 @@ app.get("/admin", mustBeAdmin, async (req, res) => {
     );
 
     res.render("admin", {
-      userCount: userResult?.userCount || 0,
-      postCount: postResult?.postCount || 0,
-      commentCount: commentResult?.commentCount || 0
-      // visitCount is already available via res.locals
+      visitCount,
+      userCount,
+      postCount,
+      commentCount,
+      activeUsers,
+      postsLastWeek,
+      commentsLastWeek,
+      mostActiveUser,
+      mostPostedDreamsUser,
+      mostCommentedUser,
+      latestUsers,
+      latestPosts,
+      latestComments,
+
+      // NEW
+      users: usersResult.rows
     });
 
   } catch (err) {
-    console.error("Admin stats error:", err);
-    res.render("admin", {
-      userCount: 0,
-      postCount: 0,
-      commentCount: 0
-    });
+    console.error(err);
+    res.status(500).send("Admin error");
   }
 });
+
+// Admin promote route
+
+app.post("/admin/promote/:id", mustBeAdmin, async (req, res) => {
+  const userId = req.params.id;
+
+  await pool.query(
+    "UPDATE users SET role = 'counselor' WHERE id = $1",
+    [userId]
+  );
+
+  res.redirect("/admin");
+});
+
+// Admin demote route
+app.post("/admin/demote/:id", mustBeAdmin, async (req, res) => {
+  const userId = req.params.id;
+
+  await pool.query(
+    "UPDATE users SET role = 'user' WHERE id = $1",
+    [userId]
+  );
+
+  res.redirect("/admin");
+});
+
+// Admin delete user route
+app.post("/admin/delete/:id", mustBeAdmin, async (req, res) => {
+  const userId = req.params.id;
+
+  if (parseInt(userId) === req.session.user.id) {
+    return res.status(400).send("You cannot delete yourself.");
+  }
+
+  await pool.query(
+    "DELETE FROM users WHERE id = $1",
+    [userId]
+  );
+
+  res.redirect("/admin");
+});
+
 
 // 6.0 Home Route
 app.get("/", (req, res) => {
@@ -806,18 +861,29 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 //vedeo counceling routes 
 
-app.get("/video-counseling", mustBeLoggedIn, async (_, res) => {
+app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
-    const result = await pool.query("SELECT id, username FROM users");
+    let result;
+
+    if (req.session.user.role === "user") {
+      result = await pool.query(
+        "SELECT id, username FROM users WHERE role = 'counselor'"
+      );
+    } else if (req.session.user.role === "counselor") {
+      result = await pool.query(
+        "SELECT id, username FROM users WHERE role = 'user'"
+      );
+    } else {
+      return res.status(403).send("Admins cannot start sessions.");
+    }
+
     res.render("video-counseling", {
-      title: "Video Counseling | eDreamBook",
-      description: "Access professional video counseling services.",
-      canonical: "https://dreambook.com.et/video-counseling",
       users: result.rows,
       roomId: null,
       userId: null,
       lang: "en"
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
@@ -825,56 +891,65 @@ app.get("/video-counseling", mustBeLoggedIn, async (_, res) => {
 });
 
 
-const crypto = require("crypto");
-
 app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   const client = await pool.connect();
 
   try {
     const { counselorId } = req.body;
-    const clientId = req.session.user.id;
+    const currentUser = req.session.user;
 
-    // 1️⃣ Validate selection
     if (!counselorId) {
-      return res.status(400).send("No counselor selected");
+      return res.status(400).send("No user selected");
     }
 
-    if (parseInt(counselorId) === clientId) {
+    if (parseInt(counselorId) === currentUser.id) {
       return res.status(400).send("You cannot select yourself");
     }
 
-    // 2️⃣ Check counselor exists
-    const counselorCheck = await client.query(
-      "SELECT id FROM users WHERE id = $1",
+    // Get selected user
+    const targetResult = await client.query(
+      "SELECT id, role FROM users WHERE id = $1",
       [counselorId]
     );
 
-    if (counselorCheck.rowCount === 0) {
-      return res.status(404).send("Counselor not found");
+    if (targetResult.rowCount === 0) {
+      return res.status(404).send("User not found");
+    }
+
+    const targetUser = targetResult.rows[0];
+
+    // 🔐 VALID ROLE COMBINATION CHECK
+    const validCombination =
+      (currentUser.role === "user" && targetUser.role === "counselor") ||
+      (currentUser.role === "counselor" && targetUser.role === "user");
+
+    if (!validCombination) {
+      return res.status(403).send("Invalid session pairing.");
     }
 
     const roomId = crypto.randomUUID();
 
     await client.query("BEGIN");
 
-    // 3️⃣ Create room
     await client.query(
       "INSERT INTO rooms (id, name, created_at) VALUES ($1, $2, NOW())",
       [roomId, `Session-${roomId.substring(0, 8)}`]
     );
 
-    // 4️⃣ Save counseling session
     await client.query(
       `INSERT INTO video_sessions (room_id, counselor_id, client_id, status)
        VALUES ($1, $2, $3, 'active')`,
-      [roomId, counselorId, clientId]
+      [
+        roomId,
+        currentUser.role === "counselor" ? currentUser.id : targetUser.id,
+        currentUser.role === "user" ? currentUser.id : targetUser.id
+      ]
     );
 
-    // 5️⃣ Add participants
     await client.query(
       `INSERT INTO room_participants (room_id, user_id)
        VALUES ($1, $2), ($1, $3)`,
-      [roomId, counselorId, clientId]
+      [roomId, currentUser.id, targetUser.id]
     );
 
     await client.query("COMMIT");
@@ -883,7 +958,7 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
 
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("Create session error:", err);
+    console.error(err);
     res.status(500).send("Failed to create session");
   } finally {
     client.release();

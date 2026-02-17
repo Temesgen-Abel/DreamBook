@@ -111,6 +111,63 @@
 
 <form action="/dashboard" method="get">
   <button type="submit" class="btn">Back to Homepage</button>
+
+<!-- ========================= -->
+<!-- managment section-->
+ <% if (typeof users !== "undefined" && users.length) { %>
+  <div class="admin-stat">
+    <h2>User Role Management</h2>
+
+    <table border="1" style="width:100%; text-align:center;">
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Action</th>
+      </tr>
+
+      <% users.forEach(user => { %>
+        <tr>
+          <td><%= user.id %></td>
+          <td><%= user.username %></td>
+          <td><%= user.email %></td>
+          <td>
+            <% if (user.role === "admin") { %>
+              <span style="color:red;"><strong>ADMIN</strong></span>
+            <% } else if (user.role === "counselor") { %>
+              <span style="color:green;">Counselor</span>
+            <% } else { %>
+              <span>User</span>
+            <% } %>
+          </td>
+
+          <td>
+            <% if (user.role === "user") { %>
+              <form action="/admin/promote/<%= user.id %>" method="POST" style="display:inline;">
+                <button class="btn">Make Counselor</button>
+              </form>
+            <% } %>
+
+            <% if (user.role === "counselor") { %>
+              <form action="/admin/demote/<%= user.id %>" method="POST" style="display:inline;">
+                <button class="btn">Remove Counselor</button>
+              </form>
+            <% } %>
+
+            <% if (user.role !== "admin") { %>
+              <form action="/admin/delete/<%= user.id %>" method="POST" style="display:inline;">
+                <button class="btn" style="background:red;">Delete</button>
+              </form>
+            <% } %>
+
+          </td>
+        </tr>
+      <% }) %>
+    </table>
+  </div>
+<% } %>
+
 </body>
 
 </html
