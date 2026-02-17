@@ -351,48 +351,45 @@ const io = require("socket.io")(server, { cors: { origin: "*" } });
 app.set("io", io);
 
 // 6. ROUTES
-app.get("/admin", mustBeAdmin, async (req, res) => {
+aapp.get("/admin", mustBeAdmin, async (req, res) => {
   try {
-    const usersResult = await pool.query(
-      "SELECT id, username, email, role, created_at FROM users ORDER BY id DESC"
-    );
-    const userResult = await dbGet(
-      "SELECT COUNT(*)::int AS userCount FROM users"
-    );
 
-    const postResult = await dbGet(
-      "SELECT COUNT(*)::int AS postCount FROM posts"
-    );
-
-    const commentResult = await dbGet(
-      "SELECT COUNT(*)::int AS commentCount FROM comments"
-    );
+    // Total users
+    const usersResult = await pool.query("SELECT COUNT(*) FROM users");
     const userCount = parseInt(usersResult.rows[0].count);
-      const postCount = parseInt(postResult.postcount);
-      const commentCount = parseInt(commentResult.commentcount);
+
+    // Active users (if you have is_active column)
+    let activeUsers = 0;
+    try {
+      const activeResult = await pool.query(
+        "SELECT COUNT(*) FROM users WHERE is_active = true"
+      );
+      activeUsers = parseInt(activeResult.rows[0].count);
+    } catch (err) {
+      console.log("No is_active column found. Skipping active users count.");
+    }
+
+    // Counselors (if role column exists)
+    let counselorCount = 0;
+    try {
+      const counselorResult = await pool.query(
+        "SELECT COUNT(*) FROM users WHERE role = 'counselor'"
+      );
+      counselorCount = parseInt(counselorResult.rows[0].count);
+    } catch (err) {
+      console.log("No role column found. Skipping counselor count.");
+    }
 
     res.render("admin", {
-      visitCount,
+      title: "Admin Dashboard | DreamBook",
       userCount,
-      postCount,
-      commentCount,
       activeUsers,
-      postsLastWeek,
-      commentsLastWeek,
-      mostActiveUser,
-      mostPostedDreamsUser,
-      mostCommentedUser,
-      latestUsers,
-      latestPosts,
-      latestComments,
-
-      // NEW
-      users: usersResult.rows
+      counselorCount
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Admin error");
+    console.error("Admin Dashboard Error:", err);
+    res.status(500).send("Server Error");
   }
 });
 
