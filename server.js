@@ -864,9 +864,7 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
     // 🔐 Safety check
-    if (!req.session || !req.session.user) {
-      return res.redirect("/video-counseling");
-    }
+    if (!req.session || !req.session.user);
 
     const currentUser = req.session.user;
     let result;
