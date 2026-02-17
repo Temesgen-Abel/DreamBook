@@ -351,7 +351,7 @@ const io = require("socket.io")(server, { cors: { origin: "*" } });
 app.set("io", io);
 
 // 6. ROUTES
-aapp.get("/admin", mustBeAdmin, async (req, res) => {
+app.get("/admin", mustBeAdmin, async (req, res) => {
   try {
 
     // Total users
