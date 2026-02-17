@@ -367,6 +367,9 @@ app.get("/admin", mustBeAdmin, async (req, res) => {
     const commentResult = await dbGet(
       "SELECT COUNT(*)::int AS commentCount FROM comments"
     );
+    const userCount = parseInt(usersResult.rows[0].count);
+      const postCount = parseInt(postResult.postcount);
+      const commentCount = parseInt(commentResult.commentcount);
 
     res.render("admin", {
       visitCount,
