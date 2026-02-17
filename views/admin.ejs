@@ -108,10 +108,6 @@
   </div>
 <% } %>
 
-
-<form action="/dashboard" method="get">
-  <button type="submit" class="btn">Back to Homepage</button>
-
 <!-- ========================= -->
 <!-- managment section-->
  <% if (typeof users !== "undefined" && users.length) { %>
@@ -167,6 +163,11 @@
     </table>
   </div>
 <% } %>
+
+
+<form action="/dashboard" method="get">
+  <button type="submit" class="btn">Back to Homepage</button>
+</form>
 
 </body>
 

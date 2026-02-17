@@ -262,7 +262,9 @@ async function authMiddleware(req, res, next) {
 }
 
 function mustBeLoggedIn(req, res, next) {
-  if (!req.user) return res.redirect("/login");
+  if (!req.session || !req.session.user) {
+    return res.redirect("/login");
+  }
   next();
 }
 
@@ -864,7 +866,9 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
     // 🔐 Safety check
-    if (!req.session || !req.session.user);
+    if (!req.session || !req.session.user) {
+      return res.redirect("/login");
+    }
 
     const currentUser = req.session.user;
     let result;
