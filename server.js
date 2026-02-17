@@ -865,7 +865,7 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
     // 🔐 Safety check
     if (!req.session || !req.session.user) {
-      return res.redirect("/login");
+      return res.redirect("/video-counseling");
     }
 
     const currentUser = req.session.user;
