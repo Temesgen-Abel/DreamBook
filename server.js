@@ -262,10 +262,10 @@ async function authMiddleware(req, res, next) {
 }
 
 function mustBeLoggedIn(req, res, next) {
-  if (!req.session || !req.session.user) {
-    return res.redirect("/login");
+  if (!req.user) {
+    return res.redirect("/login")
   }
-  next();
+  next()
 }
 
 //unread middleware
@@ -424,7 +424,7 @@ app.post("/admin/demote/:id", mustBeAdmin, async (req, res) => {
 app.post("/admin/delete/:id", mustBeAdmin, async (req, res) => {
   const userId = req.params.id;
 
-  if (parseInt(userId) === req.session.user.id) {
+  if (parseInt(userId) === req.user.id) {
     return res.status(400).send("You cannot delete yourself.");
   }
 
@@ -866,11 +866,12 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
     // 🔐 Safety check
-    if (!req.session || !req.session.user) {
+    if (!req.user) {
       return res.redirect("/login");
     }
 
-    const currentUser = req.session.user;
+    const currentUser = req.user;   // ✅ FIXED
+;
     let result;
 
     if (currentUser.role === "user") {
@@ -902,11 +903,11 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   const client = await pool.connect();
 
   try {
-    if (!req.session || !req.session.user) {
+    if (!req.user) {
       return res.redirect("/login");
     }
 
-    const currentUser = req.session.user;
+    const currentUser = req.user;
     const { counselorId } = req.body;
 
     if (!counselorId) {
