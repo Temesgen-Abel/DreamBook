@@ -929,7 +929,7 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
 });
 
 app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
-  const client = await pool.connect();
+  const user = await pool.connect();
 
   try {
     if (!req.user) {
@@ -947,16 +947,16 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
       return res.status(400).send("You cannot select yourself");
     }
 
-    await client.query("BEGIN");
+    await user.query("BEGIN");
 
     // 🔎 Get selected user
-    const targetResult = await client.query(
+    const targetResult = await user.query(
       "SELECT id, role FROM users WHERE id = $1",
       [counselorId]
     );
 
     if (targetResult.rowCount === 0) {
-      await client.query("ROLLBACK");
+      await user.query("ROLLBACK");
       return res.status(404).send("User not found");
     }
 
@@ -968,12 +968,12 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
       (currentUser.role === "counselor" && targetUser.role === "user");
 
     if (!validCombination) {
-      await client.query("ROLLBACK");
+      await user.query("ROLLBACK");
       return res.status(403).send("Invalid session pairing.");
     }
 
     // 🛑 Prevent duplicate active session
-    const existingSession = await client.query(
+    const existingSession = await user.query(
       `SELECT * FROM video_sessions
        WHERE counselor_id = $1 AND user_id = $2 AND status = 'active'`,
       [
@@ -983,20 +983,20 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
     );
 
     if (existingSession.rowCount > 0) {
-      await client.query("ROLLBACK");
+      await user.query("ROLLBACK");
       return res.status(400).send("An active session already exists.");
     }
 
     // 🎯 Create room
     const roomId = crypto.randomUUID();
 
-    await client.query(
+    await user.query(
       "INSERT INTO rooms (id, name, created_at) VALUES ($1, $2, NOW())",
       [roomId, `Session-${roomId.substring(0, 8)}`]
     );
 
-    await client.query(
-      `INSERT INTO video_sessions (room_id, counselor_id, client_id, status)
+    await user.query(
+      `INSERT INTO video_sessions (room_id, counselor_id, user_id, status)
        VALUES ($1, $2, $3, 'active')`,
       [
         roomId,
@@ -1005,22 +1005,22 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
       ]
     );
 
-    await client.query(
+    await user.query(
       `INSERT INTO room_participants (room_id, user_id)
        VALUES ($1, $2), ($1, $3)`,
       [roomId, currentUser.id, targetUser.id]
     );
 
-    await client.query("COMMIT");
+    await user.query("COMMIT");
 
     res.redirect(`/video-counseling/${roomId}`);
 
   } catch (err) {
-    await client.query("ROLLBACK");
+    await user.query("ROLLBACK");
     console.error("Video Counseling POST error:", err);
     res.status(500).send("Failed to create session");
   } finally {
-    client.release();
+    user.release();
   }
 });
 
