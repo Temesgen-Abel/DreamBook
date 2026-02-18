@@ -975,7 +975,7 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
     // 🛑 Prevent duplicate active session
     const existingSession = await client.query(
       `SELECT * FROM video_sessions
-       WHERE counselor_id = $1 AND client_id = $2 AND status = 'active'`,
+       WHERE counselor_id = $1 AND user_id = $2 AND status = 'active'`,
       [
         currentUser.role === "counselor" ? currentUser.id : targetUser.id,
         currentUser.role === "user" ? currentUser.id : targetUser.id
