@@ -134,56 +134,45 @@ CREATE TABLE IF NOT EXISTS users (
   `);
 
   // Video counseling sessions
-await dbRun(`
-  CREATE TABLE IF NOT EXISTS counselors (
-  id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  specialty VARCHAR(150),
-  bio TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
-`);
+    await dbRun(`
+    CREATE TABLE IF NOT EXISTS counselors (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      specialty VARCHAR(150),
+      bio TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    `);
 
 // Rooms table
-await dbRun(`
-  CREATE TABLE IF NOT EXISTS rooms (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
-`);
+    await dbRun(`
+    CREATE TABLE IF NOT EXISTS rooms (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    `);
 
 // Room participants
-await dbRun(`
-  CREATE TABLE IF NOT EXISTS room_participants (
-    id SERIAL PRIMARY KEY,
-    room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
-`);
-// Room counselors 
-// Room counselors 
-await dbRun(`
-CREATE TABLE IF NOT EXISTS counselors (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  email VARCHAR(150),
-  specialty VARCHAR(150),
-  bio TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
-`)
-await dbRun(`
-CREATE TABLE IF NOT EXISTS video_sessions (
+    await dbRun(`
+    CREATE TABLE IF NOT EXISTS room_participants (
+      id SERIAL PRIMARY KEY,
+      room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    `);
+
+//video_sessions
+  await dbRun(`
+  CREATE TABLE IF NOT EXISTS video_sessions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     counselor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    room_id VARCHAR(255) NOT NULL,
+    room_id UUID REFERENCES rooms(id) ON DELETE SET NULL,
     status VARCHAR(50) DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-`)
-}
+  );
+  `);
+  }
 
 // ===================================================================
 // 3. UTILITIES
