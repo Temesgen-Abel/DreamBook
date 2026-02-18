@@ -1048,7 +1048,7 @@ app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
       canonical: "",
       counselors: [],
       roomId,
-      userId: req.session.user.id,
+      userId: req.user.id,
       lang: "en"
     });
 
