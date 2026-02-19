@@ -894,51 +894,47 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
-    // 🔐 Safety check
-    if (!req.user) {
-      return res.redirect("/login");
-    }
+    if (!req.user) return res.redirect("/login");
 
-    const currentUser = req.user;  
-;
-    let result;
+    const currentUser = req.user;
+    let users = [];
+    let pendingRequests = [];
 
     if (currentUser.role === "user") {
-      result = await pool.query(
+      const result = await pool.query(
         "SELECT id, username FROM users WHERE role = 'counselor'"
       );
-    } else if (currentUser.role === "counselor") {
-      result = await pool.query(
+      users = result.rows;
+    }
+
+    else if (currentUser.role === "counselor") {
+      const result = await pool.query(
         "SELECT id, username FROM users WHERE role = 'user'"
       );
-    } else {
+      users = result.rows;
+
+      const pending = await pool.query(
+        `SELECT vs.id, u.username
+         FROM video_sessions vs
+         JOIN users u ON vs.user_id = u.id
+         WHERE vs.counselor_id = $1 AND vs.status = 'pending'`,
+        [currentUser.id]
+      );
+
+      pendingRequests = pending.rows;
+    }
+
+    else {
       return res.status(403).send("Admins cannot start sessions.");
     }
 
     res.render("video-counseling", {
-      users: result.rows,
+      users,
+      pendingRequests,   // 🔥 ALWAYS passed
       roomId: null,
       userId: currentUser.id,
       lang: "en"
     });
-
-    if (currentUser.role === "counselor") {
-  const pending = await pool.query(
-    `SELECT vs.id, u.username
-     FROM video_sessions vs
-     JOIN users u ON vs.user_id = u.id
-     WHERE vs.counselor_id = $1 AND vs.status = 'pending'`,
-    [currentUser.id]
-  );
-
-  res.render("video-counseling", {
-    users: result.rows,
-    pendingRequests: pending.rows,
-    roomId: null,
-    userId: currentUser.id,
-    lang: "en"
-  });
-}
 
   } catch (err) {
     console.error("Video Counseling GET error:", err);
@@ -953,16 +949,15 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
     const currentUser = req.user;
     const { counselorId } = req.body;
 
-    await client.query(
+    const result = await client.query(
       `INSERT INTO video_sessions (user_id, counselor_id, status)
        VALUES ($1, $2, 'pending')
        RETURNING *`,
       [currentUser.id, counselorId]
     );
 
-    const session = result.rows[0];
+    const session = result.rows[0];  // ✅ now correct
 
-    // 🔔 Notify counselor in real-time
     io.to(`user_${counselorId}`).emit("video_request", {
       sessionId: session.id,
       fromUserId: currentUser.id
@@ -971,14 +966,14 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
     res.redirect("/video-counseling?requested=1");
 
   } catch (err) {
-    console.error(err);
+    console.error("Video request error:", err);
     res.redirect("/video-counseling?error=1");
   } finally {
     client.release();
   }
 });
-
 //accept session (counselor side)
+
 app.post("/video-counseling/accept/:sessionId", mustBeLoggedIn, async (req, res) => {
   const client = await pool.connect();
 
@@ -1015,16 +1010,13 @@ app.post("/video-counseling/accept/:sessionId", mustBeLoggedIn, async (req, res)
 
     const userId = session.rows[0].user_id;
 
-    // 🔔 Notify user instantly
-    io.to(`user_${userId}`).emit("session_accepted", {
-      roomId
-    });
+    io.to(`user_${userId}`).emit("session_accepted", { roomId });
 
     res.redirect(`/video-counseling/${roomId}`);
 
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error(err);
+    console.error("Accept session error:", err);
     res.status(500).send("Error activating session");
   } finally {
     client.release();
