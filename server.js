@@ -957,6 +957,8 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
     );
 
     const session = result.rows[0];  // ✅ now correct
+    const roomId = `room_${Date.now()}_${currentUser.id}`;
+
 
     io.to(`user_${counselorId}`).emit("video_request", {
       sessionId: session.id,
@@ -991,7 +993,7 @@ app.post("/video-counseling/accept/:sessionId", mustBeLoggedIn, async (req, res)
     }
 
     const roomId = crypto.randomUUID();
-
+   
     await client.query("BEGIN");
 
     await client.query(
