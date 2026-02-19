@@ -922,6 +922,24 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
       lang: "en"
     });
 
+    if (currentUser.role === "counselor") {
+  const pending = await pool.query(
+    `SELECT vs.id, u.username
+     FROM video_sessions vs
+     JOIN users u ON vs.user_id = u.id
+     WHERE vs.counselor_id = $1 AND vs.status = 'pending'`,
+    [currentUser.id]
+  );
+
+  res.render("video-counseling", {
+    users: result.rows,
+    pendingRequests: pending.rows,
+    roomId: null,
+    userId: currentUser.id,
+    lang: "en"
+  });
+}
+
   } catch (err) {
     console.error("Video Counseling GET error:", err);
     res.status(500).send("Server error");
@@ -929,133 +947,124 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
 });
 
 app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
-  const user = await pool.connect();
+  const client = await pool.connect();
 
   try {
-    if (!req.user) {
-      return res.redirect("/login");
-    }
-
     const currentUser = req.user;
     const { counselorId } = req.body;
 
-    if (!counselorId) {
-      return res.status(400).send("No user selected");
-    }
-
-    if (parseInt(counselorId) === currentUser.id) {
-      return res.status(400).send("You cannot select yourself");
-    }
-
-    await user.query("BEGIN");
-
-    // 🔎 Get selected user
-    const targetResult = await user.query(
-      "SELECT id, role FROM users WHERE id = $1",
-      [counselorId]
+    await client.query(
+      `INSERT INTO video_sessions (user_id, counselor_id, status)
+       VALUES ($1, $2, 'pending')
+       RETURNING *`,
+      [currentUser.id, counselorId]
     );
 
-    if (targetResult.rowCount === 0) {
-      await user.query("ROLLBACK");
-      return res.status(404).send("User not found");
-    }
+    const session = result.rows[0];
 
-    const targetUser = targetResult.rows[0];
+    // 🔔 Notify counselor in real-time
+    io.to(`user_${counselorId}`).emit("video_request", {
+      sessionId: session.id,
+      fromUserId: currentUser.id
+    });
 
-    // 🔐 Validate correct role pairing
-    const validCombination =
-      (currentUser.role === "user" && targetUser.role === "counselor") ||
-      (currentUser.role === "counselor" && targetUser.role === "user");
+    res.redirect("/video-counseling?requested=1");
 
-    if (!validCombination) {
-      await user.query("ROLLBACK");
-      return res.status(403).send("Invalid session pairing.");
-    }
+  } catch (err) {
+    console.error(err);
+    res.redirect("/video-counseling?error=1");
+  } finally {
+    client.release();
+  }
+});
 
-    // 🛑 Prevent duplicate active session
-    const existingSession = await user.query(
+//accept session (counselor side)
+app.post("/video-counseling/accept/:sessionId", mustBeLoggedIn, async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const { sessionId } = req.params;
+
+    const session = await client.query(
       `SELECT * FROM video_sessions
-       WHERE counselor_id = $1 AND user_id = $2 AND status = 'active'`,
-      [
-        currentUser.role === "counselor" ? currentUser.id : targetUser.id,
-        currentUser.role === "user" ? currentUser.id : targetUser.id
-      ]
+       WHERE id = $1 AND counselor_id = $2 AND status = 'pending'`,
+      [sessionId, req.user.id]
     );
 
-    if (existingSession.rowCount > 0) {
-      await user.query("ROLLBACK");
-      return res.status(400).send("An active session already exists.");
+    if (!session.rowCount) {
+      return res.status(403).send("Unauthorized");
     }
 
-    // 🎯 Create room
     const roomId = crypto.randomUUID();
 
-    await user.query(
-      "INSERT INTO rooms (id, name, created_at) VALUES ($1, $2, NOW())",
-      [roomId, `Session-${roomId.substring(0, 8)}`]
+    await client.query("BEGIN");
+
+    await client.query(
+      "INSERT INTO rooms (id) VALUES ($1)",
+      [roomId]
     );
 
-    await user.query(
-      `INSERT INTO video_sessions (room_id, counselor_id, user_id, status)
-       VALUES ($1, $2, $3, 'active')`,
-      [
-        roomId,
-        currentUser.role === "counselor" ? currentUser.id : targetUser.id,
-        currentUser.role === "user" ? currentUser.id : targetUser.id
-      ]
+    await client.query(
+      `UPDATE video_sessions
+       SET status = 'active', room_id = $1
+       WHERE id = $2`,
+      [roomId, sessionId]
     );
 
-    await user.query(
-      `INSERT INTO room_participants (room_id, user_id)
-       VALUES ($1, $2), ($1, $3)`,
-      [roomId, currentUser.id, targetUser.id]
-    );
+    await client.query("COMMIT");
 
-    await user.query("COMMIT");
+    const userId = session.rows[0].user_id;
+
+    // 🔔 Notify user instantly
+    io.to(`user_${userId}`).emit("session_accepted", {
+      roomId
+    });
 
     res.redirect(`/video-counseling/${roomId}`);
 
   } catch (err) {
-    await user.query("ROLLBACK");
-    console.error("Video Counseling POST error:", err);
-    res.status(500).send("Failed to create session");
+    await client.query("ROLLBACK");
+    console.error(err);
+    res.status(500).send("Error activating session");
   } finally {
-    user.release();
+    client.release();
   }
 });
-
 
 
 // Video counseling room
 
 app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
-  try {
-    const { roomId } = req.params;
+  const { roomId } = req.params;
 
-    // Check if room exists
-    const roomCheck = await pool.query(
-      "SELECT id FROM rooms WHERE id = $1",
-      [roomId]
-    );
+  const session = await pool.query(
+    `SELECT * FROM video_sessions
+     WHERE room_id = $1 AND status = 'active'
+     AND (user_id = $2 OR counselor_id = $2)`,
+    [roomId, req.user.id]
+  );
 
-    if (roomCheck.rowCount === 0) {
-      return res.status(404).send("Room not found");
-    }
-
-    res.render("video-counseling", {
-      title: "Live Session | eDreamBook",
-      description: "Secure live counseling session.",
-      canonical: "",
-      counselors: [],
-      roomId,
-      userId: req.user.id,
-      lang: "en"
-    });
-
-  } catch (err) {
-    console.error("Room load error:", err);
-    res.status(500).send("Room load error");
+  if (!session.rowCount) {
+    return res.status(403).send("Access denied");
   }
+
+  res.render("video-counseling", {
+    roomId,
+    userId: req.user.id,
+    lang: "en"
+  });
+});
+
+// End session route
+app.post("/video-counseling/end/:roomId", mustBeLoggedIn, async (req, res) => {
+  await pool.query(
+    `UPDATE video_sessions
+     SET status = 'ended'
+     WHERE room_id = $1`,
+    [req.params.roomId]
+  );
+
+  res.sendStatus(200);
 });
 
 
@@ -1523,9 +1532,6 @@ app.post("/dream-realness", (req, res) => {
 
 // ===================================================================
 // 7. SOCKET.IO USERS ONLINE
-// ===================================================================
-// ===================================================================
-// 7. SOCKET.IO (USERS ONLINE + CHAT + WEBRTC SIGNALING)
 // ===================================================================
 const userSockets = new Map(); // userId -> Set of socket IDs
 const lastSeen = new Map();    // userId -> ISO timestamp
