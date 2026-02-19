@@ -946,18 +946,17 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   const client = await pool.connect();
 
   try {
-    const currentUser = req.user;
     const { counselorId } = req.body;
 
     const result = await client.query(
       `INSERT INTO video_sessions (user_id, counselor_id, status)
        VALUES ($1, $2, 'pending')
        RETURNING *`,
-      [currentUser.id, counselorId]
+      [req.user.id, counselorId]
     );
 
     const session = result.rows[0];  // ✅ now correct
-    const roomId = `room_${Date.now()}_${currentUser.id}`;
+    const roomId = `room_${Date.now()}_${req.user.id}`;
 
 
     io.to(`user_${counselorId}`).emit("video_request", {
