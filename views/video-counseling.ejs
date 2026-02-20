@@ -4,7 +4,6 @@
   <%- include('includes/head') %>
   <link rel="stylesheet" href="/style.css">
 
-  <% if (roomId) { %>
   <style>
     .videos {
       display: flex;
@@ -15,16 +14,9 @@
     }
 
     video {
-      width: 45%;
-      min-width: 280px;
+      width: 300px;
       background: #000;
       border-radius: 10px;
-    }
-
-    #status {
-      margin-top: 15px;
-      font-weight: bold;
-      color: #555;
     }
 
     .controls {
@@ -34,156 +26,183 @@
       justify-content: center;
     }
 
-    .controls button {
-      padding: 8px 15px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .end-btn {
-      background: #d9534f;
-      color: white;
-    }
-
-    .mute-btn {
-      background: #0275d8;
-      color: white;
-    }
-
-    .pending-box {
-      background: #f8f9fa;
+    .meeting-link {
+      background: #f1f3f5;
       padding: 10px;
-      margin-bottom: 10px;
       border-radius: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .meeting-link input {
+      width: 100%;
+      padding: 5px;
     }
   </style>
-  <% } %>
 </head>
 
 <body>
 <%- include('includes/header') %>
 
 <div class="chat-layout">
-  <div class="video-counseling">
+<div class="video-counseling">
 
-  <% if (!roomId) { %>
+<% if (!roomId && !meeting) { %>
 
-    <!-- ========================= -->
-    <!-- SESSION REQUEST PAGE -->
-    <!-- ========================= -->
+  <!-- ========================= -->
+  <!-- SESSION REQUEST PAGE -->
+  <!-- ========================= -->
 
-    <h1>Video Counseling</h1>
+  <h1>Video Counseling</h1>
 
-    <!-- Pending Requests (For Counselor) -->
-    <% if (pendingRequests && pendingRequests.length) { %>
-      <h3>Pending Requests</h3>
-      <% pendingRequests.forEach(req => { %>
-        <div class="pending-box">
-          <span><strong><%= req.username %></strong> requested a session</span>
-          <form action="/video-counseling/accept/<%= req.id %>" method="POST">
-            <button class="btn">Accept</button>
-          </form>
-        </div>
-      <% }) %>
-    <% } %>
+  <% if (pendingRequests && pendingRequests.length) { %>
+    <h3>Pending Requests</h3>
+    <% pendingRequests.forEach(req => { %>
+      <div class="pending-box">
+        <span><strong><%= req.username %></strong> requested a session</span>
+        <form action="/video-counseling/accept/<%= req.id %>" method="POST">
+          <button class="btn">Accept</button>
+        </form>
+      </div>
+    <% }) %>
+  <% } %>
 
-    <!-- Start Request (For User) -->
-    <% if (users && users.length) { %>
-      <form action="/video-counseling" method="POST">
-        <select name="counselorId" required>
-          <option value="">Select Counselor</option>
-          <% users.forEach(u => { %>
-            <option value="<%= u.id %>"><%= u.username %></option>
-          <% }) %>
-        </select>
-        <button class="btn">Request Video Session</button>
-      </form>
-    <% } else { %>
-      <p>No counselors available.</p>
-    <% } %>
+  <% if (users && users.length) { %>
+    <form action="/video-counseling" method="POST">
+      <select name="counselorId" required>
+        <option value="">Select Counselor</option>
+        <% users.forEach(u => { %>
+          <option value="<%= u.id %>"><%= u.username %></option>
+        <% }) %>
+      </select>
+      <button class="btn">Request Video Session</button>
+    </form>
+  <% } %>
 
-    <!-- ========================= -->
-    <!-- REAL-TIME SOCKET LISTENER -->
-    <!-- ========================= -->
+<% } else { %>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-      const socket = io();
-      const userId = "<%= userId %>";
+  <!-- ========================= -->
+  <!-- LIVE VIDEO (1-to-1 OR GROUP) -->
+  <!-- ========================= -->
 
-      socket.emit("join_room", userId);
+  <h1>
+    <%= meeting ? meeting.title : "Live Video Counseling" %>
+  </h1>
 
-      // 🔔 Counselor receives request
-      socket.on("video_request", () => {
-        alert("New counseling request received!");
-        window.location.reload();
+  <!-- Creator sees share link -->
+  <% if (meeting && meeting.created_by === userId) { %>
+    <div class="meeting-link">
+      <p><strong>Share this link:</strong></p>
+      <input value="<%= meeting.meeting_link %>" readonly>
+    </div>
+  <% } %>
+
+  <div class="videos">
+    <video id="localVideo" autoplay muted playsinline></video>
+  </div>
+
+  <div class="controls">
+    <button id="muteBtn">Mute</button>
+    <button id="endBtn">End</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const roomId = "<%= roomId || (meeting && meeting.id) %>";
+    const userId = "<%= userId %>";
+    const isGroup = <%= meeting ? "true" : "false" %>;
+
+    const localVideo = document.getElementById("localVideo");
+    const muteBtn = document.getElementById("muteBtn");
+    const endBtn = document.getElementById("endBtn");
+
+    let localStream;
+    let isMuted = false;
+
+    // Multiple peers (for group)
+    const peers = {};
+
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        localStream = stream;
+        localVideo.srcObject = stream;
+
+        if (isGroup) {
+          socket.emit("join_meeting", { meetingId: roomId, userId });
+        } else {
+          socket.emit("join_call", { roomId, userId });
+        }
       });
 
-      // 🔔 User redirected when accepted
-      socket.on("session_accepted", (data) => {
-        window.location.href = `/video-counseling/${data.roomId}`;
+    /* =========================
+       GROUP MEETING LOGIC
+    ========================= */
+
+    if (isGroup) {
+
+      socket.on("user_joined", async (newUserId) => {
+
+        const peer = new RTCPeerConnection({
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        });
+
+        peers[newUserId] = peer;
+
+        localStream.getTracks().forEach(track => {
+          peer.addTrack(track, localStream);
+        });
+
+        peer.ontrack = event => {
+          const video = document.createElement("video");
+          video.autoplay = true;
+          video.playsInline = true;
+          video.srcObject = event.streams[0];
+          document.querySelector(".videos").appendChild(video);
+        };
+
+        peer.onicecandidate = event => {
+          if (event.candidate) {
+            socket.emit("group_ice_candidate", {
+              meetingId: roomId,
+              candidate: event.candidate,
+              to: newUserId
+            });
+          }
+        };
+
+        const offer = await peer.createOffer();
+        await peer.setLocalDescription(offer);
+
+        socket.emit("group_offer", {
+          meetingId: roomId,
+          offer,
+          to: newUserId
+        });
       });
-    </script>
 
-  <% } else { %>
+    }
 
-    <!-- ========================= -->
-    <!-- LIVE VIDEO ROOM -->
-    <!-- ========================= -->
+    /* =========================
+       1-to-1 LOGIC
+    ========================= */
 
-    <h1>Live Video Counseling</h1>
-
-    <p id="status">Waiting for other participant...</p>
-
-    <div class="videos">
-      <video id="localVideo" autoplay muted playsinline></video>
-      <video id="remoteVideo" autoplay playsinline></video>
-    </div>
-
-    <div class="controls">
-      <button class="mute-btn" id="muteBtn">Mute</button>
-      <button class="end-btn" id="endBtn">End Call</button>
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-
-    <script>
-      const socket = io();
-      const roomId = "<%= roomId %>";
-      const userId = "<%= userId %>";
-
-      const statusText = document.getElementById("status");
-      const localVideo = document.getElementById("localVideo");
-      const remoteVideo = document.getElementById("remoteVideo");
-      const muteBtn = document.getElementById("muteBtn");
-      const endBtn = document.getElementById("endBtn");
-
-      let localStream;
-      let isCaller = false;
-      let isMuted = false;
+    if (!isGroup) {
 
       const peer = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
       });
 
-      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then(stream => {
-          localStream = stream;
-          localVideo.srcObject = stream;
-          stream.getTracks().forEach(track => peer.addTrack(track, stream));
-        })
-        .catch(err => {
-          alert("Camera/Microphone permission denied.");
-          console.error(err);
-        });
+      localStream?.getTracks().forEach(track => {
+        peer.addTrack(track, localStream);
+      });
 
       peer.ontrack = event => {
-        remoteVideo.srcObject = event.streams[0];
-        statusText.innerText = "Connected";
+        const video = document.createElement("video");
+        video.autoplay = true;
+        video.playsInline = true;
+        video.srcObject = event.streams[0];
+        document.querySelector(".videos").appendChild(video);
       };
 
       peer.onicecandidate = event => {
@@ -195,15 +214,10 @@
         }
       };
 
-      socket.emit("join_call", { roomId, userId });
-
       socket.on("peer_joined", async () => {
-        if (!isCaller) {
-          isCaller = true;
-          const offer = await peer.createOffer();
-          await peer.setLocalDescription(offer);
-          socket.emit("webrtc_offer", { roomId, offer });
-        }
+        const offer = await peer.createOffer();
+        await peer.setLocalDescription(offer);
+        socket.emit("webrtc_offer", { roomId, offer });
       });
 
       socket.on("webrtc_offer", async ({ offer }) => {
@@ -218,47 +232,34 @@
       });
 
       socket.on("webrtc_ice_candidate", async ({ candidate }) => {
-        try {
-          await peer.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (err) {
-          console.error("ICE error:", err);
-        }
+        await peer.addIceCandidate(new RTCIceCandidate(candidate));
       });
 
-      socket.on("peer_left", () => {
-        remoteVideo.srcObject = null;
-        statusText.innerText = "Participant left the call.";
+    }
+
+    /* =========================
+       COMMON CONTROLS
+    ========================= */
+
+    muteBtn.addEventListener("click", () => {
+      isMuted = !isMuted;
+      localStream.getAudioTracks().forEach(track => {
+        track.enabled = !isMuted;
       });
+      muteBtn.innerText = isMuted ? "Unmute" : "Mute";
+    });
 
-      muteBtn.addEventListener("click", () => {
-        if (!localStream) return;
-        isMuted = !isMuted;
-        localStream.getAudioTracks().forEach(track => {
-          track.enabled = !isMuted;
-        });
-        muteBtn.innerText = isMuted ? "Unmute" : "Mute";
-      });
+    endBtn.addEventListener("click", () => {
+      localStream.getTracks().forEach(track => track.stop());
+      socket.disconnect();
+      window.location.href = "/video-counseling";
+    });
 
-      endBtn.addEventListener("click", () => {
-        if (localStream) {
-          localStream.getTracks().forEach(track => track.stop());
-        }
+  </script>
 
-        peer.close();
-        socket.disconnect();
+<% } %>
 
-        fetch(`/video-counseling/end/<%= roomId %>`, {
-          method: "POST"
-        }).then(() => {
-          window.location.href = "/video-counseling";
-        });
-      });
-    </script>
-
-  <% } %>
-
-  </div>
 </div>
-
+</div>
 </body>
 </html>

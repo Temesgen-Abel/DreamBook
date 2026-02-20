@@ -172,7 +172,33 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
   `);
-  }
+
+ //Group live meetings
+    await dbRun(`
+CREATE TABLE IF NOT EXISTS live_meetings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title VARCHAR(200) NOT NULL,
+  description TEXT,
+  created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  scheduled_at TIMESTAMP NOT NULL,
+  duration_minutes INTEGER DEFAULT 60,
+  meeting_link VARCHAR(255) UNIQUE,
+  status VARCHAR(50) DEFAULT 'scheduled', -- scheduled | live | ended
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+    `);
+
+//Meeting participants
+      await dbRun(`
+CREATE TABLE IF NOT EXISTS meeting_participants (
+  id SERIAL PRIMARY KEY,
+  meeting_id UUID REFERENCES live_meetings(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+      `);
+}
+
 
 // ===================================================================
 // 3. UTILITIES
@@ -952,7 +978,7 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
       `INSERT INTO video_sessions (user_id, counselor_id, status)
        VALUES ($1, $2, 'pending')
        RETURNING *`,
-      [req.user.id, counselorId]
+     [fromUserId: req.user.id]
     );
 
     const session = result.rows[0];  // ✅ now correct
@@ -973,6 +999,58 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
     client.release();
   }
 });
+
+// Live meetings routes
+app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
+  try {
+    const { title, description, scheduled_at, duration } = req.body;
+
+    const meetingId = crypto.randomUUID();
+    const meetingLink = `${process.env.BASE_URL}/live-meetings/${meetingId}`;
+
+    await pool.query(
+      `INSERT INTO live_meetings 
+      (id, title, description, created_by, scheduled_at, duration_minutes, meeting_link)
+      VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [
+        meetingId,
+        title,
+        description,
+        req.user.id,
+        scheduled_at,
+        duration || 60,
+        meetingLink
+      ]
+    );
+
+    res.redirect(`/live-meetings/${meetingId}`);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error creating meeting");
+  }
+});
+
+//live meeting get route
+app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
+  const { meetingId } = req.params;
+
+  const meeting = await pool.query(
+    "SELECT * FROM live_meetings WHERE id = $1",
+    [meetingId]
+  );
+
+  if (!meeting.rowCount) {
+    return res.status(404).send("Meeting not found");
+  }
+
+  res.render("live-meeting", {
+    meeting: meeting.rows[0],
+    userId: req.user.id,
+    lang: "en"
+  });
+});
+
 //accept session (counselor side)
 
 app.post("/video-counseling/accept/:sessionId", mustBeLoggedIn, async (req, res) => {
@@ -1525,16 +1603,16 @@ app.post("/dream-realness", (req, res) => {
 
 // ===================================================================
 // 7. SOCKET.IO USERS ONLINE
-// ===================================================================
-const userSockets = new Map(); // userId -> Set of socket IDs
-const lastSeen = new Map();    // userId -> ISO timestamp
+const userSockets = new Map();
+const lastSeen = new Map();
 
 io.on("connection", socket => {
-  console.log("🔌 Socket connected:", socket.id);
 
-  // ---------------------------------------------------------------
-  // USER PRESENCE / ONLINE STATUS
-  // ---------------------------------------------------------------
+  console.log("🔌 Connected:", socket.id);
+
+  // =========================
+  // USER PRESENCE
+  // =========================
   socket.on("join_room", userId => {
     userId = Number(userId);
     if (!userId) return;
@@ -1545,110 +1623,78 @@ io.on("connection", socket => {
     if (!userSockets.has(userId)) {
       userSockets.set(userId, new Set());
     }
-    userSockets.get(userId).add(socket.id);
 
+    userSockets.get(userId).add(socket.id);
     lastSeen.set(userId, new Date().toISOString());
 
-    io.emit("online_users", [...userSockets.keys()].map(id => ({
-      id,
-      lastSeen: lastSeen.get(id)
-    })));
+    io.emit("online_users", [...userSockets.keys()]);
   });
 
-  // ---------------------------------------------------------------
-  // TYPING INDICATORS
-  // ---------------------------------------------------------------
-  socket.on("typing", data => {
-    const rid = Number(data?.receiverId);
-    if (!rid) return;
-    io.to(`user_${rid}`).emit("typing", data);
-  });
-
-  socket.on("stop_typing", data => {
-    const rid = Number(data?.receiverId);
-    if (!rid) return;
-    io.to(`user_${rid}`).emit("stop_typing", data);
-  });
-
-  // ---------------------------------------------------------------
-  // 🔴 WEBRTC SIGNALING (VIDEO COUNSELING)
-  // ---------------------------------------------------------------
-
-  // Join a video call room (appointment-based)
+  // =========================
+  // 1-to-1 CALL
+  // =========================
   socket.on("join_call", ({ roomId, userId }) => {
-    if (!roomId) return;
-
     socket.join(`call_${roomId}`);
     socket.callRoomId = roomId;
 
-    console.log(`🎥 User ${userId} joined call ${roomId}`);
-
-    // Notify other peer
     socket.to(`call_${roomId}`).emit("peer_joined", {
       socketId: socket.id,
       userId
     });
   });
 
-  // Offer
   socket.on("webrtc_offer", ({ roomId, offer }) => {
-    socket.to(`call_${roomId}`).emit("webrtc_offer", {
-      offer,
-      from: socket.id
-    });
+    socket.to(`call_${roomId}`).emit("webrtc_offer", { offer });
   });
 
-  // Answer
   socket.on("webrtc_answer", ({ roomId, answer }) => {
-    socket.to(`call_${roomId}`).emit("webrtc_answer", {
-      answer,
-      from: socket.id
-    });
+    socket.to(`call_${roomId}`).emit("webrtc_answer", { answer });
   });
 
-  // ICE Candidate
   socket.on("webrtc_ice_candidate", ({ roomId, candidate }) => {
-    socket.to(`call_${roomId}`).emit("webrtc_ice_candidate", {
-      candidate,
-      from: socket.id
-    });
+    socket.to(`call_${roomId}`).emit("webrtc_ice_candidate", { candidate });
   });
 
-  // Leave call explicitly
-  socket.on("leave_call", () => {
-    if (socket.callRoomId) {
-      socket.to(`call_${socket.callRoomId}`).emit("peer_left", socket.id);
-      socket.leave(`call_${socket.callRoomId}`);
-      socket.callRoomId = null;
-    }
+  // =========================
+  // GROUP MEETING
+  // =========================
+  socket.on("join_meeting", ({ meetingId, userId }) => {
+    socket.join(`meeting_${meetingId}`);
+    socket.to(`meeting_${meetingId}`).emit("user_joined", userId);
   });
 
-  // ---------------------------------------------------------------
+  socket.on("group_offer", data => {
+    io.to(`user_${data.to}`).emit("group_offer", data);
+  });
+
+  socket.on("group_answer", data => {
+    io.to(`user_${data.to}`).emit("group_answer", data);
+  });
+
+  socket.on("group_ice_candidate", data => {
+    io.to(`user_${data.to}`).emit("group_ice_candidate", data);
+  });
+
+  // =========================
   // DISCONNECT
-  // ---------------------------------------------------------------
+  // =========================
   socket.on("disconnect", () => {
     const uid = socket.userId;
 
-    // Handle WebRTC leave
     if (socket.callRoomId) {
       socket.to(`call_${socket.callRoomId}`).emit("peer_left", socket.id);
     }
 
-    if (!uid) return;
-
-    const set = userSockets.get(uid);
-    if (set) {
-      set.delete(socket.id);
-      if (!set.size) userSockets.delete(uid);
+    if (uid && userSockets.has(uid)) {
+      userSockets.get(uid).delete(socket.id);
+      if (!userSockets.get(uid).size) {
+        userSockets.delete(uid);
+      }
     }
 
     lastSeen.set(uid, new Date().toISOString());
-
-    io.emit("online_users", [...userSockets.keys()].map(id => ({
-      id,
-      lastSeen: lastSeen.get(id)
-    })));
   });
+
 });
 
 //  20. ADMIN AUTO-CREATE
