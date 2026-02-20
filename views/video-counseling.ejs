@@ -84,11 +84,16 @@
   <!-- CREATE GROUP MEETING -->
   <!-- ========================= -->
 
-  <form action="/live-meetings/create" method="POST" style="margin-bottom: 20px;">
-    <input type="text" name="title" placeholder="Meeting Title" required>
-    <button class="btn">Create Group Meeting</button>
-  </form>
-  
+  <% if (users && users.length) {%>
+    <h2>Start a Group Counseling Session</h2>
+    <p>You can create a group meeting and share the link with multiple users.</p>
+    <div>
+      <form action="/live-meetings/create" method="POST" style="margin-bottom: 20px;">
+        <input type="text" name="title" placeholder="Meeting Title" required>
+        <button class="btn">Create Group Meeting</button>
+      </form>
+    </div>
+  <% } %>
   <h1>
     <%= meeting ? meeting.title : "Live Video Counseling" %>
   </h1>
