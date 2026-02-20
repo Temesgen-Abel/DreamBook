@@ -955,9 +955,10 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
     }
 
     res.render("video-counseling", {
+          users: users || [],
           roomId: null,
           meeting: null,
-          pendingRequests,
+          pendingRequests: pendingRequests || [],
           currentUser: req.user,
           lang: "en"
     });
