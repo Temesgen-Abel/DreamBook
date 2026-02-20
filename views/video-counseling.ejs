@@ -52,20 +52,6 @@
   <!-- SESSION REQUEST PAGE -->
   <!-- ========================= -->
 
-  <h1>Video Counseling</h1>
-
-  <% if (pendingRequests && pendingRequests.length) { %>
-    <h3>Pending Requests</h3>
-    <% pendingRequests.forEach(req => { %>
-      <div class="pending-box">
-        <span><strong><%= req.username %></strong> requested a session</span>
-        <form action="/video-counseling/accept/<%= req.id %>" method="POST">
-          <button class="btn">Accept</button>
-        </form>
-      </div>
-    <% }) %>
-  <% } %>
-
   <% if (users && users.length) { %>
     <form action="/video-counseling" method="POST">
       <select name="counselorId" required>
@@ -80,9 +66,28 @@
 
 <% } else { %>
 
+  <h1>Video Counseling</h1>
+
+  <% if (pendingRequests && pendingRequests.length) { %>
+    <h3>Pending Requests</h3>
+    <% pendingRequests.forEach(req => { %>
+      <div class="pending-box">
+        <span><strong><%= req.username %></strong> requested a session</span>
+        <form action="/video-counseling/accept/<%= req.id %>" method="POST">
+          <button class="btn">Accept</button>
+        </form>
+      </div>
+    <% }) %>
+  <% } %>
+
   <!-- ========================= -->
   <!-- LIVE VIDEO (1-to-1 OR GROUP) -->
   <!-- ========================= -->
+
+  <% form action="/live-meetings/create" method="POST" style="margin-bottom: 20px;" %>
+    <input type="text" name="title" placeholder="Meeting Title" required>
+    <button class="btn">Create Group Meeting</button>
+     %>
 
   <h1>
     <%= meeting ? meeting.title : "Live Video Counseling" %>
@@ -95,6 +100,8 @@
       <input value="<%= meeting.meeting_link %>" readonly>
     </div>
   <% } %>
+
+
 
   <div class="videos">
     <video id="localVideo" autoplay muted playsinline></video>
