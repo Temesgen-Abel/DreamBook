@@ -1058,57 +1058,28 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
 
 //accept session (counselor side)
 
-app.post("/video-counseling/accept/:sessionId", mustBeLoggedIn, async (req, res) => {
-  const client = await pool.connect();
-
+app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
   try {
-    const { sessionId } = req.params;
-
-    const session = await client.query(
-      `SELECT * FROM video_sessions
-       WHERE id = $1 AND counselor_id = $2 AND status = 'pending'`,
-      [sessionId, req.user.id]
-    );
-
-    if (!session.rowCount) {
-      return res.status(403).send("Unauthorized");
-    }
+    const sessionId = req.params.id;
 
     const roomId = crypto.randomUUID();
-   
-    await client.query("BEGIN");
 
-    await client.query(
-      "INSERT INTO rooms (id) VALUES ($1)",
-      [roomId]
-    );
-
-    await client.query(
+    await pool.query(
       `UPDATE video_sessions
        SET status = 'active', room_id = $1
        WHERE id = $2`,
       [roomId, sessionId]
     );
 
-    await client.query("COMMIT");
-
-    const userId = session.rows[0].user_id;
-
-    io.to(`user_${userId}`).emit("session_accepted", { roomId });
+    console.log("Session accepted, room created:", roomId);
 
     res.redirect(`/video-counseling/${roomId}`);
 
   } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Accept session error:", err);
-    res.status(500).send("Error activating session");
-  } finally {
-    client.release();
+    console.error(err);
+    res.redirect("/video-counseling");
   }
-
-  console.log("Session accepted, room created");
 });
-
 
 // Video counseling room
 
