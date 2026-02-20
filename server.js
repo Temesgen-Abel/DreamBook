@@ -955,11 +955,11 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
     }
 
     res.render("video-counseling", {
-      users,
-      pendingRequests,   // 🔥 ALWAYS passed
-      roomId: null,
-      userId: currentUser.id,
-      lang: "en"
+          roomId: null,
+          meeting: null,
+          pendingRequests,
+          currentUser: req.user,
+          lang: "en"
     });
 
   } catch (err) {
