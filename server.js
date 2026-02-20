@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     counselor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    room_id UUID REFERENCES rooms(id) ON DELETE SET NULL,
+    room_id UUID REFERENCES rooms(id) NOT NULL,
     status VARCHAR(50) DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
