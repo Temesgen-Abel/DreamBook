@@ -80,15 +80,15 @@
     <% }) %>
   <% } %>
 
-  <!-- ========================= -->
-  <!-- LIVE VIDEO (1-to-1 OR GROUP) -->
+    <!-- ========================= -->
+  <!-- CREATE GROUP MEETING -->
   <!-- ========================= -->
 
-  <% form action="/live-meetings/create" method="POST" style="margin-bottom: 20px;" %>
+  <form action="/live-meetings/create" method="POST" style="margin-bottom: 20px;">
     <input type="text" name="title" placeholder="Meeting Title" required>
     <button class="btn">Create Group Meeting</button>
-     %>
-
+  </form>
+  
   <h1>
     <%= meeting ? meeting.title : "Live Video Counseling" %>
   </h1>
