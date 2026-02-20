@@ -162,16 +162,16 @@ CREATE TABLE IF NOT EXISTS users (
     `);
 
 //video_sessions
-  await dbRun(`
+ await dbRun(`
   CREATE TABLE IF NOT EXISTS video_sessions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     counselor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    room_id UUID REFERENCES rooms(id) NOT NULL,
+    room_id UUID REFERENCES rooms(id),
     status VARCHAR(50) DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
-  `);
+`);
 
  //Group live meetings
     await dbRun(`
