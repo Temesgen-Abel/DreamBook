@@ -1113,24 +1113,29 @@ app.post("/video-counseling/accept/:sessionId", mustBeLoggedIn, async (req, res)
 // Video counseling room
 
 app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
-  const { roomId } = req.params;
+  try {
+    const { roomId } = req.params;
 
-  const session = await pool.query(
-    `SELECT * FROM video_sessions
-     WHERE room_id = $1 AND status = 'active'
-     AND (user_id = $2 OR counselor_id = $2)`,
-    [roomId, req.user.id]
-  );
+    const result = await pool.query(
+      "SELECT * FROM video_sessions WHERE room_id = $1",
+      [roomId]
+    );
 
-  if (!session.rowCount) {
-    return res.status(403).send("Access denied");
+    const session = result.rows[0];
+
+    if (!session) {
+      return res.redirect("/video-counseling");
+    }
+
+    res.render("video-counseling", {
+      roomId,
+      meeting: session   // ✅ Now meeting exists
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.redirect("/video-counseling");
   }
-
-  res.render("video-counseling", {
-    roomId,
-    userId: req.user.id,
-    lang: "en"
-  });
 });
 
 // End session route
