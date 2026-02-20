@@ -1105,6 +1105,8 @@ app.post("/video-counseling/accept/:sessionId", mustBeLoggedIn, async (req, res)
   } finally {
     client.release();
   }
+
+  console.log("Session accepted, room created");
 });
 
 
