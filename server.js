@@ -1128,9 +1128,10 @@ app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
     }
 
     res.render("video-counseling", {
-      roomId,
-      meeting: session   // ✅ Now meeting exists
-    });
+        roomId,
+        meeting: session || null,
+        userId: req.user.id
+      });
 
   } catch (err) {
     console.error(err);
