@@ -976,10 +976,10 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
     const { counselorId } = req.body;
 
     const result = await client.query(
-      `INSERT INTO video_sessions (user_id, counselor_id, status)
-       VALUES ($1, $2, $3)
+      `INSERT INTO video_sessions (user_id, counselor_id, room_id, status)
+       VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [req.user.id, counselorId, "pending"]
+      [req.user.id, counselorId, room_id, "pending"]
     );
 
     const session = result.rows[0];  // ✅ now correct
