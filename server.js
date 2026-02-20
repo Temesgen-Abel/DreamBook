@@ -975,19 +975,23 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
     const { counselorId } = req.body;
 
+    // ✅ 1. Generate room ID FIRST
+    const roomId = `room_${Date.now()}_${req.user.id}`;
+
+    // ✅ 2. Insert into DB using roomId
     const result = await client.query(
       `INSERT INTO video_sessions (user_id, counselor_id, room_id, status)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [req.user.id, counselorId, room_id, "pending"]
+      [req.user.id, counselorId, roomId, "pending"]
     );
 
-    const session = result.rows[0];  // ✅ now correct
-    const roomId = `room_${Date.now()}_${req.user.id}`;
+    const session = result.rows[0];
 
-
+    // ✅ 3. Notify counselor
     io.to(`user_${counselorId}`).emit("video_request", {
       sessionId: session.id,
+      roomId: roomId,          // important
       fromUserId: req.user.id
     });
 
