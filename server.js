@@ -1062,6 +1062,22 @@ app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
   try {
     const sessionId = req.params.id;
 
+    // ✅ 1. Check if session already active
+    const existing = await pool.query(
+      "SELECT status, room_id FROM video_sessions WHERE id = $1",
+      [sessionId]
+    );
+
+    if (!existing.rows.length) {
+      return res.redirect("/video-counseling");
+    }
+
+    // ✅ 2. If already active → just redirect to existing room
+    if (existing.rows[0].status === "active") {
+      return res.redirect(`/video-counseling/${existing.rows[0].room_id}`);
+    }
+
+    // ✅ 3. Otherwise create new room
     const roomId = crypto.randomUUID();
 
     await pool.query(
@@ -1073,15 +1089,14 @@ app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
 
     console.log("Session accepted, room created:", roomId);
 
+    // ✅ 4. Redirect to video room
     res.redirect(`/video-counseling/${roomId}`);
 
   } catch (err) {
     console.error(err);
     res.redirect("/video-counseling");
   }
-});
-
-// Video counseling room
+});// Video counseling room
 
 app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
   try {
