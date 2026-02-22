@@ -250,6 +250,73 @@
     }
 
     /* =========================
+       recording logic for group meetings (optional)
+    ========================= */
+ 
+    <button id="recordBtn">Start Recording</button>
+
+let mediaRecorder;
+let recordedChunks = [];
+let isRecording = false;
+
+const recordBtn = document.getElementById("recordBtn");
+
+recordBtn.addEventListener("click", async () => {
+
+  if (!isRecording) {
+
+    const combinedStream = new MediaStream();
+
+    // Add local tracks
+    localStream.getTracks().forEach(track => {
+      combinedStream.addTrack(track);
+    });
+
+    // Add remote tracks
+    Object.values(peers).forEach(peer => {
+      peer.getReceivers().forEach(receiver => {
+        if (receiver.track) {
+          combinedStream.addTrack(receiver.track);
+        }
+      });
+    });
+
+    mediaRecorder = new MediaRecorder(combinedStream, {
+      mimeType: "video/webm"
+    });
+
+    mediaRecorder.ondataavailable = event => {
+      if (event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(recordedChunks, { type: "video/webm" });
+      const formData = new FormData();
+      formData.append("recording", blob);
+
+      await fetch(`/live-meetings/${roomId}/upload-recording`, {
+        method: "POST",
+        body: formData
+      });
+
+      recordedChunks = [];
+    };
+
+    mediaRecorder.start();
+    recordBtn.innerText = "Stop Recording";
+    isRecording = true;
+
+  } else {
+
+    mediaRecorder.stop();
+    recordBtn.innerText = "Start Recording";
+    isRecording = false;
+  }
+});
+
+    /* =========================
        COMMON CONTROLS
     ========================= */
 
@@ -267,11 +334,33 @@
       window.location.href = "/video-counseling";
     });
 
+          navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 360 },
+          frameRate: { ideal: 15 }
+        },
+        audio: true
+      })
+      .then(stream => {
+
+        localStream = stream;
+        localVideo.srcObject = stream;
+
+        // Join socket AFTER getting media
+        if (isGroup) {
+          socket.emit("join_meeting", { meetingId: roomId, userId });
+        } else {
+          socket.emit("join_call", { roomId, userId });
+        }
+
+      })
+      .catch(error => {
+        console.error("Media access error:", error);
+        alert("Camera or microphone access denied.");
+      });
   </script>
 
-<% } %>
-
-</div>
 </div>
 </body>
 </html>
