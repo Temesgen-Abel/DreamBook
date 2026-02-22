@@ -5,6 +5,7 @@
   <link rel="stylesheet" href="/style.css">
 
   <style>
+    /* ===== Dashboard Sections ===== */
     .dashboard-section {
       margin-bottom: 30px;
       padding: 15px;
@@ -52,183 +53,165 @@
 </head>
 
 <body>
-<%- include('includes/header') %>
+  <%- include('includes/header') %>
 
-<div class="chat-layout">
-<div class="video-counseling">
+  <div class="chat-layout">
+    <div class="video-counseling">
+      <h1>Video Counseling Dashboard</h1>
 
-<h1>Video Counseling Dashboard</h1>
+      <!-- =========================
+           1-to-1 SESSION REQUEST
+      ========================= -->
+      <div class="dashboard-section">
+        <h3>Request 1-to-1 Session</h3>
+        <% if (users && users.length) { %>
+          <form action="/video-counseling" method="POST">
+            <select name="counselorId" required>
+              <option value="">Select Counselor</option>
+              <% users.forEach(u => { %>
+                <option value="<%= u.id %>"><%= u.username %></option>
+              <% }) %>
+            </select>
+            <button class="btn">Request Session</button>
+          </form>
+        <% } else { %>
+          <p>No counselors available.</p>
+        <% } %>
+      </div>
 
-<!-- =========================
-     SESSION REQUEST SECTION
-========================= -->
-<div class="dashboard-section">
-  <h3>Request 1-to-1 Session</h3>
+      <!-- =========================
+           GROUP MEETING CREATION
+      ========================= -->
+      <div class="dashboard-section">
+        <h3>Group Counseling Session</h3>
+        <p>Create a meeting and share the link with participants.</p>
+        <form action="/live-meetings/create" method="POST">
+          <input type="text" name="title" placeholder="Meeting Title" required>
+          <button class="btn">Create Group Meeting</button>
+        </form>
+      </div>
 
-  <% if (users && users.length) { %>
-    <form action="/video-counseling" method="POST">
-      <select name="counselorId" required>
-        <option value="">Select Counselor</option>
-        <% users.forEach(function(u){ %>
-          <option value="<%= u.id %>"><%= u.username %></option>
-        <% }); %>
-      </select>
-      <button class="btn">Request Session</button>
-    </form>
-  <% } else { %>
-    <p>No counselors available.</p>
-  <% } %>
-</div>
+      <!-- =========================
+           PENDING REQUESTS (FOR COUNSELORS)
+      ========================= -->
+      <% if (pendingRequests && pendingRequests.length) { %>
+      <div class="dashboard-section">
+        <h3>Pending Session Requests</h3>
+        <% pendingRequests.forEach(req => { %>
+          <div style="margin-bottom:10px;">
+            <strong><%= req.username %></strong> requested a session
+            <form action="/video-counseling/accept/<%= req.id %>" method="POST" style="display:inline;">
+              <button class="btn">Accept</button>
+            </form>
+          </div>
+        <% }) %>
+      </div>
+      <% } %>
 
-<!-- =========================
-     GROUP MEETING SECTION
-========================= -->
-<div class="dashboard-section">
-  <h3>Group Counseling Session</h3>
-  <p>Create a meeting and share the link with participants.</p>
+      <!-- =========================
+           ACTIVE VIDEO SECTION
+      ========================= -->
+      <% if (roomId || meeting) { %>
+      <hr>
+      <h2><%= meeting ? meeting.title : "Live Video Counseling" %></h2>
 
-  <form action="/live-meetings/create" method="POST">
-    <input type="text" name="title" placeholder="Meeting Title" required>
-    <button class="btn">Create Group Meeting</button>
-  </form>
-</div>
+      <% if (meeting && meeting.created_by === userId) { %>
+        <div class="meeting-link">
+          <strong>Share this link:</strong>
+          <input value="<%= meeting.meeting_link %>" readonly>
+        </div>
+      <% } %>
 
-<!-- =========================
-     PENDING REQUESTS (Counselor)
-========================= -->
-<% if (pendingRequests && pendingRequests.length) { %>
-<div class="dashboard-section">
-  <h3>Pending Session Requests</h3>
-  <% pendingRequests.forEach(function(req){ %>
-    <div style="margin-bottom:10px;">
-      <strong><%= req.username %></strong> requested a session
-      <form action="/video-counseling/accept/<%= req.id %>" method="POST" style="display:inline;">
-        <button class="btn">Accept</button>
-      </form>
+      <div class="videos">
+        <video id="localVideo" autoplay muted playsinline></video>
+      </div>
+
+      <div class="controls">
+        <button id="muteBtn">Mute</button>
+        <button id="endBtn">End</button>
+        <button id="recordBtn">Start Recording</button>
+      </div>
+
+      <script src="/socket.io/socket.io.js"></script>
+      <script>
+        const socket = io();
+        const roomId = "<%= roomId || (meeting && meeting.id) %>";
+        const userId = "<%= userId %>";
+        const isGroup = <%= meeting ? "true" : "false" %>;
+
+        const localVideo = document.getElementById("localVideo");
+        const muteBtn = document.getElementById("muteBtn");
+        const endBtn = document.getElementById("endBtn");
+        const recordBtn = document.getElementById("recordBtn");
+
+        let localStream, peers = {}, isMuted = false, isRecording = false;
+        let mediaRecorder, recordedChunks = [];
+
+        /* =========================
+           GET USER MEDIA
+        ========================= */
+        navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 15 } },
+          audio: true
+        }).then(stream => {
+          localStream = stream;
+          localVideo.srcObject = stream;
+
+          if (isGroup) {
+            socket.emit("join_meeting", { meetingId: roomId, userId });
+          } else {
+            socket.emit("join_call", { roomId, userId });
+          }
+        }).catch(err => {
+          alert("Camera or microphone access denied.");
+          console.error(err);
+        });
+
+        /* =========================
+           CONTROLS
+        ========================= */
+        muteBtn.onclick = () => {
+          isMuted = !isMuted;
+          localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
+          muteBtn.innerText = isMuted ? "Unmute" : "Mute";
+        };
+
+        endBtn.onclick = () => {
+          localStream.getTracks().forEach(track => track.stop());
+          socket.disconnect();
+          window.location.href = "/video-counseling";
+        };
+
+        /* =========================
+           RECORDING
+        ========================= */
+        recordBtn.onclick = () => {
+          if (!isRecording) {
+            const combinedStream = new MediaStream();
+            localStream.getTracks().forEach(t => combinedStream.addTrack(t));
+
+            mediaRecorder = new MediaRecorder(combinedStream);
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+            mediaRecorder.onstop = async () => {
+              const blob = new Blob(recordedChunks, { type: "video/webm" });
+              const formData = new FormData();
+              formData.append("recording", blob);
+              await fetch(`/live-meetings/${roomId}/upload-recording`, { method: "POST", body: formData });
+              recordedChunks = [];
+            };
+
+            mediaRecorder.start();
+            recordBtn.innerText = "Stop Recording";
+            isRecording = true;
+          } else {
+            mediaRecorder.stop();
+            recordBtn.innerText = "Start Recording";
+            isRecording = false;
+          }
+        };
+      </script>
+      <% } %>
     </div>
-  <% }); %>
-</div>
-<% } %>
-
-<!-- =========================
-     ACTIVE VIDEO SECTION
-========================= -->
-<% if (roomId || meeting) { %>
-
-<hr>
-<h2><%= meeting ? meeting.title : "Live Video Counseling" %></h2>
-
-<% if (meeting && meeting.created_by === userId) { %>
-  <div class="meeting-link">
-    <strong>Share this link:</strong>
-    <input value="<%= meeting.meeting_link %>" readonly>
   </div>
-<% } %>
-
-<div class="videos">
-  <video id="localVideo" autoplay muted playsinline></video>
-</div>
-
-<div class="controls">
-  <button id="muteBtn">Mute</button>
-  <button id="endBtn">End</button>
-  <button id="recordBtn">Start Recording</button>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script>
-  const socket = io();
-
-  const roomId = "<%= roomId || (meeting && meeting.id) %>";
-  const userId = "<%= userId %>";
-  const isGroup = <%= meeting ? "true" : "false" %>;
-
-  const localVideo = document.getElementById("localVideo");
-  const muteBtn = document.getElementById("muteBtn");
-  const endBtn = document.getElementById("endBtn");
-  const recordBtn = document.getElementById("recordBtn");
-
-  let localStream;
-  let peers = {};
-  let isMuted = false;
-  let isRecording = false;
-  let mediaRecorder;
-  let recordedChunks = [];
-
-  /* =========================
-     GET USER MEDIA
-  ========================= */
-  navigator.mediaDevices.getUserMedia({
-    video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 15 } },
-    audio: true
-  })
-  .then(stream => {
-    localStream = stream;
-    localVideo.srcObject = stream;
-
-    if (isGroup) {
-      socket.emit("join_meeting", { meetingId: roomId, userId });
-    } else {
-      socket.emit("join_call", { roomId, userId });
-    }
-  })
-  .catch(err => {
-    alert("Camera or microphone access denied.");
-    console.error(err);
-  });
-
-  /* =========================
-     COMMON CONTROLS
-  ========================= */
-  muteBtn.onclick = () => {
-    isMuted = !isMuted;
-    localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
-    muteBtn.innerText = isMuted ? "Unmute" : "Mute";
-  };
-
-  endBtn.onclick = () => {
-    localStream.getTracks().forEach(track => track.stop());
-    socket.disconnect();
-    window.location.href = "/video-counseling";
-  };
-
-  /* =========================
-     RECORDING
-  ========================= */
-  recordBtn.onclick = () => {
-    if (!isRecording) {
-      const combinedStream = new MediaStream();
-      localStream.getTracks().forEach(t => combinedStream.addTrack(t));
-
-      mediaRecorder = new MediaRecorder(combinedStream);
-      mediaRecorder.ondataavailable = e => {
-        if (e.data.size > 0) recordedChunks.push(e.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const blob = new Blob(recordedChunks, { type: "video/webm" });
-        const formData = new FormData();
-        formData.append("recording", blob);
-        await fetch(`/live-meetings/${roomId}/upload-recording`, { method: "POST", body: formData });
-        recordedChunks = [];
-      };
-
-      mediaRecorder.start();
-      recordBtn.innerText = "Stop Recording";
-      isRecording = true;
-
-    } else {
-      mediaRecorder.stop();
-      recordBtn.innerText = "Start Recording";
-      isRecording = false;
-    }
-  };
-
-</script>
-
-<% } %>
-
-</div>
-</div>
 </body>
 </html>

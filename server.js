@@ -1023,7 +1023,6 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
 app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   try {
     const { title, description, scheduled_at, duration } = req.body;
-
     const meetingId = crypto.randomUUID();
     const meetingLink = `${process.env.BASE_URL}/live-meetings/${meetingId}`;
 
@@ -1032,17 +1031,31 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
        (id, title, description, created_by, scheduled_at, duration_minutes, meeting_link, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,'scheduled')`,
       [
-        meetingId,                          // $1 id
-        title,                              // $2 title
-        description || null,                // $3 description
-        req.user.id,                        // $4 created_by
-        scheduled_at ? new Date(scheduled_at) : new Date(), // $5 scheduled_at
-        duration || 60,                     // $6 duration_minutes
-        meetingLink                         // $7 meeting_link
+        meetingId,
+        title,
+        description || null,
+        req.user.id,
+        scheduled_at ? new Date(scheduled_at) : new Date(),
+        duration || 60,
+        meetingLink
       ]
     );
 
-    res.redirect(`/live-meetings/${meetingId}`);
+    // Fetch meeting to render in dashboard
+    const meetingResult = await pool.query(
+      "SELECT * FROM live_meetings WHERE id = $1",
+      [meetingId]
+    );
+
+    res.render("video-counseling", {
+      users: [],              // optional, you can fetch counselors/users if needed
+      roomId: null,
+      meeting: meetingResult.rows[0],
+      pendingRequests: [],
+      userId: req.user.id,
+      lang: "en"
+    });
+
   } catch (err) {
     console.error(err);
     res.status(500).send("Error creating meeting");
@@ -1078,7 +1091,7 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
     );
   }
 
-  res.render("live-meeting", {
+  res.render("video-counseling", {
     meeting: meeting.rows[0],
     userId: req.user.id,
     lang: "en"
