@@ -1625,6 +1625,33 @@ io.on("connection", socket => {
 
   console.log("🔌 Connected:", socket.id);
 
+  // Store active peer connections for group meetings
+  const peers = {};
+
+  function createPeerConnection(remoteUserId, socketId) {
+
+  const peer = new RTCPeerConnection({
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" }
+    ]
+  });
+
+  peer.ontrack = event => {
+    addVideoStream(remoteUserId, event.streams[0]);
+  };
+
+  peer.onicecandidate = event => {
+    if (event.candidate) {
+      socket.emit("group_ice_candidate", {
+        candidate: event.candidate,
+        toSocketId: socketId
+      });
+    }
+  };
+
+  return peer;
+}
+
   // =========================
   // USER PRESENCE
   // =========================
@@ -1683,7 +1710,7 @@ io.on("connection", socket => {
   });
 });
 
-socket.on("group_offer", data => {
+socket.on("group_offer", async (data) => {
   io.to(data.toSocketId).emit("group_offer", data);
 });
 
@@ -1699,6 +1726,24 @@ socket.on("disconnect", () => {
   if (socket.meetingId) {
     socket.to(`meeting_${socket.meetingId}`).emit("user_left", socket.id);
   }
+});
+
+socket.on("user_joined", async ({ userId: newUserId, socketId }) => {
+
+  const peer = createPeerConnection(newUserId, socketId);
+  peers[newUserId] = peer;
+
+  localStream.getTracks().forEach(track => {
+    peer.addTrack(track, localStream);
+  });
+
+  const offer = await peer.createOffer();
+  await peer.setLocalDescription(offer);
+
+  socket.emit("group_offer", {
+    offer,
+    toSocketId: socketId
+  });
 });
 
   // =========================
