@@ -1034,6 +1034,7 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
       [
         meetingId,
         title,
+        newDate(scheduled_at).toISOString(),
         description,
         req.user.id,
         scheduled_at,
