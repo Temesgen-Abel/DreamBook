@@ -37,6 +37,11 @@
       width: 100%;
       padding: 5px;
     }
+
+    #recordBtn {
+      margin-top: 10px;
+      padding: 5px 10px;
+    }
   </style>
 </head>
 
@@ -48,17 +53,14 @@
 
 <% if (!roomId && !meeting) { %>
 
-  <!-- ========================= -->
   <!-- SESSION REQUEST PAGE -->
-  <!-- ========================= -->
-
   <% if (users && users.length) { %>
     <form action="/video-counseling" method="POST">
       <select name="counselorId" required>
         <option value="">Select Counselor</option>
-        <% users.forEach(u => { %>
+        <% users.forEach(function(u){ %>
           <option value="<%= u.id %>"><%= u.username %></option>
-        <% }) %>
+        <% }); %>
       </select>
       <button class="btn">Request Video Session</button>
     </form>
@@ -70,43 +72,33 @@
 
   <% if (pendingRequests && pendingRequests.length) { %>
     <h3>Pending Requests</h3>
-    <% pendingRequests.forEach(req => { %>
+    <% pendingRequests.forEach(function(req){ %>
       <div class="pending-box">
         <span><strong><%= req.username %></strong> requested a session</span>
         <form action="/video-counseling/accept/<%= req.id %>" method="POST">
           <button class="btn">Accept</button>
         </form>
       </div>
-    <% }) %>
+    <% }); %>
   <% } %>
 
-    <!-- ========================= -->
-  <!-- CREATE GROUP MEETING -->
-  <!-- ========================= -->
-
-  <% if (users && users.length) {%>
-    <h2><strong>a Group Counseling Session</strong> </h2>
+  <% if (users && users.length) { %>
+    <h2><strong>Group Counseling Session</strong></h2>
     <p>You can create a group meeting and share the link with multiple users.</p>
-    <div>
-      <form action="/live-meetings/create" method="POST" style="margin-bottom: 20px;">
-        <input type="text" name="title" placeholder="Meeting Title" required>
-        <button class="btn">Create Group Meeting</button>
-      </form>
-    </div>
+    <form action="/live-meetings/create" method="POST" style="margin-bottom: 20px;">
+      <input type="text" name="title" placeholder="Meeting Title" required>
+      <button class="btn">Create Group Meeting</button>
+    </form>
   <% } %>
-  <h1>
-    <%= meeting ? meeting.title : "Live Video Counseling" %>
-  </h1>
 
-  <!-- Creator sees share link -->
+  <h1><%= meeting ? meeting.title : "Live Video Counseling" %></h1>
+
   <% if (meeting && meeting.created_by === userId) { %>
     <div class="meeting-link">
       <p><strong>Share this link:</strong></p>
       <input value="<%= meeting.meeting_link %>" readonly>
     </div>
   <% } %>
-
-
 
   <div class="videos">
     <video id="localVideo" autoplay muted playsinline></video>
@@ -115,6 +107,7 @@
   <div class="controls">
     <button id="muteBtn">Mute</button>
     <button id="endBtn">End</button>
+    <button id="recordBtn">Start Recording</button>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -128,44 +121,50 @@
     const localVideo = document.getElementById("localVideo");
     const muteBtn = document.getElementById("muteBtn");
     const endBtn = document.getElementById("endBtn");
+    const recordBtn = document.getElementById("recordBtn");
 
     let localStream;
     let isMuted = false;
+    let isRecording = false;
+    let mediaRecorder;
+    let recordedChunks = [];
 
-    // Multiple peers (for group)
     const peers = {};
 
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => {
-        localStream = stream;
-        localVideo.srcObject = stream;
+    // GET USER MEDIA (optimized)
+    navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 15 } },
+      audio: true
+    })
+    .then(function(stream){
+      localStream = stream;
+      localVideo.srcObject = stream;
 
-        if (isGroup) {
-          socket.emit("join_meeting", { meetingId: roomId, userId });
-        } else {
-          socket.emit("join_call", { roomId, userId });
-        }
-      });
+      if (isGroup) {
+        socket.emit("join_meeting", { meetingId: roomId, userId: userId });
+      } else {
+        socket.emit("join_call", { roomId: roomId, userId: userId });
+      }
+    })
+    .catch(function(error){
+      console.error("Media access error:", error);
+      alert("Camera or microphone access denied.");
+    });
 
     /* =========================
        GROUP MEETING LOGIC
     ========================= */
+    if(isGroup){
 
-    if (isGroup) {
-
-      socket.on("user_joined", async (newUserId) => {
-
-        const peer = new RTCPeerConnection({
-          iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-        });
-
+      socket.on("user_joined", async function(newUserId){
+        const peer = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
         peers[newUserId] = peer;
 
-        localStream.getTracks().forEach(track => {
+        localStream.getTracks().forEach(function(track){
           peer.addTrack(track, localStream);
         });
 
-        peer.ontrack = event => {
+        peer.ontrack = function(event){
           const video = document.createElement("video");
           video.autoplay = true;
           video.playsInline = true;
@@ -173,24 +172,16 @@
           document.querySelector(".videos").appendChild(video);
         };
 
-        peer.onicecandidate = event => {
-          if (event.candidate) {
-            socket.emit("group_ice_candidate", {
-              meetingId: roomId,
-              candidate: event.candidate,
-              to: newUserId
-            });
+        peer.onicecandidate = function(event){
+          if(event.candidate){
+            socket.emit("group_ice_candidate", { meetingId: roomId, candidate: event.candidate, to: newUserId });
           }
         };
 
         const offer = await peer.createOffer();
         await peer.setLocalDescription(offer);
 
-        socket.emit("group_offer", {
-          meetingId: roomId,
-          offer,
-          to: newUserId
-        });
+        socket.emit("group_offer", { meetingId: roomId, offer: offer, to: newUserId });
       });
 
     }
@@ -198,18 +189,11 @@
     /* =========================
        1-to-1 LOGIC
     ========================= */
+    if(!isGroup){
+      const peer = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+      localStream?.getTracks().forEach(function(track){ peer.addTrack(track, localStream); });
 
-    if (!isGroup) {
-
-      const peer = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-      });
-
-      localStream?.getTracks().forEach(track => {
-        peer.addTrack(track, localStream);
-      });
-
-      peer.ontrack = event => {
+      peer.ontrack = function(event){
         const video = document.createElement("video");
         video.autoplay = true;
         video.playsInline = true;
@@ -217,150 +201,74 @@
         document.querySelector(".videos").appendChild(video);
       };
 
-      peer.onicecandidate = event => {
-        if (event.candidate) {
-          socket.emit("webrtc_ice_candidate", {
-            roomId,
-            candidate: event.candidate
-          });
-        }
+      peer.onicecandidate = function(event){
+        if(event.candidate) socket.emit("webrtc_ice_candidate", { roomId: roomId, candidate: event.candidate });
       };
 
-      socket.on("peer_joined", async () => {
-        const offer = await peer.createOffer();
-        await peer.setLocalDescription(offer);
-        socket.emit("webrtc_offer", { roomId, offer });
-      });
-
-      socket.on("webrtc_offer", async ({ offer }) => {
-        await peer.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await peer.createAnswer();
-        await peer.setLocalDescription(answer);
-        socket.emit("webrtc_answer", { roomId, answer });
-      });
-
-      socket.on("webrtc_answer", async ({ answer }) => {
-        await peer.setRemoteDescription(new RTCSessionDescription(answer));
-      });
-
-      socket.on("webrtc_ice_candidate", async ({ candidate }) => {
-        await peer.addIceCandidate(new RTCIceCandidate(candidate));
-      });
-
+      socket.on("peer_joined", async function(){ const offer = await peer.createOffer(); await peer.setLocalDescription(offer); socket.emit("webrtc_offer", { roomId: roomId, offer: offer }); });
+      socket.on("webrtc_offer", async function({ offer }){ await peer.setRemoteDescription(new RTCSessionDescription(offer)); const answer = await peer.createAnswer(); await peer.setLocalDescription(answer); socket.emit("webrtc_answer", { roomId: roomId, answer: answer }); });
+      socket.on("webrtc_answer", async function({ answer }){ await peer.setRemoteDescription(new RTCSessionDescription(answer)); });
+      socket.on("webrtc_ice_candidate", async function({ candidate }){ await peer.addIceCandidate(new RTCIceCandidate(candidate)); });
     }
 
     /* =========================
-       recording logic for group meetings (optional)
+       RECORDING LOGIC
     ========================= */
- 
-    <button id="recordBtn">Start Recording</button>
+    recordBtn.addEventListener("click", async function(){
+      if(!isRecording){
+        const combinedStream = new MediaStream();
+        localStream.getTracks().forEach(function(track){ combinedStream.addTrack(track); });
+        Object.values(peers).forEach(function(peer){
+          peer.getReceivers().forEach(function(receiver){
+            if(receiver.track) combinedStream.addTrack(receiver.track);
+          });
+        });
 
-let mediaRecorder;
-let recordedChunks = [];
-let isRecording = false;
+        mediaRecorder = new MediaRecorder(combinedStream, { mimeType: "video/webm" });
 
-const recordBtn = document.getElementById("recordBtn");
+        mediaRecorder.ondataavailable = function(event){
+          if(event.data.size > 0) recordedChunks.push(event.data);
+        };
 
-recordBtn.addEventListener("click", async () => {
+        mediaRecorder.onstop = async function(){
+          const blob = new Blob(recordedChunks, { type: "video/webm" });
+          const formData = new FormData();
+          formData.append("recording", blob);
 
-  if (!isRecording) {
+          await fetch(`/live-meetings/${roomId}/upload-recording`, { method: "POST", body: formData });
+          recordedChunks = [];
+        };
 
-    const combinedStream = new MediaStream();
+        mediaRecorder.start();
+        recordBtn.innerText = "Stop Recording";
+        isRecording = true;
 
-    // Add local tracks
-    localStream.getTracks().forEach(track => {
-      combinedStream.addTrack(track);
-    });
-
-    // Add remote tracks
-    Object.values(peers).forEach(peer => {
-      peer.getReceivers().forEach(receiver => {
-        if (receiver.track) {
-          combinedStream.addTrack(receiver.track);
-        }
-      });
-    });
-
-    mediaRecorder = new MediaRecorder(combinedStream, {
-      mimeType: "video/webm"
-    });
-
-    mediaRecorder.ondataavailable = event => {
-      if (event.data.size > 0) {
-        recordedChunks.push(event.data);
+      } else {
+        mediaRecorder.stop();
+        recordBtn.innerText = "Start Recording";
+        isRecording = false;
       }
-    };
-
-    mediaRecorder.onstop = async () => {
-      const blob = new Blob(recordedChunks, { type: "video/webm" });
-      const formData = new FormData();
-      formData.append("recording", blob);
-
-      await fetch(`/live-meetings/${roomId}/upload-recording`, {
-        method: "POST",
-        body: formData
-      });
-
-      recordedChunks = [];
-    };
-
-    mediaRecorder.start();
-    recordBtn.innerText = "Stop Recording";
-    isRecording = true;
-
-  } else {
-
-    mediaRecorder.stop();
-    recordBtn.innerText = "Start Recording";
-    isRecording = false;
-  }
-});
+    });
 
     /* =========================
        COMMON CONTROLS
     ========================= */
-
-    muteBtn.addEventListener("click", () => {
+    muteBtn.addEventListener("click", function(){
       isMuted = !isMuted;
-      localStream.getAudioTracks().forEach(track => {
-        track.enabled = !isMuted;
-      });
+      localStream.getAudioTracks().forEach(function(track){ track.enabled = !isMuted; });
       muteBtn.innerText = isMuted ? "Unmute" : "Mute";
     });
 
-    endBtn.addEventListener("click", () => {
-      localStream.getTracks().forEach(track => track.stop());
+    endBtn.addEventListener("click", function(){
+      localStream.getTracks().forEach(function(track){ track.stop(); });
       socket.disconnect();
       window.location.href = "/video-counseling";
     });
 
-          navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 640 },
-          height: { ideal: 360 },
-          frameRate: { ideal: 15 }
-        },
-        audio: true
-      })
-      .then(stream => {
-
-        localStream = stream;
-        localVideo.srcObject = stream;
-
-        // Join socket AFTER getting media
-        if (isGroup) {
-          socket.emit("join_meeting", { meetingId: roomId, userId });
-        } else {
-          socket.emit("join_call", { roomId, userId });
-        }
-
-      })
-      .catch(error => {
-        console.error("Media access error:", error);
-        alert("Camera or microphone access denied.");
-      });
   </script>
+<% } %>
 
+</div>
 </div>
 </body>
 </html>
