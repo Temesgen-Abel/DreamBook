@@ -969,7 +969,7 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   }
 });
 
-aapp.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
+app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   const client = await pool.connect();
 
   try {
