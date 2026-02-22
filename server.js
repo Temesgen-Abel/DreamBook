@@ -917,12 +917,11 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 });
 
 //vedeo counceling routes 
-
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
-    if (!req.user) return res.redirect("/login");
-
     const currentUser = req.user;
+    if (!currentUser) return res.redirect("/login");
+
     let users = [];
     let pendingRequests = [];
 
@@ -931,9 +930,7 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
         "SELECT id, username FROM users WHERE role = 'counselor'"
       );
       users = result.rows;
-    }
-
-    else if (currentUser.role === "counselor") {
+    } else if (currentUser.role === "counselor") {
       const result = await pool.query(
         "SELECT id, username FROM users WHERE role = 'user'"
       );
@@ -946,28 +943,26 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
          WHERE vs.counselor_id = $1 AND vs.status = 'pending'`,
         [currentUser.id]
       );
-
       pendingRequests = pending.rows;
-    }
-
-    else {
+    } else {
+      // Admins cannot start sessions
       return res.status(403).send("Admins cannot start sessions.");
     }
 
     res.render("video-counseling", {
-          users: users || [],
-          roomId: null,
-          meeting: null,
-          pendingRequests: pendingRequests || [],
-          currentUser: req.user,
-          lang: "en"
+      users: users || [],
+      pendingRequests: pendingRequests || [],
+      roomId: null,
+      meeting: null,
+      userId: currentUser.id,
+      lang: "en"
     });
-
   } catch (err) {
     console.error("Video Counseling GET error:", err);
     res.status(500).send("Server error");
   }
 });
+
 
 app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   const client = await pool.connect();
@@ -1064,38 +1059,44 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
 
 //live meeting get route
 app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
-  const { meetingId } = req.params;
+  try {
+    const { meetingId } = req.params;
 
-  const meeting = await pool.query(
-    "SELECT * FROM live_meetings WHERE id = $1",
-    [meetingId]
-  );
-
-  if (!meeting.rowCount) {
-    return res.status(404).send("Meeting not found");
-  }
-
-  // Insert participant
-  await pool.query(
-    `INSERT INTO meeting_participants (meeting_id, user_id)
-     VALUES ($1, $2)
-     ON CONFLICT DO NOTHING`,
-    [meetingId, req.user.id]
-  );
-
-  // Auto set to live if creator joins
-  if (meeting.rows[0].created_by === req.user.id) {
-    await pool.query(
-      `UPDATE live_meetings SET status = 'live' WHERE id = $1`,
+    const meetingResult = await pool.query(
+      "SELECT * FROM live_meetings WHERE id = $1",
       [meetingId]
     );
-  }
 
-  res.render("video-counseling", {
-    meeting: meeting.rows[0],
-    userId: req.user.id,
-    lang: "en"
-  });
+    if (!meetingResult.rowCount) return res.status(404).send("Meeting not found");
+
+    // Insert participant if not exists
+    await pool.query(
+      `INSERT INTO meeting_participants (meeting_id, user_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [meetingId, req.user.id]
+    );
+
+    // Auto set to live if creator joins
+    if (meetingResult.rows[0].created_by === req.user.id) {
+      await pool.query(
+        `UPDATE live_meetings SET status = 'live' WHERE id = $1`,
+        [meetingId]
+      );
+    }
+
+    res.render("video-counseling", {
+      users: [],                // always defined
+      pendingRequests: [],      // always defined
+      roomId: null,
+      meeting: meetingResult.rows[0],
+      userId: req.user.id,
+      lang: "en"
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
 });
 
 //accept session (counselor side)
@@ -1134,24 +1135,29 @@ app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
 // Video counseling room
 
 app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
-  const { roomId } = req.params;
+  try {
+    const { roomId } = req.params;
 
-  const participant = await pool.query(
-    `SELECT * FROM room_participants
-     WHERE room_id = $1 AND user_id = $2`,
-    [roomId, req.user.id]
-  );
+    const participant = await pool.query(
+      `SELECT * FROM room_participants
+       WHERE room_id = $1 AND user_id = $2`,
+      [roomId, req.user.id]
+    );
 
-  if (!participant.rowCount) {
-    return res.redirect("/video-counseling");
+    if (!participant.rowCount) return res.redirect("/video-counseling");
+
+    res.render("video-counseling", {
+      users: [],                // always defined
+      pendingRequests: [],      // always defined
+      roomId,
+      meeting: null,
+      userId: req.user.id,
+      lang: "en"
+    });
+  } catch (err) {
+    console.error(err);
+    res.redirect("/video-counseling");
   }
-
-  res.render("video-counseling", {
-    roomId,
-    meeting: null,
-    userId: req.user.id,
-    lang: "en"
-  });
 });
 
 // End session route
