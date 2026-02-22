@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS live_meetings (
   title VARCHAR(200) NOT NULL,
   description TEXT,
   created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  scheduled_at TIMESTAMP NOT NULL,
+  newDate TIMESTAMPTZ,
   duration_minutes INTEGER DEFAULT 60,
   meeting_link VARCHAR(255) UNIQUE,
   status VARCHAR(50) DEFAULT 'scheduled', -- scheduled | live | ended
@@ -1034,7 +1034,7 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
       [
         meetingId,
         title,
-        newDate(scheduled_at).toISOString(),
+        newDate(),
         description,
         req.user.id,
         scheduled_at,
