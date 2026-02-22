@@ -1032,14 +1032,13 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
        (id, title, description, created_by, scheduled_at, duration_minutes, meeting_link, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,'scheduled')`,
       [
-        meetingId,
-        title,
-        new Date(),
-        description,
-        req.user.id,
-        scheduled_at,
-        duration || 60,
-        meetingLink
+        meetingId,                          // $1 id
+        title,                              // $2 title
+        description || null,                // $3 description
+        req.user.id,                        // $4 created_by
+        scheduled_at ? new Date(scheduled_at) : new Date(), // $5 scheduled_at
+        duration || 60,                     // $6 duration_minutes
+        meetingLink                         // $7 meeting_link
       ]
     );
 
