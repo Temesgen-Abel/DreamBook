@@ -359,20 +359,22 @@
             VIDEO HELPERS
           ===================================================== */
 
-          function addRemoteVideo(stream, id) {
-            let video = document.getElementById("remote_" + id);
+        function addRemoteVideo(stream, id) {
+              let video = document.getElementById("remote_" + id);
 
-            if (!video) {
-              video = document.createElement("video");
-              video.id = "remote_" + id;
-              video.autoplay = true;
-              video.playsInline = true;
-              document.querySelector(".videos").appendChild(video);
+              if (!video) {
+                video = document.createElement("video");
+                video.id = "remote_" + id;
+                video.autoplay = true;
+                video.playsInline = true;
+                video.controls = false;
+                document.querySelector(".videos").appendChild(video);
+              }
+
+              video.srcObject = stream;
+              video.muted = false;
+              video.play().catch(() => {});
             }
-
-            video.srcObject = stream;
-          }
-
           function removeRemoteVideo(id) {
             const video = document.getElementById("remote_" + id);
             if (video) video.remove();
