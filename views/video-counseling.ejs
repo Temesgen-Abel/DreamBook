@@ -119,6 +119,18 @@
         <div class="meeting-link">
           <strong>Share this link:</strong>
           <input value="<%= meeting.meeting_link %>" readonly>
+          /* You can add a copy button here if desired *\
+
+          <button class="btn" onclick="copyMeetingLink()">Copy Link</button>
+          <script>
+            function copyMeetingLink() {
+              const input = document.querySelector(".meeting-link input");
+              input.select();
+              document.execCommand("copy");
+              alert("Meeting link copied to clipboard!");
+            }
+          </script>
+
         </div>
       <% } %>
 
@@ -127,9 +139,9 @@
       </div>
 
       <div class="controls">
-        <button id="muteBtn">Mute</button>
-        <button id="endBtn">End</button>
-        <button id="recordBtn">Start Recording</button>
+        <button class="btn">Mute</button>
+        <button class="btn">End</button>
+        <button class="btn recordBtn">⏺️</button>
       </div>
 
       <script src="/socket.io/socket.io.js"></script>
