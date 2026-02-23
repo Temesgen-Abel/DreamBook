@@ -1019,7 +1019,7 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   try {
     const { title, description, scheduled_at, duration } = req.body;
     const meetingId = crypto.randomUUID();
-    const meetingLink = `${process.env.BASE_URL}/live-meetings/${meetingId}`;
+    const meetingLink = `${req.protocol}://${req.get("host")}/live-meetings/${meetingId}`;
 
     await pool.query(
       `INSERT INTO live_meetings 
