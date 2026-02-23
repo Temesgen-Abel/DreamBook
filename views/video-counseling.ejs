@@ -163,7 +163,19 @@
           let mediaRecorder, recordedChunks = [];
 
           const config = {
-            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            iceServers: [
+              { urls: "stun:stun.relay.metered.ca:80" },
+              {
+                urls: "turn:global.relay.metered.ca:80",
+                username: "openrelayproject",
+                credential: "openrelayproject"
+              },
+              {
+                urls: "turn:global.relay.metered.ca:443",
+                username: "openrelayproject",
+                credential: "openrelayproject"
+              }
+            ]
           };
 
           /* =========================
@@ -257,11 +269,9 @@
             }
           });
 
-          socket.on("webrtc_ice_candidate", async ({ candidate }) => {
-            if (peer) {
-              await peer.addIceCandidate(new RTCIceCandidate(candidate));
-            }
-          });
+          socket.on("webrtc_ice_candidate", ({ roomId, candidate }) => {
+              socket.to(roomId).emit("webrtc_ice_candidate", { candidate });
+            });
 
           /* =====================================================
             2️⃣  GROUP MEETING LOGIC
@@ -373,13 +383,14 @@
 
               video.srcObject = stream;
               video.muted = false;
-              video.play().catch(() => {});
-            }
-          function removeRemoteVideo(id) {
-            const video = document.getElementById("remote_" + id);
-            if (video) video.remove();
-          }
 
+              video.play().then(() => {
+                console.log("Remote video playing");
+              }).catch(err => {
+                console.error("Playback failed:", err);
+              });
+            }
+            
           /* =====================================================
             CONTROLS
           ===================================================== */
