@@ -133,82 +133,298 @@
       </div>
 
       <script src="/socket.io/socket.io.js"></script>
-      <script>
-        const socket = io();
-        const roomId = "<%= roomId || (meeting && meeting.id) %>";
-        const userId = "<%= userId %>";
-        const isGroup = <%= meeting ? "true" : "false" %>;
+          <script>
+          const socket = io();
+          const roomId = "<%= roomId || (meeting && meeting.id) %>";
+          const userId = "<%= userId %>";
+          const isGroup = <%= meeting ? "true" : "false" %>;
 
-        const localVideo = document.getElementById("localVideo");
-        const muteBtn = document.getElementById("muteBtn");
-        const endBtn = document.getElementById("endBtn");
-        const recordBtn = document.getElementById("recordBtn");
+          const localVideo = document.getElementById("localVideo");
+          const muteBtn = document.getElementById("muteBtn");
+          const endBtn = document.getElementById("endBtn");
+          const recordBtn = document.getElementById("recordBtn");
 
-        let localStream, peers = {}, isMuted = false, isRecording = false;
-        let mediaRecorder, recordedChunks = [];
+          let localStream;
+          let peers = {}; // for group
+          let peer = null; // for 1-to-1
+          let isMuted = false;
+          let isRecording = false;
+          let mediaRecorder, recordedChunks = [];
 
-        /* =========================
-           GET USER MEDIA
-        ========================= */
-        navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 15 } },
-          audio: true
-        }).then(stream => {
-          localStream = stream;
-          localVideo.srcObject = stream;
+          const config = {
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+          };
 
-          if (isGroup) {
-            socket.emit("join_meeting", { meetingId: roomId, userId });
-          } else {
-            socket.emit("join_call", { roomId, userId });
+          /* =========================
+            INITIALIZE MEDIA
+          ========================= */
+          async function init() {
+            try {
+              localStream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+              });
+
+              localVideo.srcObject = localStream;
+
+              if (isGroup) {
+                socket.emit("join_meeting", { meetingId: roomId, userId });
+              } else {
+                socket.emit("join_call", { roomId, userId });
+              }
+            } catch (err) {
+              alert("Camera or microphone access denied.");
+              console.error(err);
+            }
           }
-        }).catch(err => {
-          alert("Camera or microphone access denied.");
-          console.error(err);
-        });
 
-        /* =========================
-           CONTROLS
-        ========================= */
-        muteBtn.onclick = () => {
-          isMuted = !isMuted;
-          localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
-          muteBtn.innerText = isMuted ? "Unmute" : "Mute";
-        };
+          init();
 
-        endBtn.onclick = () => {
-          localStream.getTracks().forEach(track => track.stop());
-          socket.disconnect();
-          window.location.href = "/video-counseling";
-        };
+          /* =====================================================
+            1️⃣  ONE-TO-ONE CALL LOGIC
+          ===================================================== */
 
-        /* =========================
-           RECORDING
-        ========================= */
-        recordBtn.onclick = () => {
-          if (!isRecording) {
-            const combinedStream = new MediaStream();
-            localStream.getTracks().forEach(t => combinedStream.addTrack(t));
+          socket.on("peer_joined", async ({ socketId }) => {
 
-            mediaRecorder = new MediaRecorder(combinedStream);
-            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
-            mediaRecorder.onstop = async () => {
-              const blob = new Blob(recordedChunks, { type: "video/webm" });
-              const formData = new FormData();
-              formData.append("recording", blob);
-              await fetch(`/live-meetings/${roomId}/upload-recording`, { method: "POST", body: formData });
-              recordedChunks = [];
+            peer = new RTCPeerConnection(config);
+
+            localStream.getTracks().forEach(track => {
+              peer.addTrack(track, localStream);
+            });
+
+            peer.ontrack = event => {
+              addRemoteVideo(event.streams[0], socketId);
             };
 
-            mediaRecorder.start();
-            recordBtn.innerText = "Stop Recording";
-            isRecording = true;
-          } else {
-            mediaRecorder.stop();
-            recordBtn.innerText = "Start Recording";
-            isRecording = false;
+            peer.onicecandidate = event => {
+              if (event.candidate) {
+                socket.emit("webrtc_ice_candidate", {
+                  roomId,
+                  candidate: event.candidate
+                });
+              }
+            };
+
+            const offer = await peer.createOffer();
+            await peer.setLocalDescription(offer);
+
+            socket.emit("webrtc_offer", { roomId, offer });
+          });
+
+          socket.on("webrtc_offer", async ({ offer }) => {
+
+            peer = new RTCPeerConnection(config);
+
+            localStream.getTracks().forEach(track => {
+              peer.addTrack(track, localStream);
+            });
+
+            peer.ontrack = event => {
+              addRemoteVideo(event.streams[0], "remote");
+            };
+
+            peer.onicecandidate = event => {
+              if (event.candidate) {
+                socket.emit("webrtc_ice_candidate", {
+                  roomId,
+                  candidate: event.candidate
+                });
+              }
+            };
+
+            await peer.setRemoteDescription(new RTCSessionDescription(offer));
+
+            const answer = await peer.createAnswer();
+            await peer.setLocalDescription(answer);
+
+            socket.emit("webrtc_answer", { roomId, answer });
+          });
+
+          socket.on("webrtc_answer", async ({ answer }) => {
+            if (peer) {
+              await peer.setRemoteDescription(new RTCSessionDescription(answer));
+            }
+          });
+
+          socket.on("webrtc_ice_candidate", async ({ candidate }) => {
+            if (peer) {
+              await peer.addIceCandidate(new RTCIceCandidate(candidate));
+            }
+          });
+
+          /* =====================================================
+            2️⃣  GROUP MEETING LOGIC
+          ===================================================== */
+
+          socket.on("user_joined", async ({ userId: newUserId, socketId }) => {
+
+            const newPeer = new RTCPeerConnection(config);
+            peers[socketId] = newPeer;
+
+            localStream.getTracks().forEach(track => {
+              newPeer.addTrack(track, localStream);
+            });
+
+            newPeer.ontrack = event => {
+              addRemoteVideo(event.streams[0], socketId);
+            };
+
+            newPeer.onicecandidate = event => {
+              if (event.candidate) {
+                socket.emit("group_ice_candidate", {
+                  candidate: event.candidate,
+                  toSocketId: socketId
+                });
+              }
+            };
+
+            const offer = await newPeer.createOffer();
+            await newPeer.setLocalDescription(offer);
+
+            socket.emit("group_offer", {
+              offer,
+              toSocketId: socketId
+            });
+          });
+
+          socket.on("group_offer", async ({ offer, fromSocketId }) => {
+
+            const newPeer = new RTCPeerConnection(config);
+            peers[fromSocketId] = newPeer;
+
+            localStream.getTracks().forEach(track => {
+              newPeer.addTrack(track, localStream);
+            });
+
+            newPeer.ontrack = event => {
+              addRemoteVideo(event.streams[0], fromSocketId);
+            };
+
+            newPeer.onicecandidate = event => {
+              if (event.candidate) {
+                socket.emit("group_ice_candidate", {
+                  candidate: event.candidate,
+                  toSocketId: fromSocketId
+                });
+              }
+            };
+
+            await newPeer.setRemoteDescription(new RTCSessionDescription(offer));
+
+            const answer = await newPeer.createAnswer();
+            await newPeer.setLocalDescription(answer);
+
+            socket.emit("group_answer", {
+              answer,
+              toSocketId: fromSocketId
+            });
+          });
+
+          socket.on("group_answer", async ({ answer, fromSocketId }) => {
+            if (peers[fromSocketId]) {
+              await peers[fromSocketId].setRemoteDescription(
+                new RTCSessionDescription(answer)
+              );
+            }
+          });
+
+          socket.on("group_ice_candidate", async ({ candidate, fromSocketId }) => {
+            if (peers[fromSocketId]) {
+              await peers[fromSocketId].addIceCandidate(
+                new RTCIceCandidate(candidate)
+              );
+            }
+          });
+
+          socket.on("user_left", socketId => {
+            if (peers[socketId]) {
+              peers[socketId].close();
+              delete peers[socketId];
+            }
+            removeRemoteVideo(socketId);
+          });
+
+          /* =====================================================
+            VIDEO HELPERS
+          ===================================================== */
+
+          function addRemoteVideo(stream, id) {
+            let video = document.getElementById("remote_" + id);
+
+            if (!video) {
+              video = document.createElement("video");
+              video.id = "remote_" + id;
+              video.autoplay = true;
+              video.playsInline = true;
+              document.querySelector(".videos").appendChild(video);
+            }
+
+            video.srcObject = stream;
           }
-        };
+
+          function removeRemoteVideo(id) {
+            const video = document.getElementById("remote_" + id);
+            if (video) video.remove();
+          }
+
+          /* =====================================================
+            CONTROLS
+          ===================================================== */
+
+          muteBtn.onclick = () => {
+            isMuted = !isMuted;
+            localStream.getAudioTracks().forEach(track => {
+              track.enabled = !isMuted;
+            });
+            muteBtn.innerText = isMuted ? "Unmute" : "Mute";
+          };
+
+          endBtn.onclick = () => {
+            localStream.getTracks().forEach(track => track.stop());
+            socket.disconnect();
+            window.location.href = "/video-counseling";
+          };
+
+          /* =====================================================
+            RECORDING
+          ===================================================== */
+
+          recordBtn.onclick = () => {
+            if (!isRecording) {
+
+              const combinedStream = new MediaStream();
+              localStream.getTracks().forEach(t => combinedStream.addTrack(t));
+
+              mediaRecorder = new MediaRecorder(combinedStream);
+
+              mediaRecorder.ondataavailable = e => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+              };
+
+              mediaRecorder.onstop = async () => {
+                const blob = new Blob(recordedChunks, { type: "video/webm" });
+                const formData = new FormData();
+                formData.append("recording", blob);
+
+                await fetch(`/live-meetings/${roomId}/upload-recording`, {
+                  method: "POST",
+                  body: formData
+                });
+
+                recordedChunks = [];
+              };
+
+              mediaRecorder.start();
+              recordBtn.innerText = "Stop Recording";
+              isRecording = true;
+
+            } else {
+              mediaRecorder.stop();
+              recordBtn.innerText = "Start Recording";
+              isRecording = false;
+            }
+          };
+
       </script>
       <% } %>
     </div>
