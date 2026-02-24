@@ -920,17 +920,19 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
     const currentUser = req.user;
-    if (!currentUser) return res.redirect("/login");
 
     let users = [];
     let pendingRequests = [];
 
     if (currentUser.role === "user") {
+
       const result = await pool.query(
         "SELECT id, username FROM users WHERE role = 'counselor'"
       );
       users = result.rows;
+
     } else if (currentUser.role === "counselor") {
+
       const result = await pool.query(
         "SELECT id, username FROM users WHERE role = 'user'"
       );
@@ -943,22 +945,24 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
          WHERE vs.counselor_id = $1 AND vs.status = 'pending'`,
         [currentUser.id]
       );
+
       pendingRequests = pending.rows;
+
     } else {
-      // Admins cannot start sessions
       return res.status(403).send("Admins cannot start sessions.");
     }
 
     res.render("video-counseling", {
-      users: users || [],
-      pendingRequests: pendingRequests || [],
+      users,
+      pendingRequests,
       roomId: null,
       meeting: null,
       userId: currentUser.id,
       lang: "en"
     });
+
   } catch (err) {
-    console.error("Video Counseling GET error:", err);
+    console.error(err);
     res.status(500).send("Server error");
   }
 });
@@ -972,23 +976,20 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
 
     const { counselorId } = req.body;
 
-    // 1️⃣ Create room first
     const roomResult = await client.query(
       `INSERT INTO rooms DEFAULT VALUES RETURNING id`
     );
 
     const roomId = roomResult.rows[0].id;
 
-    // 2️⃣ Create session
     const sessionResult = await client.query(
       `INSERT INTO video_sessions 
        (user_id, counselor_id, room_id, status)
        VALUES ($1, $2, $3, 'pending')
-       RETURNING *`,
+       RETURNING id`,
       [req.user.id, counselorId, roomId]
     );
 
-    // 3️⃣ Insert participants
     await client.query(
       `INSERT INTO room_participants (room_id, user_id)
        VALUES ($1, $2), ($1, $3)`,
@@ -997,10 +998,20 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
 
     await client.query("COMMIT");
 
-    // 4️⃣ Notify counselor
-    io.to(`user_${counselorId}`).emit("video_request", {
-      sessionId: sessionResult.rows[0].id,
-      roomId
+    // ✅ Real-time notification
+    io.to(`user_${counselorId}`).emit("new_notification", {
+      title: "New Counseling Request",
+      message: "A user requested a video session.",
+      type: "video_request"
+    });
+
+    // ✅ Dashboard live update
+    const pendingCount = await pool.query(
+      `SELECT COUNT(*) FROM video_sessions WHERE status = 'pending'`
+    );
+
+    io.emit("dashboard_update", {
+      pendingSessions: pendingCount.rows[0].count
     });
 
     res.redirect("/video-counseling?requested=1");
@@ -1017,12 +1028,13 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
 // Live meetings routes
 app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   try {
+
     const { title, description, scheduled_at, duration } = req.body;
     const meetingId = crypto.randomUUID();
     const meetingLink = `${req.protocol}://${req.get("host")}/live-meetings/${meetingId}`;
 
     await pool.query(
-      `INSERT INTO live_meetings 
+      `INSERT INTO live_meetings
        (id, title, description, created_by, scheduled_at, duration_minutes, meeting_link, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,'scheduled')`,
       [
@@ -1036,20 +1048,11 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
       ]
     );
 
-    // Fetch meeting to render in dashboard
-    const meetingResult = await pool.query(
-      "SELECT * FROM live_meetings WHERE id = $1",
-      [meetingId]
-    );
-
-    res.render("video-counseling", {
-      users: [],              // optional, you can fetch counselors/users if needed
-      roomId: null,
-      meeting: meetingResult.rows[0],
-      pendingRequests: [],
-      userId: req.user.id,
-      lang: "en"
+    io.emit("dashboard_update", {
+      newMeeting: true
     });
+
+    res.redirect(`/live-meetings/${meetingId}`);
 
   } catch (err) {
     console.error(err);
@@ -1059,45 +1062,79 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
 
 //live meeting get route
 app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
+
   try {
+
     const { meetingId } = req.params;
 
-    const meetingResult = await pool.query(
+    const result = await pool.query(
       "SELECT * FROM live_meetings WHERE id = $1",
       [meetingId]
     );
 
-    if (!meetingResult.rowCount) return res.status(404).send("Meeting not found");
+    if (!result.rowCount) {
+      return res.status(404).send("Meeting not found");
+    }
 
-    // Insert participant if not exists
+    const meeting = result.rows[0];
+    const isHost = meeting.created_by === req.user.id;
+
     await pool.query(
       `INSERT INTO meeting_participants (meeting_id, user_id)
-       VALUES ($1, $2)
+       VALUES ($1,$2)
        ON CONFLICT DO NOTHING`,
       [meetingId, req.user.id]
     );
 
-    // Auto set to live if creator joins
-    if (meetingResult.rows[0].created_by === req.user.id) {
-      await pool.query(
-        `UPDATE live_meetings SET status = 'live' WHERE id = $1`,
-        [meetingId]
-      );
-    }
-
     res.render("video-counseling", {
-      users: [],                // always defined
-      pendingRequests: [],      // always defined
+      users: [],
+      pendingRequests: [],
       roomId: null,
-      meeting: meetingResult.rows[0],
+      meeting,
       userId: req.user.id,
+      isHost,          // ✅ Important for socket
       lang: "en"
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
   }
 });
+
+//sharing documents route
+app.post("/live-meetings/:id/upload-doc", mustBeLoggedIn, upload.single("document"), async (req, res) => {
+  await pool.query(
+    `INSERT INTO meeting_documents (meeting_id, file_path)
+     VALUES ($1,$2)`,
+    [req.params.id, req.file.filename]
+  );
+  res.sendStatus(200);
+});
+
+//enable to edite document live 
+app.post("/live-meetings/:id/edit-doc", mustBeLoggedIn, async (req, res) => {
+  const { documentId, content } = req.body;
+  await pool.query(
+    `UPDATE meeting_documents
+     SET content = $1
+     WHERE id = $2 AND meeting_id = $3`,
+    [content, documentId, req.params.id]
+  );
+  res.sendStatus(200);
+});
+
+//enable to save the editted document online
+app.get("/live-meetings/:id/documents", mustBeLoggedIn, async (req, res) => {
+  const documents = await pool.query(
+    `SELECT id, file_path, content
+      FROM meeting_documents
+      WHERE meeting_id = $1`,
+    [req.params.id]
+  );
+  res.json(documents.rows);
+});
+
 
 //accept session (counselor side)
 
@@ -1106,7 +1143,8 @@ app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
     const sessionId = req.params.id;
 
     const session = await pool.query(
-      `SELECT room_id FROM video_sessions
+      `SELECT room_id, user_id
+       FROM video_sessions
        WHERE id = $1 AND counselor_id = $2`,
       [sessionId, req.user.id]
     );
@@ -1115,7 +1153,7 @@ app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
       return res.redirect("/video-counseling");
     }
 
-    const roomId = session.rows[0].room_id;
+    const { room_id, user_id } = session.rows[0];
 
     await pool.query(
       `UPDATE video_sessions
@@ -1124,7 +1162,17 @@ app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
       [sessionId]
     );
 
-    res.redirect(`/video-counseling/${roomId}`);
+    // Notify user call is ready
+    io.to(`user_${user_id}`).emit("new_notification", {
+      title: "Session Accepted",
+      message: "Your counseling session is now active.",
+      type: "session_accepted",
+      roomId: room_id
+    });
+
+    io.emit("dashboard_update", { activeSession: true });
+
+    res.redirect(`/video-counseling/${room_id}`);
 
   } catch (err) {
     console.error(err);
@@ -1162,12 +1210,17 @@ app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
 
 // End session route
 app.post("/video-counseling/end/:roomId", mustBeLoggedIn, async (req, res) => {
+
   await pool.query(
     `UPDATE video_sessions
      SET status = 'ended'
      WHERE room_id = $1`,
     [req.params.roomId]
   );
+
+  io.emit("dashboard_update", {
+    sessionEnded: true
+  });
 
   res.sendStatus(200);
 });
@@ -1635,46 +1688,22 @@ app.post("/dream-realness", (req, res) => {
   });
 });
 
-// ===================================================================
-// 7. SOCKET.IO USERS ONLINE
-const userSockets = new Map();
-const lastSeen = new Map();
+/// ===============================
+// SOCKET.IO COMPLETE SYSTEM
+// ===============================
 
-io.on("connection", socket => {
+const userSockets = new Map();   // userId -> Set(socketIds)
+const lastSeen = new Map();      // userId -> timestamp
+
+io.on("connection", (socket) => {
 
   console.log("🔌 Connected:", socket.id);
 
-  // Store active peer connections for group meetings
-  const peers = {};
+  // =====================================================
+  // 1️⃣ USER PRESENCE SYSTEM
+  // =====================================================
 
-  function createPeerConnection(remoteUserId, socketId) {
-
-  const peer = new RTCPeerConnection({
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" }
-    ]
-  });
-
-  peer.ontrack = event => {
-    addVideoStream(remoteUserId, event.streams[0]);
-  };
-
-  peer.onicecandidate = event => {
-    if (event.candidate) {
-      socket.emit("group_ice_candidate", {
-        candidate: event.candidate,
-        toSocketId: socketId
-      });
-    }
-  };
-
-  return peer;
-}
-
-  // =========================
-  // USER PRESENCE
-  // =========================
-  socket.on("join_room", userId => {
+  socket.on("join_room", (userId) => {
     userId = Number(userId);
     if (!userId) return;
 
@@ -1691,12 +1720,59 @@ io.on("connection", socket => {
     io.emit("online_users", [...userSockets.keys()]);
   });
 
-  // =========================
-  // 1-to-1 CALL
-  // =========================
+
+  // =====================================================
+  // 2️⃣ PRIVATE CHAT SYSTEM
+  // =====================================================
+
+  socket.on("private_message", ({ toUserId, message }) => {
+    if (!socket.userId) return;
+
+    const payload = {
+      fromUserId: socket.userId,
+      toUserId,
+      message,
+      timestamp: new Date().toISOString()
+    };
+
+    io.to(`user_${toUserId}`).emit("private_message", payload);
+    io.to(`user_${socket.userId}`).emit("private_message", payload);
+  });
+
+
+  // =====================================================
+  // 3️⃣ NOTIFICATION SYSTEM
+  // =====================================================
+
+  socket.on("send_notification", ({ toUserId, notification }) => {
+    if (!socket.userId) return;
+
+    const payload = {
+      ...notification,
+      fromUserId: socket.userId,
+      timestamp: new Date().toISOString()
+    };
+
+    io.to(`user_${toUserId}`).emit("new_notification", payload);
+  });
+
+  socket.on("broadcast_notification", (notification) => {
+    io.emit("new_notification", {
+      ...notification,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+
+  // =====================================================
+  // 4️⃣ 1-to-1 VIDEO CALL (WebRTC Signaling)
+  // =====================================================
+
   socket.on("join_call", ({ roomId, userId }) => {
-    socket.join(`call_${roomId}`);
+    if (!roomId) return;
+
     socket.callRoomId = roomId;
+    socket.join(`call_${roomId}`);
 
     socket.to(`call_${roomId}`).emit("peer_joined", {
       socketId: socket.id,
@@ -1716,73 +1792,113 @@ io.on("connection", socket => {
     socket.to(`call_${roomId}`).emit("webrtc_ice_candidate", { candidate });
   });
 
-  // =========================
-  // GROUP MEETING
-  // =========================
- socket.on("join_meeting", ({ meetingId, userId }) => {
-  socket.join(`meeting_${meetingId}`);
-  socket.meetingId = meetingId;
 
-  socket.to(`meeting_${meetingId}`).emit("user_joined", {
-    userId,
-    socketId: socket.id
-  });
-});
+  // =====================================================
+  // 5️⃣ GROUP MEETING SYSTEM
+  // =====================================================
 
-socket.on("group_offer", async (data) => {
-  io.to(data.toSocketId).emit("group_offer", data);
-});
+  socket.on("join_meeting", ({ meetingId, userId, isHost }) => {
+    if (!meetingId) return;
 
-socket.on("group_answer", data => {
-  io.to(data.toSocketId).emit("group_answer", data);
-});
+    socket.meetingId = meetingId;
+    socket.join(`meeting_${meetingId}`);
 
-socket.on("group_ice_candidate", data => {
-  io.to(data.toSocketId).emit("group_ice_candidate", data);
-});
+    if (isHost) {
+      socket.join(`meeting_host_${meetingId}`);
+    }
 
-socket.on("disconnect", () => {
-  if (socket.meetingId) {
-    socket.to(`meeting_${socket.meetingId}`).emit("user_left", socket.id);
-  }
-});
-
-socket.on("user_joined", async ({ userId: newUserId, socketId }) => {
-
-  const peer = createPeerConnection(newUserId, socketId);
-  peers[newUserId] = peer;
-
-  localStream.getTracks().forEach(track => {
-    peer.addTrack(track, localStream);
+    socket.to(`meeting_${meetingId}`).emit("user_joined", {
+      userId,
+      socketId: socket.id
+    });
   });
 
-  const offer = await peer.createOffer();
-  await peer.setLocalDescription(offer);
-
-  socket.emit("group_offer", {
-    offer,
-    toSocketId: socketId
+  socket.on("group_offer", (data) => {
+    io.to(data.toSocketId).emit("group_offer", data);
   });
-});
 
-  // =========================
-  // DISCONNECT
-  // =========================
+  socket.on("group_answer", (data) => {
+    io.to(data.toSocketId).emit("group_answer", data);
+  });
+
+  socket.on("group_ice_candidate", (data) => {
+    io.to(data.toSocketId).emit("group_ice_candidate", data);
+  });
+
+  socket.on("doc_update", ({ meetingId, content }) => {
+    socket.to(`meeting_${meetingId}`).emit("doc_update", content);
+  });
+
+
+  // =====================================================
+  // 6️⃣ JOIN APPROVAL SYSTEM (Host Control)
+  // =====================================================
+
+  socket.on("request_to_join", ({ meetingId, userId }) => {
+    socket.pendingMeeting = meetingId;
+
+    socket.to(`meeting_host_${meetingId}`).emit("join_request", {
+      userId,
+      socketId: socket.id
+    });
+  });
+
+  socket.on("approve_user", ({ socketId, meetingId }) => {
+    const target = io.sockets.sockets.get(socketId);
+    if (!target) return;
+
+    target.join(`meeting_${meetingId}`);
+    io.to(socketId).emit("approved");
+  });
+
+  socket.on("reject_user", ({ socketId }) => {
+    io.to(socketId).emit("rejected");
+  });
+
+
+  // =====================================================
+  // 7️⃣ LIVE ADMIN DASHBOARD UPDATES
+  // =====================================================
+
+  socket.on("dashboard_update", (stats) => {
+    io.emit("dashboard_update", {
+      ...stats,
+      updatedAt: new Date().toISOString()
+    });
+  });
+
+
+  // =====================================================
+  // 8️⃣ CLEAN DISCONNECT HANDLING
+  // =====================================================
+
   socket.on("disconnect", () => {
-    const uid = socket.userId;
 
+    console.log("❌ Disconnected:", socket.id);
+
+    // Leave call
     if (socket.callRoomId) {
       socket.to(`call_${socket.callRoomId}`).emit("peer_left", socket.id);
     }
 
+    // Leave meeting
+    if (socket.meetingId) {
+      socket.to(`meeting_${socket.meetingId}`).emit("user_left", socket.id);
+    }
+
+    // Remove from presence map
+    const uid = socket.userId;
     if (uid && userSockets.has(uid)) {
       userSockets.get(uid).delete(socket.id);
+
       if (!userSockets.get(uid).size) {
         userSockets.delete(uid);
       }
+
+      lastSeen.set(uid, new Date().toISOString());
     }
 
-    lastSeen.set(uid, new Date().toISOString());
+    io.emit("online_users", [...userSockets.keys()]);
   });
 
 });

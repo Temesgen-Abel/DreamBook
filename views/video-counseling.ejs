@@ -108,6 +108,13 @@
       </div>
       <% } %>
 
+      <div id="waitingRoom"></div>
+
+
+        <hr>
+  <h3>Collaborative Notes</h3>
+  <textarea id="editor" style="width:100%;height:200px;"></textarea>
+
       <!-- =========================
            ACTIVE VIDEO SECTION
       ========================= -->
@@ -144,319 +151,203 @@
       </div>
 
       <script src="/socket.io/socket.io.js"></script>
-          <script>
-          const socket = io();
-          const roomId = "<%= roomId || (meeting && meeting.id) %>";
-          const userId = "<%= userId %>";
-          const isGroup = <%= meeting ? "true" : "false" %>;
+<script>
+const socket = io();
+const roomId = "<%= roomId || (meeting && meeting.id) %>";
+const userId = "<%= userId %>";
+const isGroup = <%= meeting ? "true" : "false" %>;
+const isHost = <%= meeting && meeting.created_by === userId ? "true" : "false" %>;
 
-          const localVideo = document.getElementById("localVideo");
-          const muteBtn = document.getElementById("muteBtn");
-          const endBtn = document.getElementById("endBtn");
-          const recordBtn = document.getElementById("recordBtn");
+const localVideo = document.getElementById("localVideo");
+const muteBtn = document.getElementById("muteBtn");
+const endBtn = document.getElementById("endBtn");
+const recordBtn = document.getElementById("recordBtn");
+const textarea = document.getElementById("editor");
 
-          let localStream;
-          let peers = {}; // for group
-          let peer = null; // for 1-to-1
-          let isMuted = false;
-          let isRecording = false;
-          let mediaRecorder, recordedChunks = [];
+let localStream;
+let peers = {};
+let peer = null;
+let isMuted = false;
 
-          const config = {
-            iceServers: [
-              { urls: "stun:stun.relay.metered.ca:80" },
-              {
-                urls: "turn:global.relay.metered.ca:80",
-                username: "openrelayproject",
-                credential: "openrelayproject"
-              },
-              {
-                urls: "turn:global.relay.metered.ca:443",
-                username: "openrelayproject",
-                credential: "openrelayproject"
-              }
-            ]
-          };
+const config = {
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+};
 
-          /* =========================
-            INITIALIZE MEDIA
-          ========================= */
-          async function init() {
-            try {
-              localStream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true
-              });
+/* =========================
+   INIT MEDIA
+========================= */
+async function init() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true
+    });
 
-              localVideo.srcObject = localStream;
+    localVideo.srcObject = localStream;
 
-              if (isGroup) {
-                socket.emit("join_meeting", { meetingId: roomId, userId });
-              } else {
-                socket.emit("join_call", { roomId, userId });
-              }
-            } catch (err) {
-              alert("Camera or microphone access denied.");
-              console.error(err);
-            }
-          }
+    if (isGroup) {
+      if (isHost) {
+        socket.emit("join_meeting", { meetingId: roomId, userId, isHost: true });
+      } else {
+        socket.emit("request_to_join", { meetingId: roomId, userId });
+      }
+    } else {
+      socket.emit("join_call", { roomId, userId });
+    }
+  } catch (err) {
+    alert("Camera/mic access denied.");
+  }
+}
 
-          init();
+init();
 
-          /* =====================================================
-            1️⃣  ONE-TO-ONE CALL LOGIC
-          ===================================================== */
+/* =========================
+   HOST APPROVAL
+========================= */
+socket.on("join_request", ({ userId, socketId }) => {
+  if (!isHost) return;
 
-          socket.on("peer_joined", async ({ socketId }) => {
+  const div = document.createElement("div");
+  div.innerHTML = `
+    User ${userId} wants to join
+    <button onclick="approve('${socketId}')">Approve</button>
+    <button onclick="reject('${socketId}')">Reject</button>
+  `;
+  document.getElementById("waitingRoom").appendChild(div);
+});
 
-            peer = new RTCPeerConnection(config);
+function approve(socketId) {
+  socket.emit("approve_user", { socketId, meetingId: roomId });
+}
 
-            localStream.getTracks().forEach(track => {
-              peer.addTrack(track, localStream);
-            });
+function reject(socketId) {
+  socket.emit("reject_user", { socketId });
+}
 
-            peer.ontrack = event => {
-              addRemoteVideo(event.streams[0], socketId);
-            };
+socket.on("approved", () => {
+  socket.emit("join_meeting", { meetingId: roomId, userId });
+});
 
-            peer.onicecandidate = event => {
-              if (event.candidate) {
-                socket.emit("webrtc_ice_candidate", {
-                  roomId,
-                  candidate: event.candidate
-                });
-              }
-            };
+socket.on("rejected", () => {
+  alert("Host rejected your request.");
+});
 
-            const offer = await peer.createOffer();
-            await peer.setLocalDescription(offer);
+/* =========================
+   GROUP WEBRTC
+========================= */
+socket.on("user_joined", async ({ socketId }) => {
 
-            socket.emit("webrtc_offer", { roomId, offer });
-          });
+  const newPeer = new RTCPeerConnection(config);
+  peers[socketId] = newPeer;
 
-          socket.on("webrtc_offer", async ({ offer }) => {
+  localStream.getTracks().forEach(track =>
+    newPeer.addTrack(track, localStream)
+  );
 
-            peer = new RTCPeerConnection(config);
+  newPeer.ontrack = e => addRemoteVideo(e.streams[0], socketId);
 
-            localStream.getTracks().forEach(track => {
-              peer.addTrack(track, localStream);
-            });
+  newPeer.onicecandidate = e => {
+    if (e.candidate) {
+      socket.emit("group_ice_candidate", {
+        candidate: e.candidate,
+        toSocketId: socketId
+      });
+    }
+  };
 
-            peer.ontrack = event => {
-              addRemoteVideo(event.streams[0], "remote");
-            };
+  const offer = await newPeer.createOffer();
+  await newPeer.setLocalDescription(offer);
 
-            peer.onicecandidate = event => {
-              if (event.candidate) {
-                socket.emit("webrtc_ice_candidate", {
-                  roomId,
-                  candidate: event.candidate
-                });
-              }
-            };
+  socket.emit("group_offer", { offer, toSocketId: socketId });
+});
 
-            await peer.setRemoteDescription(new RTCSessionDescription(offer));
+socket.on("group_offer", async ({ offer, fromSocketId }) => {
 
-            const answer = await peer.createAnswer();
-            await peer.setLocalDescription(answer);
+  const newPeer = new RTCPeerConnection(config);
+  peers[fromSocketId] = newPeer;
 
-            socket.emit("webrtc_answer", { roomId, answer });
-          });
+  localStream.getTracks().forEach(track =>
+    newPeer.addTrack(track, localStream)
+  );
 
-          socket.on("webrtc_answer", async ({ answer }) => {
-            if (peer) {
-              await peer.setRemoteDescription(new RTCSessionDescription(answer));
-            }
-          });
+  newPeer.ontrack = e => addRemoteVideo(e.streams[0], fromSocketId);
 
-          socket.on("webrtc_ice_candidate", ({ roomId, candidate }) => {
-              socket.to(roomId).emit("webrtc_ice_candidate", { candidate });
-            });
+  newPeer.onicecandidate = e => {
+    if (e.candidate) {
+      socket.emit("group_ice_candidate", {
+        candidate: e.candidate,
+        toSocketId: fromSocketId
+      });
+    }
+  };
 
-          /* =====================================================
-            2️⃣  GROUP MEETING LOGIC
-          ===================================================== */
+  await newPeer.setRemoteDescription(offer);
 
-          socket.on("user_joined", async ({ userId: newUserId, socketId }) => {
+  const answer = await newPeer.createAnswer();
+  await newPeer.setLocalDescription(answer);
 
-            const newPeer = new RTCPeerConnection(config);
-            peers[socketId] = newPeer;
+  socket.emit("group_answer", {
+    answer,
+    toSocketId: fromSocketId
+  });
+});
 
-            localStream.getTracks().forEach(track => {
-              newPeer.addTrack(track, localStream);
-            });
+socket.on("group_answer", async ({ answer, fromSocketId }) => {
+  await peers[fromSocketId]?.setRemoteDescription(answer);
+});
 
-            newPeer.ontrack = event => {
-              addRemoteVideo(event.streams[0], socketId);
-            };
+socket.on("group_ice_candidate", async ({ candidate, fromSocketId }) => {
+  await peers[fromSocketId]?.addIceCandidate(candidate);
+});
 
-            newPeer.onicecandidate = event => {
-              if (event.candidate) {
-                socket.emit("group_ice_candidate", {
-                  candidate: event.candidate,
-                  toSocketId: socketId
-                });
-              }
-            };
+socket.on("user_left", socketId => {
+  peers[socketId]?.close();
+  delete peers[socketId];
+  document.getElementById("remote_" + socketId)?.remove();
+});
 
-            const offer = await newPeer.createOffer();
-            await newPeer.setLocalDescription(offer);
+/* =========================
+   DOC COLLAB
+========================= */
+textarea.addEventListener("input", () => {
+  socket.emit("doc_update", {
+    meetingId: roomId,
+    content: textarea.value
+  });
+});
 
-            socket.emit("group_offer", {
-              offer,
-              toSocketId: socketId
-            });
-          });
+socket.on("doc_update", content => {
+  textarea.value = content;
+});
 
-          socket.on("group_offer", async ({ offer, fromSocketId }) => {
+/* =========================
+   HELPERS
+========================= */
+function addRemoteVideo(stream, id) {
+  let video = document.getElementById("remote_" + id);
+  if (!video) {
+    video = document.createElement("video");
+    video.id = "remote_" + id;
+    video.autoplay = true;
+    video.playsInline = true;
+    document.querySelector(".videos").appendChild(video);
+  }
+  video.srcObject = stream;
+}
 
-            const newPeer = new RTCPeerConnection(config);
-            peers[fromSocketId] = newPeer;
+muteBtn.onclick = () => {
+  isMuted = !isMuted;
+  localStream.getAudioTracks().forEach(track =>
+    track.enabled = !isMuted
+  );
+  muteBtn.innerText = isMuted ? "Unmute" : "Mute";
+};
 
-            localStream.getTracks().forEach(track => {
-              newPeer.addTrack(track, localStream);
-            });
-
-            newPeer.ontrack = event => {
-              addRemoteVideo(event.streams[0], fromSocketId);
-            };
-
-            newPeer.onicecandidate = event => {
-              if (event.candidate) {
-                socket.emit("group_ice_candidate", {
-                  candidate: event.candidate,
-                  toSocketId: fromSocketId
-                });
-              }
-            };
-
-            await newPeer.setRemoteDescription(new RTCSessionDescription(offer));
-
-            const answer = await newPeer.createAnswer();
-            await newPeer.setLocalDescription(answer);
-
-            socket.emit("group_answer", {
-              answer,
-              toSocketId: fromSocketId
-            });
-          });
-
-          socket.on("group_answer", async ({ answer, fromSocketId }) => {
-            if (peers[fromSocketId]) {
-              await peers[fromSocketId].setRemoteDescription(
-                new RTCSessionDescription(answer)
-              );
-            }
-          });
-
-          socket.on("group_ice_candidate", async ({ candidate, fromSocketId }) => {
-            if (peers[fromSocketId]) {
-              await peers[fromSocketId].addIceCandidate(
-                new RTCIceCandidate(candidate)
-              );
-            }
-          });
-
-          socket.on("user_left", socketId => {
-            if (peers[socketId]) {
-              peers[socketId].close();
-              delete peers[socketId];
-            }
-            removeRemoteVideo(socketId);
-          });
-
-          /* =====================================================
-            VIDEO HELPERS
-          ===================================================== */
-
-        function addRemoteVideo(stream, id) {
-              let video = document.getElementById("remote_" + id);
-
-              if (!video) {
-                video = document.createElement("video");
-                video.id = "remote_" + id;
-                video.autoplay = true;
-                video.playsInline = true;
-                video.controls = false;
-                document.querySelector(".videos").appendChild(video);
-              }
-
-              video.srcObject = stream;
-              video.muted = false;
-
-              video.play().then(() => {
-                console.log("Remote video playing");
-              }).catch(err => {
-                console.error("Playback failed:", err);
-              });
-            }
-            
-          /* =====================================================
-            CONTROLS
-          ===================================================== */
-
-          muteBtn.onclick = () => {
-            isMuted = !isMuted;
-            localStream.getAudioTracks().forEach(track => {
-              track.enabled = !isMuted;
-            });
-            muteBtn.innerText = isMuted ? "Unmute" : "Mute";
-          };
-
-          endBtn.onclick = () => {
-            localStream.getTracks().forEach(track => track.stop());
-            socket.disconnect();
-            window.location.href = "/video-counseling";
-          };
-
-          /* =====================================================
-            RECORDING
-          ===================================================== */
-
-          recordBtn.onclick = () => {
-            if (!isRecording) {
-
-              const combinedStream = new MediaStream();
-              localStream.getTracks().forEach(t => combinedStream.addTrack(t));
-
-              mediaRecorder = new MediaRecorder(combinedStream);
-
-              mediaRecorder.ondataavailable = e => {
-                if (e.data.size > 0) recordedChunks.push(e.data);
-              };
-
-              mediaRecorder.onstop = async () => {
-                const blob = new Blob(recordedChunks, { type: "video/webm" });
-                const formData = new FormData();
-                formData.append("recording", blob);
-
-                await fetch(`/live-meetings/${roomId}/upload-recording`, {
-                  method: "POST",
-                  body: formData
-                });
-
-                recordedChunks = [];
-              };
-
-              mediaRecorder.start();
-              recordBtn.innerText = "Stop Recording";
-              isRecording = true;
-
-            } else {
-              mediaRecorder.stop();
-              recordBtn.innerText = "Start Recording";
-              isRecording = false;
-            }
-          };
-      </script>
-      <% } %>
-    </div>
-  </div>
-
-  <P>
-<form action="/dashboard" method="get">
-  <button type="submit" class="btn">Back to Homepage</button>
-  </form>
-  </P>
+endBtn.onclick = () => {
+  localStream.getTracks().forEach(track => track.stop());
+  socket.disconnect();
+  window.location.href = "/video-counseling";
+};
+</script>
 </body>
 </html>
