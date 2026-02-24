@@ -13,6 +13,19 @@ const http = require("http");
 const fs = require("fs");
 const { SitemapStream, streamToPromise } = require("sitemap");
 const { Readable } = require("stream");
+const multer = require("multer");
+// Setup storage folder and filename
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // make sure this folder exists
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + "-" + file.originalname);
+  }
+});
+const upload = multer({ storage });
+
 
 const app = express();
 
@@ -101,6 +114,17 @@ CREATE TABLE IF NOT EXISTS users (
       createdDate TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+    
+    // Meeting documents (for live meetings file sharing)
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS meeting_documents (
+        id SERIAL PRIMARY KEY,
+        meeting_id UUID,
+        file_path TEXT,
+        content TEXT,
+        uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
   await dbRun(`
     CREATE TABLE IF NOT EXISTS reactions (
@@ -604,10 +628,15 @@ app.post("/register", async (req, res) => {
 });
 
 //6.5. forgot password route
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY // ✅ anon key ONLY
-);
+let supabase = null;
+if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+  supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY // ✅ anon key ONLY
+  );
+} else {
+  console.log("Supabase not configured; skipping supabase setup.");
+}
 
 // ----------------
 // GET: request password reset page

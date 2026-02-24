@@ -152,10 +152,11 @@
 
       <script src="/socket.io/socket.io.js"></script>
 <script>
+
 const socket = io();
 const roomId = "<%= roomId || (meeting && meeting.id) %>";
 const userId = "<%= userId %>";
-const isGroup = <%= meeting ? "true" : "false" %>;
+const isGroupMeeting = <%= meeting ? "true" : "false" %>;
 const isHost = <%= meeting && meeting.created_by === userId ? "true" : "false" %>;
 
 const localVideo = document.getElementById("localVideo");
@@ -185,7 +186,7 @@ async function init() {
 
     localVideo.srcObject = localStream;
 
-    if (isGroup) {
+    if (isGroupMeeting) {
       if (isHost) {
         socket.emit("join_meeting", { meetingId: roomId, userId, isHost: true });
       } else {
