@@ -1131,37 +1131,49 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
   }
 });
 
-//sharing documents route
-app.post("/live-meetings/:id/upload-doc", mustBeLoggedIn, upload.single("document"), async (req, res) => {
+// Upload document
+app.post("/live-meetings/:id/upload-doc", mustBeLoggedIn, upload.single("document"), async (req,res)=>{
   await pool.query(
-    `INSERT INTO meeting_documents (meeting_id, file_path)
-     VALUES ($1,$2)`,
+    `INSERT INTO meeting_documents (meeting_id, file_path) VALUES ($1,$2)`,
     [req.params.id, req.file.filename]
   );
+  io.to(`meeting_${req.params.id}`).emit("refresh_docs");
   res.sendStatus(200);
 });
 
-//enable to edite document live 
-app.post("/live-meetings/:id/edit-doc", mustBeLoggedIn, async (req, res) => {
+
+// Edit document
+app.post("/live-meetings/:id/edit-doc", mustBeLoggedIn, async (req,res)=>{
   const { documentId, content } = req.body;
   await pool.query(
-    `UPDATE meeting_documents
-     SET content = $1
-     WHERE id = $2 AND meeting_id = $3`,
+    `UPDATE meeting_documents SET content = $1 WHERE id=$2 AND meeting_id=$3`,
     [content, documentId, req.params.id]
   );
+  io.to(`meeting_${req.params.id}`).emit("doc_update", { content, documentId });
   res.sendStatus(200);
 });
 
-//enable to save the editted document online
-app.get("/live-meetings/:id/documents", mustBeLoggedIn, async (req, res) => {
-  const documents = await pool.query(
-    `SELECT id, file_path, content
-      FROM meeting_documents
-      WHERE meeting_id = $1`,
+//grant edit permission to specific user
+app.post("/live-meetings/:id/grant-edit", mustBeLoggedIn, async (req,res)=>{
+  const { documentId, userId } = req.body;
+  await pool.query(
+    `UPDATE meeting_documents
+     SET can_edit_user_id = $1
+     WHERE id = $2 AND meeting_id = $3`,
+    [userId, documentId, req.params.id]
+  );
+  io.to(`meeting_${req.params.id}`).emit("refresh_docs");
+  res.sendStatus(200);
+});
+
+
+// Get documents
+app.get("/live-meetings/:id/documents", mustBeLoggedIn, async (req,res)=>{
+  const docs = await pool.query(
+    `SELECT id, file_path, content, can_edit_user_id FROM meeting_documents WHERE meeting_id=$1`,
     [req.params.id]
   );
-  res.json(documents.rows);
+  res.json(docs.rows);
 });
 
 
