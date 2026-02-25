@@ -8,138 +8,196 @@
     .videos { display:flex; gap:10px; margin-top:20px; justify-content:center; flex-wrap:wrap; }
     video { width:300px; background:#000; border-radius:10px; }
     .controls { margin-top:15px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
-    .meeting-link { background:#f1f3f5; padding:10px; border-radius:6px; margin-bottom:15px; }
-    .meeting-link input { width:100%; padding:5px; }
-    #recordBtn { padding:5px 10px; }
-    .doc-list { margin-top: 15px; }
-    .doc-item { border:1px solid #ccc; padding:5px; margin-bottom:5px; border-radius:4px; display:flex; flex-direction:column; }
-    .doc-header { display:flex; justify-content:space-between; align-items:center; }
+    .doc-list { margin-top:15px; }
+    .doc-item { border:1px solid #ccc; padding:8px; margin-bottom:8px; border-radius:6px; }
     .doc-editor { width:100%; height:150px; margin-top:5px; }
-    .btn-small { padding:2px 6px; font-size:12px; }
+    .btn-small { padding:4px 8px; font-size:12px; }
   </style>
 </head>
 <body>
-  <%- include('includes/header') %>
 
-  <div class="chat-layout">
-    <div class="video-counseling">
-      <h1>Video Counseling Dashboard</h1>
+<%- include('includes/header') %>
 
-      <% if (meeting) { %>
-      <div class="dashboard-section">
-        <h3>Documents</h3>
-        <form id="uploadDocForm" enctype="multipart/form-data">
-          <input type="file" name="document" required>
-          <button type="submit" class="btn">Upload</button>
+<div class="chat-layout">
+<div class="video-counseling">
+
+  <!-- ✅ ALWAYS VISIBLE HEADING -->
+  <h1>Video Counseling Dashboard</h1>
+
+  <!-- ============================= -->
+  <!-- ✅ SESSION REQUEST SECTION -->
+  <!-- ============================= -->
+  <div class="dashboard-section">
+    <h3>Start Counseling Session</h3>
+
+    <% if (users && users.length > 0) { %>
+      <% users.forEach(user => { %>
+        <form action="/video-counseling" method="POST" style="display:inline;">
+          <input type="hidden" name="counselorId" value="<%= user.id %>">
+          <button type="submit" class="btn">
+            Request Session with <%= user.username %>
+          </button>
         </form>
-        <div class="doc-list" id="docList"></div>
-      </div>
-      <% } %>
-
-      <% if (roomId || meeting) { %>
-        <div class="videos">
-          <video id="localVideo" autoplay muted playsinline></video>
-        </div>
-      <% } %>
-    </div>
+      <% }) %>
+    <% } else { %>
+      <p>No available users.</p>
+    <% } %>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const roomId = "<%= roomId || (meeting && meeting.id) %>";
-    const userId = "<%= userId %>";
-    const isHost = <%= meeting && meeting.created_by === userId ? "true" : "false" %>;
+  <!-- ============================= -->
+  <!-- ✅ PENDING REQUESTS (COUNSELOR) -->
+  <!-- ============================= -->
+  <% if (pendingRequests && pendingRequests.length > 0) { %>
+  <div class="dashboard-section">
+    <h3>Pending Requests</h3>
+    <% pendingRequests.forEach(req => { %>
+      <div>
+        <span><%= req.username %></span>
+        <form action="/video-counseling/accept/<%= req.id %>" method="POST" style="display:inline;">
+          <button class="btn">Accept</button>
+        </form>
+      </div>
+    <% }) %>
+  </div>
+  <% } %>
 
-    const docList = document.getElementById("docList");
-    let editableDocs = {}; // documentId -> boolean
+  <!-- ============================= -->
+  <!-- ✅ VIDEO AREA -->
+  <!-- ============================= -->
+  <% if (roomId || meeting) { %>
+  <div class="dashboard-section">
+    <h3>Live Session</h3>
 
-    async function loadDocuments() {
-      const res = await fetch(`/live-meetings/${roomId}/documents`);
-      const docs = await res.json();
-      docList.innerHTML = "";
+    <div class="videos">
+      <video id="localVideo" autoplay muted playsinline></video>
+      <video id="remoteVideo" autoplay playsinline></video>
+    </div>
 
-      docs.forEach(doc => {
-        const canEdit = isHost || doc.can_edit_user_id == userId;
-        editableDocs[doc.id] = canEdit;
+    <div class="controls">
+      <button id="endBtn" class="btn">End Session</button>
+    </div>
+  </div>
+  <% } %>
 
-        const div = document.createElement("div");
-        div.className = "doc-item";
-        div.id = "doc_"+doc.id;
-        div.innerHTML = `
-          <div class="doc-header">
-            <span>${doc.file_path}</span>
-            <div>
-              ${isHost ? `<button class="btn-small" onclick="grantEdit(${doc.id})">Grant Edit</button>` : ""}
-              <button class="btn-small" onclick="downloadDoc('${doc.id}')">Download</button>
-            </div>
-          </div>
-          <textarea class="doc-editor" id="docEditor_${doc.id}" ${canEdit ? "" : "readonly"}>${doc.content || ""}</textarea>
-          ${canEdit ? `<button class="btn-small" onclick="saveDoc(${doc.id})">Save</button>` : ""}
-        `;
-        docList.appendChild(div);
+  <!-- ============================= -->
+  <!-- ✅ DOCUMENTS (ONLY FOR LIVE MEETING) -->
+  <!-- ============================= -->
+  <% if (meeting) { %>
+  <div class="dashboard-section">
+    <h3>Shared Documents</h3>
 
-        const editor = document.getElementById("docEditor_"+doc.id);
-        editor.addEventListener("input", ()=>{
-          if(editableDocs[doc.id]){
-            socket.emit("doc_update", { meetingId: roomId, content: editor.value, documentId: doc.id });
-          }
+    <form id="uploadDocForm" enctype="multipart/form-data">
+      <input type="file" name="document" required>
+      <button type="submit" class="btn">Upload</button>
+    </form>
+
+    <div id="docList" class="doc-list"></div>
+  </div>
+  <% } %>
+
+</div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+
+const roomId = "<%= roomId || (meeting ? meeting.id : '') %>";
+const userId = "<%= userId %>";
+const isHost = <%= typeof isHost !== "undefined" ? isHost : false %>;
+
+if (userId) {
+  socket.emit("join_room", userId);
+}
+
+// =====================================================
+// DOCUMENT SYSTEM
+// =====================================================
+
+const docList = document.getElementById("docList");
+
+async function loadDocuments() {
+  if (!roomId || !docList) return;
+
+  const res = await fetch(`/live-meetings/${roomId}/documents`);
+  const docs = await res.json();
+  docList.innerHTML = "";
+
+  docs.forEach(doc => {
+
+    const canEdit = isHost || doc.can_edit_user_id == userId;
+
+    const div = document.createElement("div");
+    div.className = "doc-item";
+
+    div.innerHTML = `
+      <strong>${doc.file_path}</strong>
+      <textarea class="doc-editor" id="doc_${doc.id}" ${canEdit ? "" : "readonly"}>
+${doc.content || ""}
+      </textarea>
+      ${canEdit ? `<button class="btn-small" onclick="saveDoc(${doc.id})">Save</button>` : ""}
+    `;
+
+    docList.appendChild(div);
+
+    const editor = document.getElementById("doc_"+doc.id);
+    editor.addEventListener("input", ()=>{
+      if(canEdit){
+        socket.emit("doc_update", {
+          meetingId: roomId,
+          content: editor.value,
+          documentId: doc.id
         });
-      });
-    }
-
-    async function grantEdit(docId){
-      const userToEdit = prompt("Enter user ID to allow edit:");
-      if(!userToEdit) return;
-      await fetch(`/live-meetings/${roomId}/grant-edit`, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ documentId: docId, userId: userToEdit })
-      });
-      socket.emit("refresh_docs", { meetingId: roomId });
-    }
-
-    function saveDoc(docId){
-      const editor = document.getElementById("docEditor_"+docId);
-      fetch(`/live-meetings/${roomId}/edit-doc`, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ documentId: docId, content: editor.value })
-      });
-    }
-
-    function downloadDoc(docId){
-      const editor = document.getElementById("docEditor_"+docId);
-      const blob = new Blob([editor.value], {type:"text/plain"});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `document_${docId}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    socket.on("doc_update", ({ content, documentId })=>{
-      const editor = document.getElementById("docEditor_"+documentId);
-      if(editor) editor.value = content;
+      }
     });
+  });
+}
 
-    socket.on("refresh_docs", ()=> loadDocuments());
+function saveDoc(docId){
+  const editor = document.getElementById("doc_"+docId);
+  fetch(`/live-meetings/${roomId}/edit-doc`, {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      documentId: docId,
+      content: editor.value
+    })
+  });
+}
 
-    loadDocuments();
+socket.on("doc_update", ({ content, documentId })=>{
+  const editor = document.getElementById("doc_"+documentId);
+  if(editor) editor.value = content;
+});
 
-    // DOCUMENT UPLOAD
-    const uploadForm = document.getElementById("uploadDocForm");
-    uploadForm?.addEventListener("submit", async (e)=>{
-      e.preventDefault();
-      const formData = new FormData(uploadForm);
-      await fetch(`/live-meetings/${roomId}/upload-doc`, {
-        method:"POST",
-        body: formData
-      });
-      socket.emit("refresh_docs", { meetingId: roomId });
-      uploadForm.reset();
-    });
-  </script>
+if (roomId && docList) {
+  loadDocuments();
+}
+
+// Upload document
+const uploadForm = document.getElementById("uploadDocForm");
+uploadForm?.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const formData = new FormData(uploadForm);
+  await fetch(`/live-meetings/${roomId}/upload-doc`, {
+    method:"POST",
+    body: formData
+  });
+  loadDocuments();
+  uploadForm.reset();
+});
+
+// =====================================================
+// END SESSION
+// =====================================================
+
+document.getElementById("endBtn")?.addEventListener("click", async ()=>{
+  if (!roomId) return;
+
+  await fetch(`/video-counseling/end/${roomId}`, { method:"POST" });
+  window.location.href = "/video-counseling";
+});
+</script>
+
 </body>
 </html>

@@ -1866,9 +1866,9 @@ io.on("connection", (socket) => {
     io.to(data.toSocketId).emit("group_ice_candidate", data);
   });
 
-  socket.on("doc_update", ({ meetingId, content }) => {
-    socket.to(`meeting_${meetingId}`).emit("doc_update", content);
-  });
+ socket.on("doc_update", ({ meetingId, content, documentId }) => {
+  socket.to(`meeting_${meetingId}`).emit("doc_update", { content, documentId });
+});
 
 
   // =====================================================
