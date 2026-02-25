@@ -47,37 +47,41 @@
   <!-- ============================= -->
   <!-- ✅ PENDING REQUESTS (COUNSELOR) -->
   <!-- ============================= -->
-  <% if (pendingRequests && pendingRequests.length > 0) { %>
-  <div class="dashboard-section">
-    <h3>Pending Requests</h3>
-    <% pendingRequests.forEach(req => { %>
-      <div>
-        <span><%= req.username %></span>
-        <form action="/video-counseling/accept/<%= req.id %>" method="POST" style="display:inline;">
-          <button class="btn">Accept</button>
-        </form>
-      </div>
-    <% }) %>
-  </div>
-  <% } %>
+    <% if (pendingRequests && pendingRequests.length > 0) { %>
+    <div class="dashboard-section">
+      <h3>Pending Requests</h3>
+      <% pendingRequests.forEach(req => { %>
+        <div>
+          <span><%= req.username %></span>
+          <form action="/video-counseling/accept/<%= req.id %>" method="POST" style="display:inline;">
+            <button class="btn">Accept</button>
+          </form>
+          <form action="/video-counseling/reject/<%= req.id %>" method="POST" style="display:inline; margin-left:5px;">
+            <button class="btn btn-small" style="background:#e74c3c; color:#fff;">Reject</button>
+          </form>
+        </div>
+      <% }) %>
+    </div>
+    <% } %>
 
   <!-- ============================= -->
   <!-- ✅ VIDEO AREA -->
   <!-- ============================= -->
-  <% if (roomId || meeting) { %>
-  <div class="dashboard-section">
-    <h3>Live Session</h3>
+    <% if (roomId || meeting) { %>
+    <div class="dashboard-section">
+      <h3>Live Session</h3>
 
-    <div class="videos">
-      <video id="localVideo" autoplay muted playsinline></video>
-      <video id="remoteVideo" autoplay playsinline></video>
-    </div>
+      <div class="videos">
+        <video id="localVideo" autoplay muted playsinline></video>
+        <video id="remoteVideo" autoplay playsinline></video>
+      </div>
 
-    <div class="controls">
-      <button id="endBtn" class="btn">End Session</button>
+      <div class="controls">
+        <button id="endBtn" class="btn">End Session</button>
+        <button id="cleanUpBtn" class="btn btn-small" style="background:#f39c12; color:#fff;">Clean Up</button>
+      </div>
     </div>
-  </div>
-  <% } %>
+    <% } %>
 
   <!-- ============================= -->
   <!-- ✅ DOCUMENTS (ONLY FOR LIVE MEETING) -->
@@ -192,11 +196,17 @@ uploadForm?.addEventListener("submit", async (e)=>{
 // END SESSION
 // =====================================================
 
+
 document.getElementById("endBtn")?.addEventListener("click", async ()=>{
   if (!roomId) return;
-
   await fetch(`/video-counseling/end/${roomId}`, { method:"POST" });
   window.location.href = "/video-counseling";
+});
+
+document.getElementById("cleanUpBtn")?.addEventListener("click", async ()=>{
+  if (!roomId) return;
+  await fetch(`/video-counseling/cleanup/${roomId}`, { method:"POST" });
+  window.location.reload();
 });
 </script>
 
