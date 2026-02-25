@@ -201,6 +201,78 @@
     socket.emit("reject_user", { meetingId, userId:id });
   }
 
+// ===============================
+// WEBRTC BASIC SETUP
+// ===============================
+
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
+
+let localStream;
+let peer;
+
+async function initMedia() {
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: true
+  });
+
+  localVideo.srcObject = localStream;
+}
+
+function createPeer() {
+  peer = new RTCPeerConnection();
+
+  localStream.getTracks().forEach(track => {
+    peer.addTrack(track, localStream);
+  });
+
+  peer.ontrack = event => {
+    remoteVideo.srcObject = event.streams[0];
+  };
+
+  peer.onicecandidate = event => {
+    if (event.candidate) {
+      socket.emit("ice-candidate", {
+        meetingId,
+        candidate: event.candidate
+      });
+    }
+  };
+}
+
+socket.on("offer", async offer => {
+  createPeer();
+  await peer.setRemoteDescription(new RTCSessionDescription(offer));
+  const answer = await peer.createAnswer();
+  await peer.setLocalDescription(answer);
+  socket.emit("answer", { meetingId, answer });
+});
+
+socket.on("answer", async answer => {
+  await peer.setRemoteDescription(new RTCSessionDescription(answer));
+});
+
+socket.on("ice-candidate", async candidate => {
+  if (peer) {
+    await peer.addIceCandidate(new RTCIceCandidate(candidate));
+  }
+});
+
+async function startCall() {
+  createPeer();
+  const offer = await peer.createOffer();
+  await peer.setLocalDescription(offer);
+  socket.emit("offer", { meetingId, offer });
+}
+
+initMedia().then(() => {
+  if (isHost) {
+    startCall();
+  }
+});
+
+
   /* ===============================
      PARTICIPANT LIST (HOST)
   =============================== */
