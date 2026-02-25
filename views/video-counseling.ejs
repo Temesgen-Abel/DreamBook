@@ -3,181 +3,276 @@
 <head>
   <%- include('includes/head') %>
   <link rel="stylesheet" href="/style.css">
+
   <style>
-    .dashboard-section {
-      margin-bottom: 25px;
-      padding: 20px;
-      background: #f8f9fa;
-      border-radius: 8px;
+    body { background:#f4f6f9; }
+    .section {
+      background:white;
+      padding:20px;
+      border-radius:10px;
+      margin-bottom:20px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.05);
     }
+    .btn {
+      padding:8px 14px;
+      border:none;
+      border-radius:6px;
+      background:#2d89ef;
+      color:white;
+      cursor:pointer;
+      margin-right:5px;
+    }
+    .btn-danger { background:#e74c3c; }
+    .btn-warning { background:#f39c12; }
+    .btn-success { background:#27ae60; }
 
     .videos {
-      display: flex;
-      gap: 15px;
-      margin-top: 20px;
-      justify-content: center;
-      flex-wrap: wrap;
+      display:flex;
+      gap:15px;
+      justify-content:center;
+      flex-wrap:wrap;
+      margin-top:20px;
     }
 
     video {
-      width: 320px;
-      background: #000;
-      border-radius: 8px;
+      width:320px;
+      background:black;
+      border-radius:8px;
     }
 
-    .btn-danger {
-      background: #dc3545;
-      color: white;
+    .participant {
+      margin-bottom:8px;
+      padding:8px;
+      background:#fafafa;
+      border-radius:6px;
     }
   </style>
 </head>
+
 <body>
 
-<%- include('includes/header') %>
+<div class="container">
 
-<div class="chat-layout">
-<div class="video-counseling">
+<!-- ================================================= -->
+<!-- CREATE LIVE MEETING (ANYONE CAN CREATE) -->
+<!-- ================================================= -->
 
-<h1>Video Counseling Dashboard</h1>
-
-<!-- ===================================== -->
-<!-- ACTIVE SESSION -->
-<!-- ===================================== -->
-
-<% if (activeRoom) { %>
-<div class="dashboard-section">
-  <h3>Active Session</h3>
-  <a href="/video-counseling/<%= activeRoom %>" class="btn">
-    Join Active Session
-  </a>
-</div>
-<% } %>
-
-
-<!-- ===================================== -->
-<!-- START SESSION (USER SIDE) -->
-<!-- ===================================== -->
-
-<% if (users && users.length > 0 && !activeRoom) { %>
-<div class="dashboard-section">
-  <h3>Start Counseling Session</h3>
-
-  <% users.forEach(user => { %>
-    <form action="/video-counseling" method="POST" style="display:inline;">
-      <input type="hidden" name="counselorId" value="<%= user.id %>">
-      <button type="submit" class="btn">
-        Request Session with <%= user.username %>
-      </button>
-    </form>
-  <% }) %>
-
-</div>
-<% } %>
-
-
-<!-- ===================================== -->
-<!-- PENDING REQUESTS (COUNSELOR SIDE) -->
-<!-- ===================================== -->
-
-<% if (pendingRequests && pendingRequests.length > 0) { %>
-<div class="dashboard-section">
-  <h3>Pending Requests</h3>
-
-  <% pendingRequests.forEach(req => { %>
-    <div style="margin-bottom:10px;">
-      <strong><%= req.username %></strong>
-
-      <form action="/video-counseling/accept/<%= req.id %>" method="POST" style="display:inline;">
-        <button class="btn">Accept</button>
-      </form>
-
-      <form action="/video-counseling/reject/<%= req.id %>" method="POST" style="display:inline;">
-        <button class="btn btn-danger">Reject</button>
-      </form>
-    </div>
-  <% }) %>
-</div>
-<% } %>
-
-
-<!-- ===================================== -->
-<!-- CREATE LIVE GROUP MEETING -->
-<!-- ===================================== -->
-
-<% if (!activeRoom) { %>
-<div class="dashboard-section">
-  <h3>Create Live Group Meeting</h3>
+<div class="section">
+  <h3>Create Live Meeting</h3>
 
   <form action="/live-meetings/create" method="POST">
-    <input type="text" name="title" placeholder="Meeting Title" required>
+    <input type="text" name="title" placeholder="Meeting title" required>
     <input type="datetime-local" name="scheduled_at">
     <input type="number" name="duration" placeholder="Duration (minutes)">
-    <button type="submit" class="btn">Create Meeting</button>
+    <button class="btn btn-success">Create Meeting</button>
   </form>
 </div>
-<% } %>
 
+<!-- ================================================= -->
+<!-- MEETING AREA -->
+<!-- ================================================= -->
 
-<!-- ===================================== -->
-<!-- LIVE VIDEO ROOM -->
-<!-- ===================================== -->
+<% if (meeting) { %>
 
-<% if (roomId || meeting) { %>
-<div class="dashboard-section">
-  <h3>Live Session</h3>
+<div class="section">
+  <h3><%= meeting.title %></h3>
+
+  <p>
+    <strong>Status:</strong> <%= meeting.status %>
+  </p>
+
+  <p>
+    <strong>Meeting Link:</strong><br>
+    <input type="text" value="<%= meeting.meeting_link %>" readonly style="width:100%;">
+  </p>
 
   <div class="videos">
     <video id="localVideo" autoplay muted playsinline></video>
     <video id="remoteVideo" autoplay playsinline></video>
   </div>
+</div>
 
-  <div style="margin-top:15px;">
-    <button id="endBtn" class="btn btn-danger">End Session</button>
-  </div>
+<!-- ================================================= -->
+<!-- WAITING ROOM -->
+<!-- ================================================= -->
+
+<% if (isHost) { %>
+<div class="section">
+  <h3>Waiting Room</h3>
+
+  <label>
+    <input type="checkbox" id="autoAdmitToggle">
+    Auto Admit Participants
+  </label>
+
+  <div id="waitingRoom"></div>
 </div>
 <% } %>
 
+<!-- ================================================= -->
+<!-- PARTICIPANTS MANAGEMENT -->
+<!-- ================================================= -->
 
-<!-- ===================================== -->
-<!-- DOCUMENTS (ONLY FOR GROUP MEETING) -->
-<!-- ===================================== -->
+<% if (isHost) { %>
+<div class="section">
+  <h3>Participants (Host Controls)</h3>
+  <div id="participantList"></div>
+</div>
+<% } %>
 
-<% if (meeting) { %>
-<div class="dashboard-section">
+<!-- ================================================= -->
+<!-- DOCUMENTS -->
+<!-- ================================================= -->
+
+<div class="section">
   <h3>Shared Documents</h3>
 
-  <form action="/live-meetings/<%= meeting.id %>/upload-doc" 
-        method="POST" 
-        enctype="multipart/form-data">
-    <input type="file" name="document" required>
-    <button type="submit" class="btn">Upload</button>
-  </form>
+  <% if (isHost) { %>
+    <form id="uploadDocForm" enctype="multipart/form-data">
+      <input type="file" name="document" required>
+      <button class="btn">Upload</button>
+    </form>
+  <% } %>
+
+  <div id="docList"></div>
+</div>
+
+<!-- ================================================= -->
+<!-- HOST ACTIONS -->
+<!-- ================================================= -->
+
+<% if (isHost) { %>
+<div class="section">
+  <h3>Meeting Controls</h3>
+
+  <button class="btn btn-warning" id="muteAllBtn">Mute All</button>
+  <button class="btn btn-danger" id="endMeetingBtn">End Meeting For Everyone</button>
 </div>
 <% } %>
 
-
-<!-- ===================================== -->
-<!-- CLEAR OLD SESSIONS -->
-<!-- ===================================== -->
-
-<div class="dashboard-section">
-  <form action="/video-counseling/clear-ended" method="POST">
-    <button class="btn">Clear Old Sessions</button>
-  </form>
-</div>
+<% } %>
 
 </div>
-</div>
 
+
+<!-- ================================================= -->
+<!-- SOCKET + MEETING LOGIC -->
+<!-- ================================================= -->
+
+<% if (meeting) { %>
+<script src="/socket.io/socket.io.js"></script>
 <script>
-const roomId = "<%= roomId || '' %>";
+  const socket = io();
+  const meetingId = "<%= meeting.id %>";
+  const userId = "<%= userId %>";
+  const isHost = <%= isHost ? "true" : "false" %>;
 
-document.getElementById("endBtn")?.addEventListener("click", async () => {
-  if (!roomId) return;
-  await fetch(`/video-counseling/end/${roomId}`, { method: "POST" });
-  window.location.href = "/video-counseling";
-});
+  socket.emit("join_meeting", { meetingId, userId });
+
+  /* ===============================
+     WAITING ROOM LOGIC
+  =============================== */
+
+  socket.on("waiting_user", (data) => {
+    if (!isHost) return;
+
+    const container = document.getElementById("waitingRoom");
+
+    if (document.getElementById("autoAdmitToggle").checked) {
+      socket.emit("approve_user", data);
+      return;
+    }
+
+    const div = document.createElement("div");
+    div.className = "participant";
+    div.innerHTML = `
+      ${data.username}
+      <button onclick='approve("${data.userId}")' class="btn btn-success">Accept</button>
+      <button onclick='reject("${data.userId}")' class="btn btn-danger">Reject</button>
+    `;
+    container.appendChild(div);
+  });
+
+  function approve(id){
+    socket.emit("approve_user", { meetingId, userId:id });
+  }
+
+  function reject(id){
+    socket.emit("reject_user", { meetingId, userId:id });
+  }
+
+  /* ===============================
+     PARTICIPANT LIST (HOST)
+  =============================== */
+
+  socket.on("participant_joined", (data) => {
+    if (!isHost) return;
+
+    const list = document.getElementById("participantList");
+
+    const div = document.createElement("div");
+    div.className = "participant";
+    div.id = "p_" + data.userId;
+
+    div.innerHTML = `
+      ${data.username}
+      <button onclick='mute("${data.userId}")' class="btn btn-warning">Mute</button>
+      <button onclick='removeUser("${data.userId}")' class="btn btn-danger">Remove</button>
+    `;
+
+    list.appendChild(div);
+  });
+
+  function mute(id){
+    socket.emit("mute_user", { meetingId, userId:id });
+  }
+
+  function removeUser(id){
+    socket.emit("remove_user", { meetingId, userId:id });
+  }
+
+  /* ===============================
+     MUTE ALL
+  =============================== */
+
+  if (isHost) {
+    document.getElementById("muteAllBtn")?.addEventListener("click", ()=>{
+      socket.emit("mute_all", { meetingId });
+    });
+
+    document.getElementById("endMeetingBtn")?.addEventListener("click", ()=>{
+      socket.emit("end_meeting", { meetingId });
+    });
+  }
+
+  socket.on("meeting_ended", ()=>{
+    alert("Meeting has ended by host.");
+    window.location.href = "/video-counseling";
+  });
+
+  /* ===============================
+     DOCUMENT UPLOAD
+  =============================== */
+
+  document.getElementById("uploadDocForm")?.addEventListener("submit", async function(e){
+    e.preventDefault();
+
+    const formData = new FormData(this);
+
+    await fetch(`/live-meetings/${meetingId}/upload-doc`, {
+      method: "POST",
+      body: formData
+    });
+
+    this.reset();
+  });
+
+  socket.on("refresh_docs", ()=>{
+    location.reload();
+  });
+
 </script>
+<% } %>
 
 </body>
 </html>
