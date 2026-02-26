@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="<%= lang %>">
+<head>
+  <%- include('includes/head') %>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('includes/header') %>
+  <div class="container" style="margin-top:40px;">
+    <h1>Join a Live Meeting</h1>
+    <form action="/live-meetings/join" method="get" class="mt-3">
+      <div class="form-group">
+        <label for="meetingId">Meeting ID or Link</label>
+        <input type="text" class="form-control" id="meetingId" name="meetingId" required placeholder="Enter meeting ID or URL">
+      </div>
+      <button type="submit" class="btn btn-primary mt-2">Join</button>
+    </form>
+    <p class="mt-3 text-muted">If you have a full link, just paste it above. We'll extract the ID automatically.</p>
+  </div>
+</body>
+</html>

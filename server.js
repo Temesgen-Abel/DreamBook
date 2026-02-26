@@ -1060,6 +1060,16 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
 
 // 6.13 Group live meetings routes
 
+// legacy alias used by some links / bookmarks
+app.get("/create-group-meeting", mustBeLoggedIn, (req, res) => {
+  // simply forward the user to the new path
+  return res.redirect("/live-meetings/create");
+});
+app.post("/create-group-meeting", mustBeLoggedIn, (req, res) => {
+  // preserve verb for forms if any are still pointing here
+  return res.redirect(307, "/live-meetings/create");
+});
+
 //Get live meetings page
 app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   try {
