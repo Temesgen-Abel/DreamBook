@@ -23,6 +23,16 @@
       gap: 10px;
     }
 
+    /* meeting controls toolbar */
+    #meetingControls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    #meetingControls .btn {
+      min-width: 80px;
+    }
+
     .videos {
       display: flex;
       gap: 10px;
@@ -85,6 +95,12 @@
         <% } else { %>
           <p class="text-muted">You are in the meeting; others may join shortly.</p>
         <% } %>
+        <!-- meeting controls toolbar -->
+        <div id="meetingControls" class="mb-2">
+          <button id="toggleAudioBtn" class="btn btn-outline-primary">Mute</button>
+          <button id="toggleVideoBtn" class="btn btn-outline-primary">Stop Video</button>
+          <button id="leaveBtn" class="btn btn-outline-danger">Leave</button>
+        </div>
         <!-- camera control available to all attendees -->
         <button id="startCamBtn" class="btn btn-secondary mb-2">Start Camera</button>
 
@@ -190,6 +206,8 @@
     let localStream = null;
     const pcs = {}; // map socketId -> RTCPeerConnection
     const seenParticipants = new Set(); // prevent duplicate UI entries
+    let audioEnabled = true;
+    let videoEnabled = true;
 
     async function startLocalStream() {
       if (localStream) return localStream;
@@ -200,6 +218,7 @@
         vid.muted = true; // prevent echo
         vid.srcObject = localStream;
         document.getElementById('group-video-container').appendChild(vid);
+        if (startCamBtn) startCamBtn.style.display = 'none';
         // add tracks to existing peer connections and renegotiate
         Object.entries(pcs).forEach(async ([remoteId, pc]) => {
           localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
@@ -222,6 +241,41 @@
     if (startCamBtn) {
       startCamBtn.addEventListener('click', startLocalStream);
     }
+
+    // control buttons
+    const toggleAudioBtn = document.getElementById('toggleAudioBtn');
+    const toggleVideoBtn = document.getElementById('toggleVideoBtn');
+    const leaveBtn = document.getElementById('leaveBtn');
+
+    function updateControlLabels() {
+      if (toggleAudioBtn) toggleAudioBtn.textContent = audioEnabled ? 'Mute' : 'Unmute';
+      if (toggleVideoBtn) toggleVideoBtn.textContent = videoEnabled ? 'Stop Video' : 'Start Video';
+    }
+
+    if (toggleAudioBtn) {
+      toggleAudioBtn.addEventListener('click', () => {
+        if (!localStream) return;
+        audioEnabled = !audioEnabled;
+        localStream.getAudioTracks().forEach(t => t.enabled = audioEnabled);
+        updateControlLabels();
+      });
+    }
+    if (toggleVideoBtn) {
+      toggleVideoBtn.addEventListener('click', () => {
+        if (!localStream) return;
+        videoEnabled = !videoEnabled;
+        localStream.getVideoTracks().forEach(t => t.enabled = videoEnabled);
+        updateControlLabels();
+      });
+    }
+    if (leaveBtn) {
+      leaveBtn.addEventListener('click', () => {
+        socket.disconnect();
+        window.location.href = '/dashboard';
+      });
+    }
+
+    updateControlLabels();
 
     // automatically start local stream when joining meeting
     <% if (meeting && meeting.id) { %>
