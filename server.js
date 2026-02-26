@@ -1058,6 +1058,29 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   }
 });
 
+// 6.13 Group live meetings routes
+
+//Get live meetings page
+app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
+  try {
+    const meetingsResult = await pool.query(
+      `SELECT lm.*, u.username AS creator_username
+       FROM live_meetings lm
+       JOIN users u ON lm.created_by = u.id
+       ORDER BY lm.created_at DESC`
+    );
+    res.render("live-meetings", {
+      meetings: meetingsResult.rows,
+      userId: req.user.id,
+      lang: "en"
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+
 // Live meetings routes
 app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   try {
