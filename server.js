@@ -204,12 +204,19 @@ CREATE TABLE IF NOT EXISTS live_meetings (
   title VARCHAR(200) NOT NULL,
   description TEXT,
   created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  -- legacy column kept for compatibility; new code uses scheduled_at
   new_date TIMESTAMPTZ,
+  scheduled_at TIMESTAMPTZ,
   duration_minutes INTEGER DEFAULT 60,
   meeting_link VARCHAR(255) UNIQUE,
   status VARCHAR(50) DEFAULT 'scheduled', -- scheduled | live | ended
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+    `);
+    // add scheduled_at if table already existed but column did not
+    await dbRun(`
+      ALTER TABLE live_meetings
+      ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ;
     `);
 
 //Meeting participants
