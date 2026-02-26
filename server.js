@@ -1121,6 +1121,16 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   }
 });
 
+// join form / redirect
+app.get("/live-meetings/join", mustBeLoggedIn, (req, res) => {
+  const { meetingId } = req.query;
+  if (meetingId) {
+    const id = meetingId.split("/").pop();
+    return res.redirect(`/live-meetings/${id}`);
+  }
+  res.render("join-live-meeting", { lang: req.query.lang || "en" });
+});
+
 //live meeting get route
 app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
 
