@@ -1150,6 +1150,8 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
     res.render("video-counseling", {
       users: [],
       pendingRequests: [],
+      groupDocuments: [],
+      counselingDocuments: [],
       roomId: null,
       meeting,
       userId: req.user.id,
