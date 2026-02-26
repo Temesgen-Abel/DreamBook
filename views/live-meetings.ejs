@@ -13,7 +13,25 @@
     <!-- creation form -->
     <div class="mb-4">
       <h2>Create a New Meeting</h2>
+      <% if (newMeeting) { %>
+        <div class="alert alert-success">
+          Meeting created! ID: <code><%= newMeeting.id %></code><br>
+          Link: <a href="<%= newMeeting.meeting_link %>" target="_blank"><%= newMeeting.meeting_link %></a>
+        </div>
+      <% } %>
+
+      <% if (preLink) { %>
+        <div class="alert alert-secondary">
+          <strong>New meeting ID (not yet saved):</strong>
+          <code><%= preId %></code><br>
+          <strong>Link:</strong>
+          <a href="<%= preLink %>" target="_blank"><%= preLink %></a>
+          <p class="small text-muted">You can copy this and send to participants now; it will be used when the meeting is created.</p>
+        </div>
+      <% } %>
+
       <form action="/live-meetings/create" method="post">
+        <input type="hidden" name="preId" value="<%= preId %>">
         <div class="form-group">
           <label for="title">Title</label>
           <input type="text" name="title" id="title" class="form-control" required>
@@ -50,10 +68,9 @@
                 <% if (m.status) { %> [<%= m.status %>]<% } %>
               </div>
               <div>
+                <span class="small text-muted">ID: <%= m.id %></span>
                 <% if (m.meeting_link) { %>
-                  <a href="<%= m.meeting_link %>" class="btn btn-sm btn-success" target="_blank">Join</a>
-                <% } else { %>
-                  <span class="text-muted">ID: <%= m.id %></span>
+                  <a href="<%= m.meeting_link %>" class="btn btn-sm btn-success ml-2" target="_blank">Join</a>
                 <% } %>
               </div>
             </li>

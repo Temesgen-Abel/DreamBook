@@ -30,10 +30,9 @@
               <% if (m.status) { %> [<%= m.status %>]<% } %>
             </div>
             <div>
+              <span class="small text-muted">ID: <%= m.id %></span>
               <% if (m.meeting_link) { %>
-                <a href="<%= m.meeting_link %>" class="btn btn-sm btn-success" target="_blank">Join</a>
-              <% } else { %>
-                <span class="text-muted">ID: <%= m.id %></span>
+                <a href="<%= m.meeting_link %>" class="btn btn-sm btn-success ml-2" target="_blank">Join</a>
               <% } %>
             </div>
           </li>

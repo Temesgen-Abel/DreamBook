@@ -1068,16 +1068,34 @@ app.post("/create-group-meeting", mustBeLoggedIn, (req, res) => {
 //Get live meetings page
 app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   try {
+    // Optionally show newly created meeting details when redirected back
+    let newMeeting = null;
+    if (req.query.newId) {
+      const mres = await pool.query(
+        `SELECT id, meeting_link FROM live_meetings WHERE id = $1`,
+        [req.query.newId]
+      );
+      if (mres.rowCount) newMeeting = mres.rows[0];
+    }
+
     const meetingsResult = await pool.query(
       `SELECT lm.*, u.username AS creator_username
        FROM live_meetings lm
        JOIN users u ON lm.created_by = u.id
        ORDER BY lm.created_at DESC`
     );
+
+    // generate a pre-id for the form so the host can copy/share before submission
+    const preId = crypto.randomUUID();
+    const preLink = `${req.protocol}://${req.get("host")}/live-meetings/${preId}`;
+
     res.render("live-meetings", {
       meetings: meetingsResult.rows,
       userId: req.user.id,
-      lang: "en"
+      lang: "en",
+      newMeeting,
+      preId,
+      preLink
     });
   } catch (err) {
     console.error(err);
@@ -1089,9 +1107,9 @@ app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
 // Live meetings routes
 app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   try {
-
-    const { title, description, scheduled_at, duration } = req.body;
-    const meetingId = crypto.randomUUID();
+    const { title, description, scheduled_at, duration, preId } = req.body;
+    // allow an ID pre-generated on the form (so host knows it before submit)
+    const meetingId = preId || crypto.randomUUID();
     const meetingLink = `${req.protocol}://${req.get("host")}/live-meetings/${meetingId}`;
 
     await pool.query(
@@ -1113,7 +1131,8 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
       newMeeting: true
     });
 
-    res.redirect(`/live-meetings/${meetingId}`);
+    // redirect back to the create page with the new info so the host can share it
+    res.redirect(`/live-meetings/create?newId=${meetingId}`);
 
   } catch (err) {
     console.error(err);
