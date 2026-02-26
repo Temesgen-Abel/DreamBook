@@ -2,93 +2,53 @@
 <html lang="<%= lang || 'en' %>">
 <head>
 <meta charset="UTF-8">
+
 <title>
-  <% if (meeting) { %>
-    <%= meeting.title %>
-  <% } else if (roomId) { %>
-    Video Counseling Session
-  <% } else { %>
-    Video Counseling Dashboard
-  <% } %>
+<% if (meeting) { %>
+  <%= meeting.title %>
+<% } else if (roomId) { %>
+  Video Counseling Session
+<% } else { %>
+  Video Counseling Dashboard
+<% } %>
 </title>
 
 <style>
-body{
-  font-family: Arial, sans-serif;
-  margin:20px;
-}
-
-.section{
-  margin-bottom:30px;
-  padding:20px;
-  border-radius:10px;
-  background:#f4f6f9;
-}
-
-.videos{
-  display:flex;
-  gap:15px;
-  flex-wrap:wrap;
-  margin-top:15px;
-}
-
-video{
-  width:280px;
-  background:black;
-  border-radius:10px;
-}
-
-.btn{
-  padding:8px 14px;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-  margin:5px 5px 5px 0;
-  background:#2d89ef;
-  color:white;
-}
-
-.btn.danger{
-  background:#d9534f;
-}
-
-.btn.secondary{
-  background:#6c757d;
-}
-
-textarea{
-  width:100%;
-  height:180px;
-  border-radius:8px;
-  padding:10px;
-  resize:none;
-}
+body{font-family:Arial;margin:20px;}
+.section{background:#f4f6f9;padding:20px;border-radius:10px;margin-bottom:25px;}
+.videos{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px;}
+video{width:280px;background:#000;border-radius:10px;}
+.btn{padding:8px 14px;margin:5px 5px 5px 0;border:none;border-radius:6px;cursor:pointer;background:#2d89ef;color:#fff;}
+.btn.danger{background:#d9534f;}
+.btn.secondary{background:#6c757d;}
+textarea{width:100%;height:180px;padding:10px;border-radius:8px;resize:none;}
 </style>
 </head>
+
 <body>
 
-<!-- ============================= -->
-<!-- DASHBOARD VIEW -->
-<!-- ============================= -->
+<!-- ================= DASHBOARD ================= -->
 <% if (!roomId && !meeting) { %>
 
 <div class="section">
   <h2>Start Video Session</h2>
 
   <% if (users && users.length > 0) { %>
-    <% users.forEach(u => { %>
+    <% users.forEach(function(u){ %>
       <form method="POST" action="/video-counseling">
         <input type="hidden" name="counselorId" value="<%= u.id %>">
         <button class="btn">Start Session with <%= u.username %></button>
       </form>
     <% }) %>
+  <% } else { %>
+    <p>No users available.</p>
   <% } %>
 </div>
 
 <% if (pendingRequests && pendingRequests.length > 0) { %>
 <div class="section">
   <h3>Pending Requests</h3>
-  <% pendingRequests.forEach(p => { %>
+  <% pendingRequests.forEach(function(p){ %>
     <form method="POST" action="/video-counseling/accept/<%= p.id %>">
       <button class="btn">Accept <%= p.username %></button>
     </form>
@@ -98,19 +58,16 @@ textarea{
 
 <% } %>
 
-
-<!-- ============================= -->
-<!-- VIDEO ROOM (Counseling OR Live Meeting) -->
-<!-- ============================= -->
+<!-- ================= VIDEO ROOM ================= -->
 <% if (roomId || meeting) { %>
 
 <div class="section">
   <h2>
-    <% if (meeting) { %>
-      <%= meeting.title %>
-    <% } else { %>
-      Counseling Session
-    <% } %>
+  <% if (meeting) { %>
+    <%= meeting.title %>
+  <% } else { %>
+    Counseling Session
+  <% } %>
   </h2>
 
   <div class="videos" id="videoContainer">
@@ -125,200 +82,51 @@ textarea{
   <% } %>
 </div>
 
-<!-- ============================= -->
-<!-- DOCUMENT SECTION (Live Meetings Only) -->
-<!-- ============================= -->
-<% if (meeting) { %>
-<div class="section">
-  <h3>Shared Document</h3>
-
-  <textarea id="sharedDoc"><%= meeting.description || '' %></textarea>
-  <button class="btn" id="saveDoc">Save</button>
-
-  <hr>
-
-  <form id="uploadForm" enctype="multipart/form-data">
-    <input type="file" name="document" required>
-    <button type="submit" class="btn secondary">Upload Document</button>
-  </form>
-
-  <div id="documentsList"></div>
-</div>
 <% } %>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 
-const socket = io();
-const userId = <%= userId %>;
-const roomId = "<%= roomId || '' %>";
-const meetingId = "<%= meeting ? meeting.id : '' %>";
-const isHost = <%= typeof isHost !== 'undefined' && isHost ? 'true' : 'false' %>;
+var socket = io();
+var userId = <%= userId || 0 %>;
+var roomId = "<%= roomId || '' %>";
+var meetingId = "<%= meeting ? meeting.id : '' %>";
+var isHost = <%= (typeof isHost !== 'undefined' && isHost) ? 'true' : 'false' %>;
 
-let localStream;
-let peers = {};
-const container = document.getElementById("videoContainer");
+var localStream;
+var peers = {};
+var container = document.getElementById("videoContainer");
 
-// =======================
-// INIT MEDIA
-// =======================
 async function initMedia(){
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video:true,
-    audio:true
-  });
+  localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
   document.getElementById("localVideo").srcObject = localStream;
 }
 
-// =======================
-// JOIN ROOM
-// =======================
 if(roomId){
-  socket.emit("join_room",{ roomId, userId });
+  socket.emit("join_room",{roomId:roomId,userId:userId});
 }
 
 if(meetingId){
-  socket.emit("join_meeting",{ meetingId, userId });
+  socket.emit("join_meeting",{meetingId:meetingId,userId:userId});
 }
 
-// =======================
-// WEBRTC
-// =======================
-socket.on("participant_joined", async ({ socketId })=>{
-  await createPeer(socketId, true);
-});
-
-socket.on("webrtc_offer", async data=>{
-  await createPeer(data.from, false, data.offer);
-});
-
-socket.on("webrtc_answer", async data=>{
-  await peers[data.from]
-    .setRemoteDescription(new RTCSessionDescription(data.answer));
-});
-
-socket.on("webrtc_ice_candidate", async data=>{
-  await peers[data.from]
-    .addIceCandidate(new RTCIceCandidate(data.candidate));
-});
-
-async function createPeer(socketId, isInitiator, remoteOffer=null){
-
-  if(!localStream) await initMedia();
-
-  const peer = new RTCPeerConnection();
-  peers[socketId] = peer;
-
-  localStream.getTracks().forEach(track=>{
-    peer.addTrack(track, localStream);
-  });
-
-  peer.ontrack = e=>{
-    const video = document.createElement("video");
-    video.autoplay = true;
-    video.srcObject = e.streams[0];
-    container.appendChild(video);
-  };
-
-  peer.onicecandidate = e=>{
-    if(e.candidate){
-      socket.emit("webrtc_ice_candidate",{
-        to: socketId,
-        candidate: e.candidate
-      });
-    }
-  };
-
-  if(isInitiator){
-    const offer = await peer.createOffer();
-    await peer.setLocalDescription(offer);
-    socket.emit("webrtc_offer",{ to: socketId, offer });
-  } else {
-    await peer.setRemoteDescription(new RTCSessionDescription(remoteOffer));
-    const answer = await peer.createAnswer();
-    await peer.setLocalDescription(answer);
-    socket.emit("webrtc_answer",{ to: socketId, answer });
-  }
-}
-
-// =======================
-// CONTROLS
-// =======================
-document.getElementById("muteSelf")?.addEventListener("click",()=>{
-  localStream.getAudioTracks().forEach(t=>{
+document.getElementById("muteSelf") &&
+document.getElementById("muteSelf").addEventListener("click",function(){
+  if(!localStream) return;
+  localStream.getAudioTracks().forEach(function(t){
     t.enabled = !t.enabled;
   });
 });
 
-document.getElementById("muteAll")?.addEventListener("click",()=>{
-  socket.emit("mute_all",{ meetingId });
-});
-
-document.getElementById("endMeeting")?.addEventListener("click",()=>{
+document.getElementById("endMeeting") &&
+document.getElementById("endMeeting").addEventListener("click",function(){
   if(meetingId){
-    socket.emit("end_meeting",{ meetingId });
-  } else {
-    fetch("/video-counseling/end/"+roomId,{ method:"POST" });
+    socket.emit("end_meeting",{meetingId:meetingId});
+  }else if(roomId){
+    fetch("/video-counseling/end/"+roomId,{method:"POST"});
     window.location="/video-counseling";
   }
 });
-
-// =======================
-// DOCUMENT COLLAB
-// =======================
-const textarea = document.getElementById("sharedDoc");
-
-textarea?.addEventListener("input",()=>{
-  socket.emit("doc_change",{
-    meetingId,
-    content: textarea.value
-  });
-});
-
-socket.on("doc_change", content=>{
-  if(textarea) textarea.value = content;
-});
-
-document.getElementById("saveDoc")?.addEventListener("click",()=>{
-  socket.emit("save_document",{
-    meetingId,
-    content: textarea.value
-  });
-  alert("Saved");
-});
-
-// =======================
-// DOCUMENT UPLOAD
-// =======================
-document.getElementById("uploadForm")?.addEventListener("submit",async e=>{
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  await fetch(`/live-meetings/${meetingId}/upload-doc`,{
-    method:"POST",
-    body:formData
-  });
-  loadDocuments();
-});
-
-async function loadDocuments(){
-  if(!meetingId) return;
-  const res = await fetch(`/live-meetings/${meetingId}/documents`);
-  const docs = await res.json();
-  const list = document.getElementById("documentsList");
-  list.innerHTML="";
-  docs.forEach(d=>{
-    list.innerHTML += `
-      <div>
-        <a href="/uploads/${d.file_path}" target="_blank">${d.file_path}</a>
-      </div>
-    `;
-  });
-}
-
-if(meetingId){
-  loadDocuments();
-  socket.on("refresh_docs", loadDocuments);
-}
 
 </script>
 
