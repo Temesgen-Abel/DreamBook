@@ -60,6 +60,24 @@
 
   <div class="container">
 
+    <!-- Show the meeting details when inside a meeting -->
+    <% if (meeting) { %>
+      <div class="alert alert-info mt-3">
+        <strong>Meeting ID:</strong> <code><%= meeting.id %></code><br>
+        <strong>Share link:</strong>
+        <a href="<%= meeting.meeting_link %>" target="_blank">
+          <%= meeting.meeting_link %>
+        </a>
+        <button class="btn btn-sm btn-outline-secondary ml-2" onclick="copyLink()">Copy</button>
+      </div>
+      <script>
+        function copyLink() {
+          navigator.clipboard.writeText("<%= meeting.meeting_link %>");
+          alert('Link copied to clipboard');
+        }
+      </script>
+    <% } %>
+
     <!-- ================= Group Meetings ================= -->
     <div class="dashboard-section" id="group-meetings">
       <h2>
