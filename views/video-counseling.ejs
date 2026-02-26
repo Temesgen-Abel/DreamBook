@@ -189,6 +189,7 @@
     // handle local media and peer connections
     let localStream = null;
     const pcs = {}; // map socketId -> RTCPeerConnection
+    const seenParticipants = new Set(); // prevent duplicate UI entries
 
     async function startLocalStream() {
       if (localStream) return localStream;
@@ -259,6 +260,9 @@
 
     socket.on('participant_joined', async data => {
       console.log('participant joined', data);
+      // avoid adding duplicate entries
+      if (seenParticipants.has(data.socketId)) return;
+      seenParticipants.add(data.socketId);
       // update visible participant list
       const ul = document.getElementById('waitingUsers');
       if (ul) {
@@ -269,7 +273,7 @@
         if (noWaiting) noWaiting.style.display = 'none';
       }
 
-      if (data.socketId === socket.id) return; // ignore self
+      if (data.socketId === socket.id) return; // ignore self when negotiating
       const pc = createPeerConnection(data.socketId);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
