@@ -1,350 +1,186 @@
 <!DOCTYPE html>
-<html lang="<%= lang %>">
+<html>
 <head>
-  <%- include('includes/head') %>
-  <link rel="stylesheet" href="/style.css">
-
+  <title>Live Meeting</title>
   <style>
-    body { background:#f4f6f9; }
-    .section {
-      background:white;
-      padding:20px;
-      border-radius:10px;
-      margin-bottom:20px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.05);
-    }
-    .btn {
-      padding:8px 14px;
-      border:none;
-      border-radius:6px;
-      background:#2d89ef;
-      color:white;
-      cursor:pointer;
-      margin-right:5px;
-    }
-    .btn-danger { background:#e74c3c; }
-    .btn-warning { background:#f39c12; }
-    .btn-success { background:#27ae60; }
-
-    .videos {
-      display:flex;
-      gap:15px;
-      justify-content:center;
-      flex-wrap:wrap;
-      margin-top:20px;
-    }
-
-    video {
-      width:320px;
-      background:black;
-      border-radius:8px;
-    }
-
-    .participant {
-      margin-bottom:8px;
-      padding:8px;
-      background:#fafafa;
-      border-radius:6px;
-    }
+    .videos { display:flex; flex-wrap:wrap; gap:10px; }
+    video { width:300px; background:black; border-radius:8px; }
+    textarea { width:100%; height:200px; }
+    .btn { padding:8px 14px; margin:5px; cursor:pointer; }
   </style>
 </head>
-
 <body>
 
-<div class="container">
+<h2><%= meeting.title %></h2>
 
-<!-- ================================================= -->
-<!-- CREATE LIVE MEETING (ANYONE CAN CREATE) -->
-<!-- ================================================= -->
-
-<div class="section">
-  <h3>Create Live Meeting</h3>
-
-  <form action="/live-meetings/create" method="POST">
-    <input type="text" name="title" placeholder="Meeting title" required>
-    <input type="datetime-local" name="scheduled_at">
-    <input type="number" name="duration" placeholder="Duration (minutes)">
-    <button class="btn btn-success">Create Meeting</button>
-  </form>
+<div class="videos" id="videoContainer">
+  <video id="localVideo" autoplay muted playsinline></video>
 </div>
 
-<!-- ================================================= -->
-<!-- MEETING AREA -->
-<!-- ================================================= -->
-
-<% if (meeting) { %>
-
-<div class="section">
-  <h3><%= meeting.title %></h3>
-
-  <p>
-    <strong>Status:</strong> <%= meeting.status %>
-  </p>
-
-  <p>
-    <strong>Meeting Link:</strong><br>
-    <input type="text" value="<%= meeting.meeting_link %>" readonly style="width:100%;">
-  </p>
-
-  <div class="videos">
-    <video id="localVideo" autoplay muted playsinline></video>
-    <video id="remoteVideo" autoplay playsinline></video>
-  </div>
-</div>
-
-<!-- ================================================= -->
-<!-- WAITING ROOM -->
-<!-- ================================================= -->
+<button id="muteSelf" class="btn">Mute Myself</button>
 
 <% if (isHost) { %>
-<div class="section">
-  <h3>Waiting Room</h3>
-
-  <label>
-    <input type="checkbox" id="autoAdmitToggle">
-    Auto Admit Participants
-  </label>
-
-  <div id="waitingRoom"></div>
-</div>
+<button id="muteAll" class="btn">Mute All</button>
+<button id="endMeeting" class="btn">End Meeting</button>
 <% } %>
 
-<!-- ================================================= -->
-<!-- PARTICIPANTS MANAGEMENT -->
-<!-- ================================================= -->
+<h3>Shared Document</h3>
+<textarea id="sharedDoc"><%= meeting.description || "" %></textarea>
+<button id="saveDoc" class="btn">Save</button>
 
-<% if (isHost) { %>
-<div class="section">
-  <h3>Participants (Host Controls)</h3>
-  <div id="participantList"></div>
-</div>
-<% } %>
-
-<!-- ================================================= -->
-<!-- DOCUMENTS -->
-<!-- ================================================= -->
-
-<div class="section">
-  <h3>Shared Documents</h3>
-
-  <% if (isHost) { %>
-    <form id="uploadDocForm" enctype="multipart/form-data">
-      <input type="file" name="document" required>
-      <button class="btn">Upload</button>
-    </form>
-  <% } %>
-
-  <div id="docList"></div>
-</div>
-
-<!-- ================================================= -->
-<!-- HOST ACTIONS -->
-<!-- ================================================= -->
-
-<% if (isHost) { %>
-<div class="section">
-  <h3>Meeting Controls</h3>
-
-  <button class="btn btn-warning" id="muteAllBtn">Mute All</button>
-  <button class="btn btn-danger" id="endMeetingBtn">End Meeting For Everyone</button>
-</div>
-<% } %>
-
-<% } %>
-
-</div>
-
-
-<!-- ================================================= -->
-<!-- SOCKET + MEETING LOGIC -->
-<!-- ================================================= -->
-
-<% if (meeting) { %>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-  const socket = io();
-  const meetingId = "<%= meeting.id %>";
-  const userId = "<%= userId %>";
-  const isHost = <%= isHost ? "true" : "false" %>;
 
-  socket.emit("join_meeting", { meetingId, userId });
-
-  /* ===============================
-     WAITING ROOM LOGIC
-  =============================== */
-
-  socket.on("waiting_user", (data) => {
-    if (!isHost) return;
-
-    const container = document.getElementById("waitingRoom");
-
-    if (document.getElementById("autoAdmitToggle").checked) {
-      socket.emit("approve_user", data);
-      return;
-    }
-
-    const div = document.createElement("div");
-    div.className = "participant";
-    div.innerHTML = `
-      ${data.username}
-      <button onclick='approve("${data.userId}")' class="btn btn-success">Accept</button>
-      <button onclick='reject("${data.userId}")' class="btn btn-danger">Reject</button>
-    `;
-    container.appendChild(div);
-  });
-
-  function approve(id){
-    socket.emit("approve_user", { meetingId, userId:id });
-  }
-
-  function reject(id){
-    socket.emit("reject_user", { meetingId, userId:id });
-  }
-
-// ===============================
-// WEBRTC BASIC SETUP
-// ===============================
-
-const localVideo = document.getElementById("localVideo");
-const remoteVideo = document.getElementById("remoteVideo");
+const socket = io();
+const meetingId = "<%= meeting.id %>";
+const userId = Number("<%= userId %>");
+const isHost = <%= isHost ? "true" : "false" %>;
 
 let localStream;
-let peer;
+let peers = {};
+
+const container = document.getElementById("videoContainer");
 
 async function initMedia() {
   localStream = await navigator.mediaDevices.getUserMedia({
-    video: true,
-    audio: true
+    video:true,
+    audio:true
   });
-
-  localVideo.srcObject = localStream;
+  document.getElementById("localVideo").srcObject = localStream;
 }
 
-function createPeer() {
-  peer = new RTCPeerConnection();
+socket.emit("join_meeting", { meetingId, userId });
 
-  localStream.getTracks().forEach(track => {
+socket.on("approved", async () => {
+  await initMedia();
+});
+
+socket.on("host_ready", async () => {
+  await initMedia();
+});
+
+socket.on("participant_joined", async ({ socketId }) => {
+
+  const peer = new RTCPeerConnection();
+  peers[socketId] = peer;
+
+  localStream.getTracks().forEach(track=>{
     peer.addTrack(track, localStream);
   });
 
-  peer.ontrack = event => {
-    remoteVideo.srcObject = event.streams[0];
+  peer.ontrack = e => {
+    const video = document.createElement("video");
+    video.autoplay = true;
+    video.srcObject = e.streams[0];
+    container.appendChild(video);
   };
 
-  peer.onicecandidate = event => {
-    if (event.candidate) {
-      socket.emit("ice-candidate", {
-        meetingId,
-        candidate: event.candidate
+  peer.onicecandidate = e=>{
+    if(e.candidate){
+      socket.emit("webrtc_ice_candidate", {
+        to: socketId,
+        candidate: e.candidate
       });
     }
   };
-}
 
-socket.on("offer", async offer => {
-  createPeer();
-  await peer.setRemoteDescription(new RTCSessionDescription(offer));
-  const answer = await peer.createAnswer();
-  await peer.setLocalDescription(answer);
-  socket.emit("answer", { meetingId, answer });
-});
-
-socket.on("answer", async answer => {
-  await peer.setRemoteDescription(new RTCSessionDescription(answer));
-});
-
-socket.on("ice-candidate", async candidate => {
-  if (peer) {
-    await peer.addIceCandidate(new RTCIceCandidate(candidate));
-  }
-});
-
-async function startCall() {
-  createPeer();
   const offer = await peer.createOffer();
   await peer.setLocalDescription(offer);
-  socket.emit("offer", { meetingId, offer });
-}
 
-initMedia().then(() => {
-  if (isHost) {
-    startCall();
-  }
+  socket.emit("webrtc_offer", {
+    to: socketId,
+    offer
+  });
 });
 
+socket.on("webrtc_offer", async data => {
 
-  /* ===============================
-     PARTICIPANT LIST (HOST)
-  =============================== */
+  const peer = new RTCPeerConnection();
+  peers[data.from] = peer;
 
-  socket.on("participant_joined", (data) => {
-    if (!isHost) return;
-
-    const list = document.getElementById("participantList");
-
-    const div = document.createElement("div");
-    div.className = "participant";
-    div.id = "p_" + data.userId;
-
-    div.innerHTML = `
-      ${data.username}
-      <button onclick='mute("${data.userId}")' class="btn btn-warning">Mute</button>
-      <button onclick='removeUser("${data.userId}")' class="btn btn-danger">Remove</button>
-    `;
-
-    list.appendChild(div);
+  localStream.getTracks().forEach(track=>{
+    peer.addTrack(track, localStream);
   });
 
-  function mute(id){
-    socket.emit("mute_user", { meetingId, userId:id });
-  }
+  peer.ontrack = e=>{
+    const video = document.createElement("video");
+    video.autoplay = true;
+    video.srcObject = e.streams[0];
+    container.appendChild(video);
+  };
 
-  function removeUser(id){
-    socket.emit("remove_user", { meetingId, userId:id });
-  }
+  await peer.setRemoteDescription(
+    new RTCSessionDescription(data.offer)
+  );
 
-  /* ===============================
-     MUTE ALL
-  =============================== */
+  const answer = await peer.createAnswer();
+  await peer.setLocalDescription(answer);
 
-  if (isHost) {
-    document.getElementById("muteAllBtn")?.addEventListener("click", ()=>{
-      socket.emit("mute_all", { meetingId });
-    });
-
-    document.getElementById("endMeetingBtn")?.addEventListener("click", ()=>{
-      socket.emit("end_meeting", { meetingId });
-    });
-  }
-
-  socket.on("meeting_ended", ()=>{
-    alert("Meeting has ended by host.");
-    window.location.href = "/video-counseling";
+  socket.emit("webrtc_answer", {
+    to: data.from,
+    answer
   });
+});
 
-  /* ===============================
-     DOCUMENT UPLOAD
-  =============================== */
+socket.on("webrtc_answer", async data => {
+  await peers[data.from]
+    .setRemoteDescription(new RTCSessionDescription(data.answer));
+});
 
-  document.getElementById("uploadDocForm")?.addEventListener("submit", async function(e){
-    e.preventDefault();
+socket.on("webrtc_ice_candidate", async data => {
+  await peers[data.from]
+    .addIceCandidate(new RTCIceCandidate(data.candidate));
+});
 
-    const formData = new FormData(this);
+document.getElementById("muteSelf").onclick = ()=>{
+  localStream.getAudioTracks()
+    .forEach(t=> t.enabled = !t.enabled);
+};
 
-    await fetch(`/live-meetings/${meetingId}/upload-doc`, {
-      method: "POST",
-      body: formData
-    });
+if(isHost){
+  document.getElementById("muteAll").onclick = ()=>{
+    socket.emit("mute_all", { meetingId });
+  };
+  document.getElementById("endMeeting").onclick = ()=>{
+    socket.emit("end_meeting", { meetingId });
+  };
+}
 
-    this.reset();
+socket.on("muted_by_host", ()=>{
+  localStream.getAudioTracks().forEach(t=> t.enabled=false);
+  alert("You were muted");
+});
+
+socket.on("meeting_ended", ()=>{
+  alert("Meeting ended");
+  window.location.href="/video-counseling";
+});
+
+// =======================
+// DOCUMENT COLLAB
+// =======================
+
+const textarea = document.getElementById("sharedDoc");
+
+textarea.addEventListener("input", ()=>{
+  socket.emit("doc_change", {
+    meetingId,
+    content: textarea.value
   });
+});
 
-  socket.on("refresh_docs", ()=>{
-    location.reload();
+socket.on("doc_change", content=>{
+  textarea.value = content;
+});
+
+document.getElementById("saveDoc").onclick = ()=>{
+  socket.emit("save_document", {
+    meetingId,
+    content: textarea.value
   });
+  alert("Saved");
+};
 
 </script>
-<% } %>
-
 </body>
 </html>
