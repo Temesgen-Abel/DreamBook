@@ -997,6 +997,7 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
       pendingRequests,
       roomId: null,
       meeting: null,
+      isHost: false,
       userId: currentUser.id,
       lang: "en"
     });
@@ -1325,6 +1326,7 @@ app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
       pendingRequests: [],      // always defined
       roomId,
       meeting: null,
+      isHost: false,
       userId: req.user.id,
       lang: "en"
     });

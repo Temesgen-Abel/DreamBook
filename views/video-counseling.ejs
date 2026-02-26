@@ -193,6 +193,7 @@
       document.querySelector('.container').prepend(info);
     });
 
+    <% if (meeting && meeting.id) { %>
     // waiting user notification (host sees new users)
     socket.on('waiting_user', data => {
       console.log('new user waiting', data);
@@ -253,6 +254,7 @@
       alert('Meeting has been ended by the host');
       window.location.href = '/dashboard';
     });
+    <% } %>
 
     // ================= Group Meeting Videos =================
     const groupContainer = document.getElementById('group-video-container');
