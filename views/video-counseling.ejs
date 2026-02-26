@@ -60,8 +60,8 @@
 
   <div class="container">
 
-    <!-- Show the meeting details when inside a meeting -->
-    <% if (meeting) { %>
+    <% if (meeting && meeting.id) { %>
+      <!-- meeting view -->
       <div class="alert alert-info mt-3">
         <strong>Meeting ID:</strong> <code><%= meeting.id %></code><br>
         <strong>Share link:</strong>
@@ -76,75 +76,99 @@
           alert('Link copied to clipboard');
         }
       </script>
+
+      <section id="meeting-room" class="dashboard-section">
+        <h2>🟠 In Meeting: <%= meeting.title || 'Untitled' %></h2>
+        <% if (isHost) { %>
+          <button id="endMeetingBtn" class="btn btn-danger mb-2">End Meeting</button>
+        <% } %>
+
+        <div class="videos" id="group-video-container">
+          <!-- video elements injected here -->
+        </div>
+
+        <% if (isHost) { %>
+          <div id="waitingList" class="mt-3">
+            <h4>Waiting users</h4>
+            <ul id="waitingUsers"></ul>
+          </div>
+        <% } else { %>
+          <p id="waitingText" class="text-muted">Waiting for host approval…</p>
+        <% } %>
+      </section>
+
+    <% } else { %>
+      <!-- dashboard content -->
+
+      <!-- ================= Group Meetings ================= -->
+      <div class="dashboard-section" id="group-meetings">
+        <h2>
+          🔵 Live Group Meetings
+          <div class="buttons">
+            <a href="/live-meetings/create" class="btn btn-primary">Create Session</a>
+            <a href="/live-meetings/join" class="btn btn-success">Join Session</a>
+          </div>
+        </h2>
+
+        <div class="videos" id="group-video-container">
+          <!-- Live group meeting video streams inserted here via Socket.IO -->
+        </div>
+
+        <div class="documents">
+          <% if(groupDocuments && groupDocuments.length) { %>
+            <% groupDocuments.forEach(doc => { %>
+              <div class="document-card">
+                <strong><%= doc.name %></strong>
+                <div>
+                  <a href="<%= doc.url %>" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
+                  <% if(isAdmin) { %>
+                    <a href="/documents/<%= doc.id %>/edit" class="btn btn-sm btn-outline-warning">Edit</a>
+                    <a href="/documents/<%= doc.id %>/download" class="btn btn-sm btn-outline-success">Download</a>
+                  <% } %>
+                </div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <p>No documents yet.</p>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- ================= 1-to-1 Counseling ================= -->
+      <div class="dashboard-section" id="one-to-one-counseling">
+        <h2>
+          🟢 1-to-1 Counseling
+          <div class="buttons">
+            <a href="/create-counseling-session" class="btn btn-primary">Schedule Session</a>
+            <a href="/join-counseling-session" class="btn btn-success">Join Session</a>
+          </div>
+        </h2>
+
+        <div class="videos" id="counseling-video-container">
+          <!-- 1-to-1 video streams inserted here via Socket.IO -->
+        </div>
+
+        <div class="documents">
+          <% if(counselingDocuments && counselingDocuments.length) { %>
+            <% counselingDocuments.forEach(doc => { %>
+              <div class="document-card">
+                <strong><%= doc.name %></strong>
+                <div>
+                  <a href="<%= doc.url %>" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
+                  <% if(isAdmin) { %>
+                    <a href="/documents/<%= doc.id %>/edit" class="btn btn-sm btn-outline-warning">Edit</a>
+                    <a href="/documents/<%= doc.id %>/download" class="btn btn-sm btn-outline-success">Download</a>
+                  <% } %>
+                </div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <p>No documents yet.</p>
+          <% } %>
+        </div>
+      </div>
+
     <% } %>
-
-    <!-- ================= Group Meetings ================= -->
-    <div class="dashboard-section" id="group-meetings">
-      <h2>
-        🔵 Live Group Meetings
-        <div class="buttons">
-          <a href="/live-meetings/create" class="btn btn-primary">Create Session</a>
-          <a href="/live-meetings/join" class="btn btn-success">Join Session</a>
-        </div>
-      </h2>
-
-      <div class="videos" id="group-video-container">
-        <!-- Live group meeting video streams inserted here via Socket.IO -->
-      </div>
-
-      <div class="documents">
-        <% if(groupDocuments && groupDocuments.length) { %>
-          <% groupDocuments.forEach(doc => { %>
-            <div class="document-card">
-              <strong><%= doc.name %></strong>
-              <div>
-                <a href="<%= doc.url %>" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
-                <% if(isAdmin) { %>
-                  <a href="/documents/<%= doc.id %>/edit" class="btn btn-sm btn-outline-warning">Edit</a>
-                  <a href="/documents/<%= doc.id %>/download" class="btn btn-sm btn-outline-success">Download</a>
-                <% } %>
-              </div>
-            </div>
-          <% }) %>
-        <% } else { %>
-          <p>No documents yet.</p>
-        <% } %>
-      </div>
-    </div>
-
-    <!-- ================= 1-to-1 Counseling ================= -->
-    <div class="dashboard-section" id="one-to-one-counseling">
-      <h2>
-        🟢 1-to-1 Counseling
-        <div class="buttons">
-          <a href="/create-counseling-session" class="btn btn-primary">Schedule Session</a>
-          <a href="/join-counseling-session" class="btn btn-success">Join Session</a>
-        </div>
-      </h2>
-
-      <div class="videos" id="counseling-video-container">
-        <!-- 1-to-1 video streams inserted here via Socket.IO -->
-      </div>
-
-      <div class="documents">
-        <% if(counselingDocuments && counselingDocuments.length) { %>
-          <% counselingDocuments.forEach(doc => { %>
-            <div class="document-card">
-              <strong><%= doc.name %></strong>
-              <div>
-                <a href="<%= doc.url %>" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
-                <% if(isAdmin) { %>
-                  <a href="/documents/<%= doc.id %>/edit" class="btn btn-sm btn-outline-warning">Edit</a>
-                  <a href="/documents/<%= doc.id %>/download" class="btn btn-sm btn-outline-success">Download</a>
-                <% } %>
-              </div>
-            </div>
-          <% }) %>
-        <% } else { %>
-          <p>No documents yet.</p>
-        <% } %>
-      </div>
-    </div>
 
   </div>
 
@@ -172,11 +196,38 @@
     // waiting user notification (host sees new users)
     socket.on('waiting_user', data => {
       console.log('new user waiting', data);
+      <% if (isHost) { %>
+        const ul = document.getElementById('waitingUsers');
+        if (ul) {
+          const li = document.createElement('li');
+          li.textContent = `User ${data.userId}`;
+          const approve = document.createElement('button');
+          approve.textContent = '✅';
+          approve.className = 'btn btn-sm btn-success ml-1';
+          approve.onclick = () => {
+            socket.emit('approve_user', { meetingId: '<%= meeting.id %>', userId: data.userId });
+            li.remove();
+          };
+          const reject = document.createElement('button');
+          reject.textContent = '❌';
+          reject.className = 'btn btn-sm btn-danger ml-1';
+          reject.onclick = () => {
+            socket.emit('reject_user', { meetingId: '<%= meeting.id %>', userId: data.userId });
+            li.remove();
+          };
+          li.appendChild(approve);
+          li.appendChild(reject);
+          ul.appendChild(li);
+        }
+      <% } %>
     });
 
     // participant approved/joined
     socket.on('approved', () => {
       console.log('you have been approved to join the meeting');
+      // hide waiting message if present
+      const wt = document.getElementById('waitingText');
+      if (wt) wt.remove();
     });
     socket.on('participant_joined', data => {
       console.log('participant joined', data);
@@ -185,6 +236,21 @@
     // participant rejected
     socket.on('rejected', () => {
       alert('Your request to join was rejected by the host');
+      window.location.href = '/dashboard';
+    });
+
+    // host can end the meeting
+    const endBtn = document.getElementById('endMeetingBtn');
+    if (endBtn) {
+      endBtn.addEventListener('click', () => {
+        if (confirm('End this meeting for everyone?')) {
+          socket.emit('end_meeting', { meetingId: '<%= meeting ? meeting.id : '' %>' });
+        }
+      });
+    }
+
+    socket.on('meeting_ended', () => {
+      alert('Meeting has been ended by the host');
       window.location.href = '/dashboard';
     });
 

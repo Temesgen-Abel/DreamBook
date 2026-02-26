@@ -9,10 +9,11 @@
   /* =========================
      SOCKET NOTIFICATIONS
   ========================= */
-  const socket = io("http://localhost:5733");
-  socket.emit("join_room", "user_<%= user ? user.id : '' %>");
+  // use a separate variable so we can also create a meeting socket on the same page
+  const notifSocket = io();
+  notifSocket.emit("join_room", "user_<%= user ? user.id : '' %>");
 
-  socket.on("new_message", data => {
+  notifSocket.on("new_message", data => {
     const badge = document.getElementById("notif-count");
     if (badge) badge.textContent = Number(badge.textContent) + 1;
 
