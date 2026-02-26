@@ -1928,42 +1928,38 @@ io.on("connection", (socket) => {
           hostId,
           hostSocket: null,
           participants: {},
-          waiting: {}
+          waiting: {} // still kept for potential manual use
         };
       }
 
       const meeting = meetings[meetingId];
 
-      // =============================
       // HOST JOIN
-      // =============================
       if (userId === hostId) {
-
         meeting.hostSocket = socket.id;
         meeting.participants[userId] = socket.id;
-
         socket.join(`meeting_${meetingId}`);
-
         await pool.query(
           "UPDATE live_meetings SET status='live' WHERE id=$1",
           [meetingId]
         );
-
         socket.emit("host_ready");
-        return;
-      }
-
-      // =============================
-      // NORMAL USER → WAITING ROOM
-      // =============================
-      meeting.waiting[userId] = socket.id;
-
-      if (meeting.hostSocket) {
-        io.to(meeting.hostSocket).emit("waiting_user", {
+        // let everyone (existing participants) know the host is here
+        io.to(`meeting_${meetingId}`).emit("participant_joined", {
           userId,
           socketId: socket.id
         });
+        return;
       }
+
+      // NORMAL USER -> automatically join the meeting
+      meeting.participants[userId] = socket.id;
+      socket.join(`meeting_${meetingId}`);
+      // notify everyone that a participant joined (including the new user)
+      io.to(`meeting_${meetingId}`).emit("participant_joined", {
+        userId,
+        socketId: socket.id
+      });
 
     } catch (err) {
       console.error(err);

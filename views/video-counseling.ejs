@@ -81,23 +81,22 @@
         <h2>🟠 In Meeting: <%= meeting.title || 'Untitled' %></h2>
         <% if (isHost) { %>
           <button id="endMeetingBtn" class="btn btn-danger mb-2">End Meeting</button>
-          <p class="text-muted">Share the link above with participants and approve them when they arrive. You can also start your camera to preview yourself:</p>
-          <button id="startCamBtn" class="btn btn-secondary mb-2">Start Camera</button>
+          <p class="text-muted">Share the link above with participants.</p>
+        <% } else { %>
+          <p class="text-muted">You are in the meeting; others may join shortly.</p>
         <% } %>
+        <!-- camera control available to all attendees -->
+        <button id="startCamBtn" class="btn btn-secondary mb-2">Start Camera</button>
 
         <div class="videos" id="group-video-container">
           <!-- video elements injected here -->
         </div>
 
-        <% if (isHost) { %>
-          <div id="waitingList" class="mt-3">
-            <h4>Waiting users</h4>
-            <ul id="waitingUsers"></ul>
-            <p id="noWaiting" class="text-muted">No one has requested to join yet.</p>
-          </div>
-        <% } else { %>
-          <p id="waitingText" class="text-muted">Waiting for host approval…</p>
-        <% } %>
+        <div id="waitingList" class="mt-3">
+          <h4>Participants</h4>
+          <ul id="waitingUsers"></ul>
+          <p id="noWaiting" class="text-muted">No one else is here yet.</p>
+        </div>
       </section>
 
     <% } else { %>
@@ -187,24 +186,117 @@
       });
     <% } %>
 
-    // local preview functionality (host can start their camera)
-    const startCamBtn = document.getElementById('startCamBtn');
+    // handle local media and peer connections
+    let localStream = null;
+    const pcs = {}; // map socketId -> RTCPeerConnection
+
     async function startLocalStream() {
+      if (localStream) return localStream;
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         const vid = document.createElement('video');
         vid.autoplay = true;
-        vid.muted = true; // don't feedback
-        vid.srcObject = stream;
+        vid.muted = true; // prevent echo
+        vid.srcObject = localStream;
         document.getElementById('group-video-container').appendChild(vid);
+        // add tracks to existing peer connections and renegotiate
+        Object.entries(pcs).forEach(async ([remoteId, pc]) => {
+          localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+          try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket.emit('webrtc_offer', { to: remoteId, sdp: offer, from: socket.id });
+          } catch (e) {
+            console.error('renegotiation failed', e);
+          }
+        });
+        return localStream;
       } catch (err) {
         console.error('failed to get media', err);
         alert('Could not access camera/microphone');
       }
     }
+
+    const startCamBtn = document.getElementById('startCamBtn');
     if (startCamBtn) {
       startCamBtn.addEventListener('click', startLocalStream);
     }
+
+    // automatically start local stream when joining meeting
+    <% if (meeting && meeting.id) { %>
+      startLocalStream();
+    <% } %>
+
+    // utility to create new RTCPeerConnection for a socket
+    function createPeerConnection(remoteSocketId) {
+      const pc = new RTCPeerConnection();
+      pc.onicecandidate = e => {
+        if (e.candidate) {
+          socket.emit('webrtc_ice_candidate', {
+            to: remoteSocketId,
+            candidate: e.candidate,
+            from: socket.id
+          });
+        }
+      };
+      pc.ontrack = e => {
+        const vid = document.createElement('video');
+        vid.autoplay = true;
+        vid.playsInline = true;
+        vid.srcObject = e.streams[0];
+        document.getElementById('group-video-container').appendChild(vid);
+      };
+      // attach local tracks once available
+      if (localStream) {
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+      } else {
+        // if not ready yet, wait
+        startLocalStream().then(s => s.getTracks().forEach(track => pc.addTrack(track, s)));
+      }
+      pcs[remoteSocketId] = pc;
+      return pc;
+    }
+
+    socket.on('participant_joined', async data => {
+      console.log('participant joined', data);
+      // update visible participant list
+      const ul = document.getElementById('waitingUsers');
+      if (ul) {
+        const li = document.createElement('li');
+        li.textContent = data.userId;
+        ul.appendChild(li);
+        const noWaiting = document.getElementById('noWaiting');
+        if (noWaiting) noWaiting.style.display = 'none';
+      }
+
+      if (data.socketId === socket.id) return; // ignore self
+      const pc = createPeerConnection(data.socketId);
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('webrtc_offer', { to: data.socketId, sdp: offer, from: socket.id });
+    });
+
+    socket.on('webrtc_offer', async ({ from, sdp }) => {
+      const pc = createPeerConnection(from);
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('webrtc_answer', { to: from, sdp: answer, from: socket.id });
+    });
+
+    socket.on('webrtc_answer', async ({ from, sdp }) => {
+      const pc = pcs[from];
+      if (pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      }
+    });
+
+    socket.on('webrtc_ice_candidate', ({ from, candidate }) => {
+      const pc = pcs[from];
+      if (pc) {
+        pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
+      }
+    });
 
     // host_ready event means the server acknowledged the host join
     socket.on('host_ready', () => {
