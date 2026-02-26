@@ -33,6 +33,22 @@
       min-width: 80px;
     }
 
+    /* position controls over video container */
+    .video-controls {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.5);
+      padding: 5px 10px;
+      border-radius: 8px;
+      z-index: 10;
+    }
+
+    .videos {
+      position: relative; /* for overlay */
+    }
+
     .videos {
       display: flex;
       gap: 10px;
@@ -95,16 +111,16 @@
         <% } else { %>
           <p class="text-muted">You are in the meeting; others may join shortly.</p>
         <% } %>
-        <!-- meeting controls toolbar -->
-        <div id="meetingControls" class="mb-2">
-          <button id="toggleAudioBtn" class="btn btn-outline-primary">Mute</button>
-          <button id="toggleVideoBtn" class="btn btn-outline-primary">Stop Video</button>
-          <button id="leaveBtn" class="btn btn-outline-danger">Leave</button>
-        </div>
         <!-- camera control available to all attendees -->
         <button id="startCamBtn" class="btn btn-secondary mb-2">Start Camera</button>
 
         <div class="videos" id="group-video-container">
+          <!-- meeting controls overlay -->
+          <div id="meetingControls" class="video-controls">
+            <button id="toggleAudioBtn" class="btn btn-outline-primary">Mute</button>
+            <button id="toggleVideoBtn" class="btn btn-outline-primary">Stop Video</button>
+            <button id="leaveBtn" class="btn btn-outline-danger">Leave</button>
+          </div>
           <!-- video elements injected here -->
         </div>
 
