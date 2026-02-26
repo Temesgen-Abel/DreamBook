@@ -1076,6 +1076,7 @@ app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
         [req.query.newId]
       );
       if (mres.rowCount) newMeeting = mres.rows[0];
+      console.log("newMeeting lookup", newMeeting);
     }
 
     const meetingsResult = await pool.query(
@@ -1088,6 +1089,7 @@ app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
     // generate a pre-id for the form so the host can copy/share before submission
     const preId = crypto.randomUUID();
     const preLink = `${req.protocol}://${req.get("host")}/live-meetings/${preId}`;
+    console.log("preId generated", preId);
 
     res.render("live-meetings", {
       meetings: meetingsResult.rows,
@@ -1111,6 +1113,9 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
     // allow an ID pre-generated on the form (so host knows it before submit)
     const meetingId = preId || crypto.randomUUID();
     const meetingLink = `${req.protocol}://${req.get("host")}/live-meetings/${meetingId}`;
+
+    // log for debugging/ops so we can see what's generated
+    console.log("creating live meeting", { meetingId, meetingLink, title });
 
     await pool.query(
       `INSERT INTO live_meetings
@@ -1145,6 +1150,7 @@ app.get("/live-meetings/join", mustBeLoggedIn, async (req, res) => {
   const { meetingId } = req.query;
   if (meetingId) {
     const id = meetingId.split("/").pop();
+    console.log("redirecting join request for", meetingId, "->", id);
     return res.redirect(`/live-meetings/${id}`);
   }
 
@@ -1171,6 +1177,7 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
   try {
 
     const { meetingId } = req.params;
+    console.log("fetching meeting", meetingId);
 
     const result = await pool.query(
       "SELECT * FROM live_meetings WHERE id = $1",
