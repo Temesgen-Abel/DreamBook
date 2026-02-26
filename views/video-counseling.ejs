@@ -1,134 +1,164 @@
 <!DOCTYPE html>
-<html lang="<%= lang || 'en' %>">
+<html lang="<%= lang %>">
 <head>
-<meta charset="UTF-8">
+  <%- include('includes/head') %>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .dashboard-section {
+      margin-bottom: 30px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
 
-<title>
-<% if (meeting) { %>
-  <%= meeting.title %>
-<% } else if (roomId) { %>
-  Video Counseling Session
-<% } else { %>
-  Video Counseling Dashboard
-<% } %>
-</title>
+    .dashboard-section h2 {
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-<style>
-body{font-family:Arial;margin:20px;}
-.section{background:#f4f6f9;padding:20px;border-radius:10px;margin-bottom:25px;}
-.videos{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px;}
-video{width:280px;background:#000;border-radius:10px;}
-.btn{padding:8px 14px;margin:5px 5px 5px 0;border:none;border-radius:6px;cursor:pointer;background:#2d89ef;color:#fff;}
-.btn.danger{background:#d9534f;}
-.btn.secondary{background:#6c757d;}
-textarea{width:100%;height:180px;padding:10px;border-radius:8px;resize:none;}
-</style>
+    .buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .videos {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    video {
+      width: 300px;
+      background: #000;
+      border-radius: 10px;
+    }
+
+    .documents {
+      margin-top: 20px;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .document-card {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+  </style>
 </head>
-
 <body>
+  <%- include('includes/navbar') %>
 
-<!-- ================= DASHBOARD ================= -->
-<% if (!roomId && !meeting) { %>
+  <div class="container">
 
-<div class="section">
-  <h2>Start Video Session</h2>
+    <!-- ================= Group Meetings ================= -->
+    <div class="dashboard-section" id="group-meetings">
+      <h2>
+        🔵 Live Group Meetings
+        <div class="buttons">
+          <a href="/create-group-meeting" class="btn btn-primary">Create Session</a>
+          <a href="/join-group-meeting" class="btn btn-success">Join Session</a>
+        </div>
+      </h2>
 
-  <% if (users && users.length > 0) { %>
-    <% users.forEach(function(u){ %>
-      <form method="POST" action="/video-counseling">
-        <input type="hidden" name="counselorId" value="<%= u.id %>">
-        <button class="btn">Start Session with <%= u.username %></button>
-      </form>
-    <% }) %>
-  <% } else { %>
-    <p>No users available.</p>
-  <% } %>
-</div>
+      <div class="videos" id="group-video-container">
+        <!-- Live group meeting video streams inserted here via Socket.IO -->
+      </div>
 
-<% if (pendingRequests && pendingRequests.length > 0) { %>
-<div class="section">
-  <h3>Pending Requests</h3>
-  <% pendingRequests.forEach(function(p){ %>
-    <form method="POST" action="/video-counseling/accept/<%= p.id %>">
-      <button class="btn">Accept <%= p.username %></button>
-    </form>
-  <% }) %>
-</div>
-<% } %>
+      <div class="documents">
+        <% if(groupDocuments && groupDocuments.length) { %>
+          <% groupDocuments.forEach(doc => { %>
+            <div class="document-card">
+              <strong><%= doc.name %></strong>
+              <div>
+                <a href="<%= doc.url %>" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
+                <% if(isAdmin) { %>
+                  <a href="/documents/<%= doc.id %>/edit" class="btn btn-sm btn-outline-warning">Edit</a>
+                  <a href="/documents/<%= doc.id %>/download" class="btn btn-sm btn-outline-success">Download</a>
+                <% } %>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <p>No documents yet.</p>
+        <% } %>
+      </div>
+    </div>
 
-<% } %>
+    <!-- ================= 1-to-1 Counseling ================= -->
+    <div class="dashboard-section" id="one-to-one-counseling">
+      <h2>
+        🟢 1-to-1 Counseling
+        <div class="buttons">
+          <a href="/create-counseling-session" class="btn btn-primary">Schedule Session</a>
+          <a href="/join-counseling-session" class="btn btn-success">Join Session</a>
+        </div>
+      </h2>
 
-<!-- ================= VIDEO ROOM ================= -->
-<% if (roomId || meeting) { %>
+      <div class="videos" id="counseling-video-container">
+        <!-- 1-to-1 video streams inserted here via Socket.IO -->
+      </div>
 
-<div class="section">
-  <h2>
-  <% if (meeting) { %>
-    <%= meeting.title %>
-  <% } else { %>
-    Counseling Session
-  <% } %>
-  </h2>
+      <div class="documents">
+        <% if(counselingDocuments && counselingDocuments.length) { %>
+          <% counselingDocuments.forEach(doc => { %>
+            <div class="document-card">
+              <strong><%= doc.name %></strong>
+              <div>
+                <a href="<%= doc.url %>" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
+                <% if(isAdmin) { %>
+                  <a href="/documents/<%= doc.id %>/edit" class="btn btn-sm btn-outline-warning">Edit</a>
+                  <a href="/documents/<%= doc.id %>/download" class="btn btn-sm btn-outline-success">Download</a>
+                <% } %>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <p>No documents yet.</p>
+        <% } %>
+      </div>
+    </div>
 
-  <div class="videos" id="videoContainer">
-    <video id="localVideo" autoplay muted playsinline></video>
   </div>
 
-  <button class="btn" id="muteSelf">Mute / Unmute</button>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
 
-  <% if (typeof isHost !== 'undefined' && isHost) { %>
-    <button class="btn secondary" id="muteAll">Mute All</button>
-    <button class="btn danger" id="endMeeting">End Meeting</button>
-  <% } %>
-</div>
+    // ================= Group Meeting Videos =================
+    const groupContainer = document.getElementById('group-video-container');
+    socket.on('group-video-update', participants => {
+      groupContainer.innerHTML = '';
+      participants.forEach(p => {
+        const vid = document.createElement('video');
+        vid.srcObject = p.stream; // Assumes stream is sent via WebRTC
+        vid.autoplay = true;
+        vid.playsInline = true;
+        groupContainer.appendChild(vid);
+      });
+    });
 
-<% } %>
-
-<script src="/socket.io/socket.io.js"></script>
-<script>
-
-var socket = io();
-var userId = <%= userId || 0 %>;
-var roomId = "<%= roomId || '' %>";
-var meetingId = "<%= meeting ? meeting.id : '' %>";
-var isHost = <%= (typeof isHost !== 'undefined' && isHost) ? 'true' : 'false' %>;
-
-var localStream;
-var peers = {};
-var container = document.getElementById("videoContainer");
-
-async function initMedia(){
-  localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-  document.getElementById("localVideo").srcObject = localStream;
-}
-
-if(roomId){
-  socket.emit("join_room",{roomId:roomId,userId:userId});
-}
-
-if(meetingId){
-  socket.emit("join_meeting",{meetingId:meetingId,userId:userId});
-}
-
-document.getElementById("muteSelf") &&
-document.getElementById("muteSelf").addEventListener("click",function(){
-  if(!localStream) return;
-  localStream.getAudioTracks().forEach(function(t){
-    t.enabled = !t.enabled;
-  });
-});
-
-document.getElementById("endMeeting") &&
-document.getElementById("endMeeting").addEventListener("click",function(){
-  if(meetingId){
-    socket.emit("end_meeting",{meetingId:meetingId});
-  }else if(roomId){
-    fetch("/video-counseling/end/"+roomId,{method:"POST"});
-    window.location="/video-counseling";
-  }
-});
-
-</script>
-
+    // ================= 1-to-1 Counseling Videos =================
+    const counselingContainer = document.getElementById('counseling-video-container');
+    socket.on('counseling-video-update', participants => {
+      counselingContainer.innerHTML = '';
+      participants.forEach(p => {
+        const vid = document.createElement('video');
+        vid.srcObject = p.stream;
+        vid.autoplay = true;
+        vid.playsInline = true;
+        counselingContainer.appendChild(vid);
+      });
+    });
+  </script>
 </body>
 </html>
