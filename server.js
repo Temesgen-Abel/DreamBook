@@ -1122,13 +1122,28 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
 });
 
 // join form / redirect
-app.get("/live-meetings/join", mustBeLoggedIn, (req, res) => {
+app.get("/live-meetings/join", mustBeLoggedIn, async (req, res) => {
   const { meetingId } = req.query;
   if (meetingId) {
     const id = meetingId.split("/").pop();
     return res.redirect(`/live-meetings/${id}`);
   }
-  res.render("join-live-meeting", { lang: req.query.lang || "en" });
+
+  // also offer a list of upcoming meetings so users don't have to know an ID
+  try {
+    const meetingsResult = await pool.query(
+      `SELECT id, title, meeting_link, status, scheduled_at
+       FROM live_meetings
+       ORDER BY scheduled_at DESC`
+    );
+    res.render("join-live-meeting", {
+      lang: req.query.lang || "en",
+      meetings: meetingsResult.rows
+    });
+  } catch (err) {
+    console.error("Join page load error", err);
+    res.render("join-live-meeting", { lang: req.query.lang || "en", meetings: [] });
+  }
 });
 
 //live meeting get route
