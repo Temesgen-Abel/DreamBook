@@ -1068,7 +1068,7 @@ app.post("/create-group-meeting", mustBeLoggedIn, (req, res) => {
 //Get live meetings page
 app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   try {
-    // Optionally show newly created meeting details when redirected back
+    // Optionally show newly created meeting details when redirected back (if manually revisiting page)
     let newMeeting = null;
     if (req.query.newId) {
       const mres = await pool.query(
@@ -1136,8 +1136,8 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
       newMeeting: true
     });
 
-    // redirect back to the create page with the new info so the host can share it
-    res.redirect(`/live-meetings/create?newId=${meetingId}`);
+    // redirect host directly into the meeting so the session becomes live immediately
+    res.redirect(`/live-meetings/${meetingId}`);
 
   } catch (err) {
     console.error(err);

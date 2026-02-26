@@ -152,6 +152,42 @@
   <script>
     const socket = io();
 
+    // when we have meeting information, immediately join on connect
+    <% if (meeting && meeting.id) { %>
+      socket.emit('join_meeting', {
+        meetingId: '<%= meeting.id %>',
+        userId: '<%= userId %>'
+      });
+    <% } %>
+
+    // host_ready event means the server acknowledged the host join
+    socket.on('host_ready', () => {
+      console.log('host connected, meeting marked live');
+      const info = document.createElement('div');
+      info.className = 'alert alert-info';
+      info.textContent = 'You are hosting this meeting. Waiting for participants...';
+      document.querySelector('.container').prepend(info);
+    });
+
+    // waiting user notification (host sees new users)
+    socket.on('waiting_user', data => {
+      console.log('new user waiting', data);
+    });
+
+    // participant approved/joined
+    socket.on('approved', () => {
+      console.log('you have been approved to join the meeting');
+    });
+    socket.on('participant_joined', data => {
+      console.log('participant joined', data);
+    });
+
+    // participant rejected
+    socket.on('rejected', () => {
+      alert('Your request to join was rejected by the host');
+      window.location.href = '/dashboard';
+    });
+
     // ================= Group Meeting Videos =================
     const groupContainer = document.getElementById('group-video-container');
     socket.on('group-video-update', participants => {
