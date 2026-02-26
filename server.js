@@ -949,6 +949,8 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
     const currentUser = req.user;
+    const groupDocuments = [];
+    const counselingDocuments = [];
 
     let users = [];
     let pendingRequests = [];
@@ -982,6 +984,8 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
     }
 
     res.render("video-counseling", {
+      groupDocuments,
+      counselingDocuments,
       users,
       pendingRequests,
       roomId: null,
