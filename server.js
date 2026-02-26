@@ -1003,18 +1003,13 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
 
 app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   const client = await pool.connect();
-
   try {
     await client.query("BEGIN");
-
     const { counselorId } = req.body;
-
     const roomResult = await client.query(
       `INSERT INTO rooms DEFAULT VALUES RETURNING id`
     );
-
     const roomId = roomResult.rows[0].id;
-
     const sessionResult = await client.query(
       `INSERT INTO video_sessions 
        (user_id, counselor_id, room_id, status)
@@ -1022,33 +1017,26 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
        RETURNING id`,
       [req.user.id, counselorId, roomId]
     );
-
     await client.query(
       `INSERT INTO room_participants (room_id, user_id)
        VALUES ($1, $2), ($1, $3)`,
       [roomId, req.user.id, counselorId]
     );
-
     await client.query("COMMIT");
-
     // ✅ Real-time notification
     io.to(`user_${counselorId}`).emit("new_notification", {
       title: "New Counseling Request",
       message: "A user requested a video session.",
       type: "video_request"
     });
-
     // ✅ Dashboard live update
     const pendingCount = await pool.query(
       `SELECT COUNT(*) FROM video_sessions WHERE status = 'pending'`
     );
-
     io.emit("dashboard_update", {
       pendingSessions: pendingCount.rows[0].count
     });
-
     res.redirect("/video-counseling?requested=1");
-
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
