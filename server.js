@@ -1216,6 +1216,26 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
     res.status(500).send("Server error");
   }
 });
+//delete meeting request lists
+app.post("/live-meetings/:id/delete", mustBeLoggedIn, async (req, res) => {
+  const meetingId = req.params.id;
+
+  try {
+    await pool.query(
+      `DELETE FROM live_meetings WHERE id = $1 AND created_by = $2`,
+      [meetingId, req.user.id]
+    );
+
+    io.emit("dashboard_update", {
+      deletedMeeting: true
+    });
+
+    res.redirect("/live-meetings");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error deleting meeting");
+  }
+});
 
 // Upload document
 app.post("/live-meetings/:id/upload-doc", mustBeLoggedIn, upload.single("document"), async (req,res)=>{
