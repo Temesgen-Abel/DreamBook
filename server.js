@@ -1257,7 +1257,7 @@ app.post("/live-meetings/delete", mustBeLoggedIn, async (req, res) => {
   try {
     await pool.query(
       `DELETE FROM live_meetings
-       WHERE id = ANY($1::text[])
+       WHERE id = ANY($1::uuid[])
          AND created_by = $2
          AND scheduled_at < NOW()`,
       [meetingIds, req.user.id]
