@@ -1221,7 +1221,7 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
     res.status(500).send("Server error");
   }
 });
-//delete meeting request lists
+//delete meeting request lists (single)
 app.post("/live-meetings/:id/delete", mustBeLoggedIn, async (req, res) => {
   const meetingId = req.params.id;
 
@@ -1239,6 +1239,38 @@ app.post("/live-meetings/:id/delete", mustBeLoggedIn, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send("Error deleting meeting");
+  }
+});
+
+// delete multiple meetings at once (bulk delete)
+app.post("/live-meetings/delete", mustBeLoggedIn, async (req, res) => {
+  const meetingIds = Array.isArray(req.body.meetingIds)
+    ? req.body.meetingIds
+    : req.body.meetingIds
+    ? [req.body.meetingIds]
+    : [];
+
+  if (!meetingIds.length) {
+    return res.redirect("/live-meetings");
+  }
+
+  try {
+    await pool.query(
+      `DELETE FROM live_meetings
+       WHERE id = ANY($1::text[])
+         AND created_by = $2
+         AND scheduled_at < NOW()`,
+      [meetingIds, req.user.id]
+    );
+
+    io.emit("dashboard_update", {
+      deletedMeeting: true
+    });
+
+    res.redirect("/live-meetings");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error deleting meetings");
   }
 });
 
