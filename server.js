@@ -1066,6 +1066,11 @@ app.post("/create-group-meeting", mustBeLoggedIn, (req, res) => {
   return res.redirect(307, "/live-meetings/create");
 });
 
+// Main live meetings page - redirect to join
+app.get("/live-meetings", mustBeLoggedIn, (req, res) => {
+  res.redirect("/live-meetings/join");
+});
+
 //Get live meetings page
 app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   try {
