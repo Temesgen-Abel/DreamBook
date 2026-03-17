@@ -1236,7 +1236,7 @@ app.post("/live-meetings/:id/delete", mustBeLoggedIn, async (req, res) => {
       deletedMeeting: true
     });
 
-    res.redirect("/live-meetings");
+    res.redirect("/live-meetings/join");
   } catch (err) {
     console.error(err);
     res.status(500).send("Error deleting meeting");
@@ -1263,8 +1263,7 @@ app.post("/live-meetings/delete", mustBeLoggedIn, async (req, res) => {
     await pool.query(
       `DELETE FROM live_meetings
        WHERE id = ANY($1::uuid[])
-         AND created_by = $2::int
-         AND scheduled_at < NOW()`,
+         AND created_by = $2::int`,
       [meetingIds, req.user.id]
     );
 
@@ -1272,7 +1271,7 @@ app.post("/live-meetings/delete", mustBeLoggedIn, async (req, res) => {
       deletedMeeting: true
     });
 
-    res.redirect("/live-meetings");
+    res.redirect("/live-meetings/join");
   } catch (err) {
     console.error("Bulk delete error", { meetingIds, userId: req.user.id, err });
     res.status(500).send("Error deleting meetings");
