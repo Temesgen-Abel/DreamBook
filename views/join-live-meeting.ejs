@@ -30,9 +30,10 @@
         <ul class="list-group">
           <% meetings.forEach(m => { %>
             <% const isPast = m.scheduled_at && new Date(m.scheduled_at) < new Date(); %>
+            <% const canDelete = isPast && m.created_by === userId; %>
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <div>
-                <% if (isPast) { %>
+                <% if (canDelete) { %>
                   <input type="checkbox" name="meetingIds" value="<%= m.id %>" class="delete-checkbox mr-2" />
                 <% } else { %>
                   <span class="mr-3" style="width: 18px; display:inline-block;"></span>
@@ -45,7 +46,7 @@
                 <span class="small text-muted">ID: <%= m.id %></span>
                 <% if (m.meeting_link) { %>
                   <a href="<%= m.meeting_link %>" class="btn btn-sm btn-success ml-2" target="_blank">Join</a>
-                  <% if (isPast) { %>
+                  <% if (canDelete) { %>
                     <button class="btn btn-sm btn-danger ml-2" type="button" onclick="confirmSingleDelete('<%= m.id %>')">Delete</button>
                   <% } %>
                 <% } else { %>

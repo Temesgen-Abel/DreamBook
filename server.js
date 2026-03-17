@@ -1163,17 +1163,18 @@ app.get("/live-meetings/join", mustBeLoggedIn, async (req, res) => {
   // also offer a list of upcoming meetings so users don't have to know an ID
   try {
     const meetingsResult = await pool.query(
-      `SELECT id, title, meeting_link, status, scheduled_at
+      `SELECT id, title, meeting_link, status, scheduled_at, created_by
        FROM live_meetings
        ORDER BY scheduled_at DESC`
     );
     res.render("join-live-meeting", {
       lang: req.query.lang || "en",
-      meetings: meetingsResult.rows
+      meetings: meetingsResult.rows,
+      userId: req.user.id
     });
   } catch (err) {
     console.error("Join page load error", err);
-    res.render("join-live-meeting", { lang: req.query.lang || "en", meetings: [] });
+    res.render("join-live-meeting", { lang: req.query.lang || "en", meetings: [], userId: req.user.id });
   }
 });
 
@@ -1244,11 +1245,15 @@ app.post("/live-meetings/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 // delete multiple meetings at once (bulk delete)
 app.post("/live-meetings/delete", mustBeLoggedIn, async (req, res) => {
-  const meetingIds = Array.isArray(req.body.meetingIds)
+  const rawIds = Array.isArray(req.body.meetingIds)
     ? req.body.meetingIds
     : req.body.meetingIds
     ? [req.body.meetingIds]
     : [];
+
+  // Only keep well-formed UUIDs to avoid SQL errors and avoid accidentally deleting unrelated rows.
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const meetingIds = rawIds.filter(id => typeof id === "string" && uuidRegex.test(id));
 
   if (!meetingIds.length) {
     return res.redirect("/live-meetings");
@@ -1258,7 +1263,7 @@ app.post("/live-meetings/delete", mustBeLoggedIn, async (req, res) => {
     await pool.query(
       `DELETE FROM live_meetings
        WHERE id = ANY($1::uuid[])
-         AND created_by = $2
+         AND created_by = $2::int
          AND scheduled_at < NOW()`,
       [meetingIds, req.user.id]
     );
@@ -1269,7 +1274,7 @@ app.post("/live-meetings/delete", mustBeLoggedIn, async (req, res) => {
 
     res.redirect("/live-meetings");
   } catch (err) {
-    console.error(err);
+    console.error("Bulk delete error", { meetingIds, userId: req.user.id, err });
     res.status(500).send("Error deleting meetings");
   }
 });
