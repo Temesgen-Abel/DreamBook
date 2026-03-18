@@ -9,17 +9,7 @@
 
 <div class="container mt-4">
   <h1>Join a Live Meeting</h1>
-  <p>Enter Meeting ID or paste full link:</p>
-
-  <form id="joinForm" action="/live-meetings/join" method="get" class="mt-3">
-    <input type="text" class="form-control" id="meetingId" name="meetingId" placeholder="Meeting ID or URL" required>
-    <button type="submit" class="btn btn-primary mt-2">Join</button>
-    <button type="button" class="btn btn-secondary mt-2 ml-2" onclick="meetingId.value=''">Clear</button>
-  </form>
-
   <% if(meetings && meetings.length){ %>
-    <hr>
-    <h2>Available Meetings</h2>
     <ul class="list-group">
       <% meetings.forEach(m => { %>
         <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -28,30 +18,13 @@
             <% if(m.scheduled_at){ %> – <%= new Date(m.scheduled_at).toLocaleString() %> <% } %>
             <% if(m.status){ %> [<%= m.status %>] <% } %>
           </div>
-          <div>
-            <a href="/live-meetings/join?meetingId=<%= m.id %>" class="btn btn-success btn-sm ml-2">Join</a>
-          </div>
+          <a href="/live-meetings/<%= m.id %>" class="btn btn-success btn-sm">Join via Link</a>
         </li>
       <% }) %>
     </ul>
+  <% } else { %>
+    <p>No active meetings. You can create one <a href="/live-meetings/create">here</a>.</p>
   <% } %>
 </div>
-
-<script>
-const joinForm=document.getElementById("joinForm");
-const meetingInput=document.getElementById("meetingId");
-
-joinForm.addEventListener("submit",function(e){
-  let value=meetingInput.value.trim();
-  if(value.includes("meetingId=")){
-    try{
-      const url=new URL(value);
-      const extracted=url.searchParams.get("meetingId");
-      if(extracted) meetingInput.value=extracted;
-    } catch(err){ console.warn("Invalid URL, using raw input."); }
-  }
-});
-</script>
-
 </body>
 </html>
