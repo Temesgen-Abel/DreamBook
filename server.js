@@ -952,7 +952,14 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
   res.redirect(`/post/${comment.postid}`);
 });
 
-//vedeo counceling routes 
+// ======================================================
+// VIDEO COUNSELING + LIVE MEETINGS FULL CORRECTED ROUTES
+// ======================================================
+
+
+// ================= VIDEO COUNSELING =================
+
+// Main counseling page
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
     const currentUser = req.user;
@@ -973,10 +980,11 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
       users = result.rows;
 
       const pending = await pool.query(
-        `SELECT vs.id,u.username
+        `SELECT vs.id, u.username
          FROM video_sessions vs
-         JOIN users u ON vs.user_id=u.id
-         WHERE vs.counselor_id=$1 AND vs.status='pending'`,
+         JOIN users u ON vs.user_id = u.id
+         WHERE vs.counselor_id = $1
+         AND vs.status='pending'`,
         [currentUser.id]
       );
 
@@ -1002,42 +1010,49 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   }
 });
 
+
+// Request counseling
 app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   const client = await pool.connect();
+
   try {
     await client.query("BEGIN");
+
     const { counselorId } = req.body;
+
     const roomResult = await client.query(
       `INSERT INTO rooms DEFAULT VALUES RETURNING id`
     );
+
     const roomId = roomResult.rows[0].id;
-    const sessionResult = await client.query(
-      `INSERT INTO video_sessions 
+
+    await client.query(
+      `INSERT INTO video_sessions
        (user_id, counselor_id, room_id, status)
-       VALUES ($1, $2, $3, 'pending')
-       RETURNING id`,
+       VALUES ($1, $2, $3, 'pending')`,
       [req.user.id, counselorId, roomId]
     );
+
     await client.query(
       `INSERT INTO room_participants (room_id, user_id)
        VALUES ($1, $2), ($1, $3)`,
       [roomId, req.user.id, counselorId]
     );
+
     await client.query("COMMIT");
-    // ✅ Real-time notification
+
     io.to(`user_${counselorId}`).emit("new_notification", {
       title: "New Counseling Request",
       message: "A user requested a video session.",
       type: "video_request"
     });
-    // ✅ Dashboard live update
-    const pendingCount = await pool.query(
-      `SELECT COUNT(*) FROM video_sessions WHERE status = 'pending'`
-    );
+
     io.emit("dashboard_update", {
-      pendingSessions: pendingCount.rows[0].count
+      pendingSessions: true
     });
+
     res.redirect("/video-counseling?requested=1");
+
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
@@ -1047,296 +1062,8 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   }
 });
 
-// 6.13 Group live meetings routes
 
-// legacy alias used by some links / bookmarks
-app.get("/create-group-meeting", mustBeLoggedIn, (req, res) => {
-  // simply forward the user to the new path
-  return res.redirect("/live-meetings/create");
-});
-app.post("/create-group-meeting", mustBeLoggedIn, (req, res) => {
-  // preserve verb for forms if any are still pointing here
-  return res.redirect(307, "/live-meetings/create");
-});
-
-
-// Main live meetings page - redirect to join
-app.get("/live-meetings", mustBeLoggedIn, (req, res) => {
-  res.redirect("/live-meetings/join");
-});
-
-//Get live meetings page
-app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
-  try {
-    // Optionally show newly created meeting details when redirected back (if manually revisiting page)
-    let newMeeting = null;
-    if (req.query.newId) {
-      const mres = await pool.query(
-        `SELECT id, meeting_link FROM live_meetings WHERE id = $1`,
-        [req.query.newId]
-      );
-      if (mres.rowCount) newMeeting = mres.rows[0];
-      console.log("newMeeting lookup", newMeeting);
-    }
-
-    const meetingsResult = await pool.query(
-      `SELECT lm.*, u.username AS creator_username
-       FROM live_meetings lm
-       JOIN users u ON lm.created_by = u.id
-       ORDER BY lm.created_at DESC`
-    );
-
-    // generate a pre-id for the form so the host can copy/share before submission
-    const preId = crypto.randomUUID();
-    const preLink = `${req.protocol}://${req.get("host")}/live-meetings/${preId}`;
-    console.log("preId generated", preId);
-
-    res.render("live-meetings", {
-      meetings: meetingsResult.rows,
-      userId: req.user.id,
-      lang: "en",
-      newMeeting,
-      preId,
-      preLink
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
-});
-
-
-// Live meetings routes
-app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
-  try {
-    const { title, description, scheduled_at, duration, preId } = req.body;
-    // allow an ID pre-generated on the form (so host knows it before submit)
-    const meetingId = preId || crypto.randomUUID();
-    const meetingLink = `${req.protocol}://${req.get("host")}/live-meetings/${meetingId}`;
-
-    // log for debugging/ops so we can see what's generated
-    console.log("creating live meeting", { meetingId, meetingLink, title });
-
-    await pool.query(
-      `INSERT INTO live_meetings
-       (id, title, description, created_by, scheduled_at, duration_minutes, meeting_link, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'scheduled')`,
-      [
-        meetingId,
-        title,
-        description || null,
-        req.user.id,
-        scheduled_at ? new Date(scheduled_at) : new Date(),
-        duration || 60,
-        meetingLink
-      ]
-    );
-
-    io.emit("dashboard_update", {
-      newMeeting: true
-    });
-
-    // redirect host directly into the meeting so the session becomes live immediately
-    res.redirect(`/live-meetings/${meetingId}`);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error creating meeting");
-  }
-});
-
-// join form / redirect
-app.get("/live-meetings/join", mustBeLoggedIn, async (req, res) => {
-  const { meetingId } = req.query;
-  if (meetingId) {
-    const id = meetingId.split("/").pop();
-    console.log("redirecting join request for", meetingId, "->", id);
-    return res.redirect(`/live-meetings/${id}`);
-  }
-
-  // also offer a list of upcoming meetings so users don't have to know an ID
-  try {
-    const meetingsResult = await pool.query(
-      `SELECT id, title, meeting_link, status, scheduled_at, created_by
-       FROM live_meetings
-       ORDER BY scheduled_at DESC`
-    );
-    res.render("join-live-meeting", {
-      lang: req.query.lang || "en",
-      meetings: meetingsResult.rows,
-      userId: req.user.id
-    });
-  } catch (err) {
-    console.error("Join page load error", err);
-    res.render("join-live-meeting", { lang: req.query.lang || "en", meetings: [], userId: req.user.id });
-  }
-});
-
-//live meeting get route
-app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
-  try {
-    const { meetingId } = req.params;
-
-    const result = await pool.query(
-      "SELECT * FROM live_meetings WHERE id=$1",
-      [meetingId]
-    );
-
-    if (!result.rowCount) {
-      return res.status(404).send("Meeting not found");
-    }
-
-    const meeting = result.rows[0];
-    const isHost = meeting.created_by === req.user.id;
-
-    await pool.query(
-      `INSERT INTO meeting_participants (meeting_id,user_id)
-       VALUES ($1,$2)
-       ON CONFLICT DO NOTHING`,
-      [meetingId, req.user.id]
-    );
-
-    res.render("video-counseling", {
-      users: [],
-      pendingRequests: [],
-      groupDocuments: [],
-      counselingDocuments: [],
-      roomId: null,
-      meeting,
-      isHost,
-      userId: req.user.id,
-      meetingMode: true,
-      lang: "en"
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
-});
-//delete meeting request lists (single)
-app.post("/live-meetings/:id/delete", mustBeLoggedIn, async (req, res) => {
-  const meetingId = req.params.id;
-
-  try {
-    await pool.query(
-      `DELETE FROM live_meetings WHERE id = $1 AND created_by = $2`,
-      [meetingId, req.user.id]
-    );
-
-    io.emit("dashboard_update", {
-      deletedMeeting: true
-    });
-
-    res.redirect("/live-meetings/join");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error deleting meeting");
-  }
-});
-
-// delete all meetings created by the current user (clear request history)
-app.post("/live-meetings/clear-history", mustBeLoggedIn, async (req, res) => {
-  try {
-    await pool.query(
-      `DELETE FROM live_meetings WHERE created_by = $1`,
-      [req.user.id]
-    );
-
-    io.emit("dashboard_update", {
-      deletedMeeting: true
-    });
-
-    res.redirect("/live-meetings/join");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error clearing meeting history");
-  }
-});
-
-// delete multiple meetings at once (bulk delete)
-app.post("/live-meetings/delete", mustBeLoggedIn, async (req, res) => {
-  const rawIds = Array.isArray(req.body.meetingIds)
-    ? req.body.meetingIds
-    : req.body.meetingIds
-    ? [req.body.meetingIds]
-    : [];
-
-  // Only keep well-formed UUIDs to avoid SQL errors and avoid accidentally deleting unrelated rows.
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const meetingIds = rawIds.filter(id => typeof id === "string" && uuidRegex.test(id));
-
-  if (!meetingIds.length) {
-    return res.redirect("/live-meetings");
-  }
-
-  try {
-    await pool.query(
-      `DELETE FROM live_meetings
-       WHERE id = ANY($1::uuid[])
-         AND created_by = $2::int`,
-      [meetingIds, req.user.id]
-    );
-
-    io.emit("dashboard_update", {
-      deletedMeeting: true
-    });
-
-    res.redirect("/live-meetings/join");
-  } catch (err) {
-    console.error("Bulk delete error", { meetingIds, userId: req.user.id, err });
-    res.status(500).send("Error deleting meetings");
-  }
-});
-
-// Upload document
-app.post("/live-meetings/:id/upload-doc", mustBeLoggedIn, upload.single("document"), async (req,res)=>{
-  await pool.query(
-    `INSERT INTO meeting_documents (meeting_id, file_path) VALUES ($1,$2)`,
-    [req.params.id, req.file.filename]
-  );
-  io.to(`meeting_${req.params.id}`).emit("refresh_docs");
-  res.sendStatus(200);
-});
-
-
-// Edit document
-app.post("/live-meetings/:id/edit-doc", mustBeLoggedIn, async (req,res)=>{
-  const { documentId, content } = req.body;
-  await pool.query(
-    `UPDATE meeting_documents SET content = $1 WHERE id=$2 AND meeting_id=$3`,
-    [content, documentId, req.params.id]
-  );
-  io.to(`meeting_${req.params.id}`).emit("doc_update", { content, documentId });
-  res.sendStatus(200);
-});
-
-//grant edit permission to specific user
-app.post("/live-meetings/:id/grant-edit", mustBeLoggedIn, async (req,res)=>{
-  const { documentId, userId } = req.body;
-  await pool.query(
-    `UPDATE meeting_documents
-     SET can_edit_user_id = $1
-     WHERE id = $2 AND meeting_id = $3`,
-    [userId, documentId, req.params.id]
-  );
-  io.to(`meeting_${req.params.id}`).emit("refresh_docs");
-  res.sendStatus(200);
-});
-
-
-// Get documents
-app.get("/live-meetings/:id/documents", mustBeLoggedIn, async (req,res)=>{
-  const docs = await pool.query(
-    `SELECT id, file_path, content, can_edit_user_id FROM meeting_documents WHERE meeting_id=$1`,
-    [req.params.id]
-  );
-  res.json(docs.rows);
-});
-
-
-//accept session (counselor side)
-
+// Accept counseling request
 app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
   try {
     const sessionId = req.params.id;
@@ -1344,7 +1071,8 @@ app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
     const session = await pool.query(
       `SELECT room_id, user_id
        FROM video_sessions
-       WHERE id = $1 AND counselor_id = $2`,
+       WHERE id = $1
+       AND counselor_id = $2`,
       [sessionId, req.user.id]
     );
 
@@ -1361,15 +1089,15 @@ app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
       [sessionId]
     );
 
-    // Notify user call is ready
     io.to(`user_${user_id}`).emit("new_notification", {
       title: "Session Accepted",
       message: "Your counseling session is now active.",
-      type: "session_accepted",
       roomId: room_id
     });
 
-    io.emit("dashboard_update", { activeSession: true });
+    io.emit("dashboard_update", {
+      activeSession: true
+    });
 
     res.redirect(`/video-counseling/${room_id}`);
 
@@ -1379,15 +1107,16 @@ app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
   }
 });
 
-// Video counseling room
 
+// Counseling room
 app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
   try {
     const { roomId } = req.params;
 
     const participant = await pool.query(
       `SELECT * FROM room_participants
-       WHERE room_id=$1 AND user_id=$2`,
+       WHERE room_id = $1
+       AND user_id = $2`,
       [roomId, req.user.id]
     );
 
@@ -1414,23 +1143,187 @@ app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
   }
 });
 
-// End session route
+
+// End counseling session
 app.post("/video-counseling/end/:roomId", mustBeLoggedIn, async (req, res) => {
+  try {
+    await pool.query(
+      `UPDATE video_sessions
+       SET status = 'ended'
+       WHERE room_id = $1`,
+      [req.params.roomId]
+    );
 
-  await pool.query(
-    `UPDATE video_sessions
-     SET status = 'ended'
-     WHERE room_id = $1`,
-    [req.params.roomId]
-  );
+    io.emit("dashboard_update", {
+      sessionEnded: true
+    });
 
-  io.emit("dashboard_update", {
-    sessionEnded: true
-  });
+    res.sendStatus(200);
 
-  res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    res.sendStatus(500);
+  }
 });
 
+
+// ================= LIVE MEETINGS =================
+
+
+// Legacy alias
+app.get("/create-group-meeting", mustBeLoggedIn, (req, res) => {
+  return res.redirect("/live-meetings/create");
+});
+
+app.post("/create-group-meeting", mustBeLoggedIn, (req, res) => {
+  return res.redirect(307, "/live-meetings/create");
+});
+
+
+// Main meetings page
+app.get("/live-meetings", mustBeLoggedIn, async (req, res) => {
+  try {
+    const meetingsResult = await pool.query(
+      `SELECT lm.*, u.username AS creator_username
+       FROM live_meetings lm
+       JOIN users u ON lm.created_by = u.id
+       ORDER BY lm.created_at DESC`
+    );
+
+    res.render("live-meetings", {
+      meetings: meetingsResult.rows,
+      userId: req.user.id,
+      lang: "en"
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+
+// Create meeting page
+app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
+  try {
+    const preId = crypto.randomUUID();
+    const preLink = `${req.protocol}://${req.get("host")}/live-meetings/${preId}`;
+
+    const meetingsResult = await pool.query(
+      `SELECT * FROM live_meetings ORDER BY created_at DESC`
+    );
+
+    res.render("live-meetings", {
+      meetings: meetingsResult.rows,
+      userId: req.user.id,
+      preId,
+      preLink,
+      lang: "en"
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+
+// Create meeting
+app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
+  try {
+    const { title, description, scheduled_at, duration, preId } = req.body;
+
+    const meetingId = preId || crypto.randomUUID();
+    const meetingLink = `${req.protocol}://${req.get("host")}/live-meetings/${meetingId}`;
+
+    await pool.query(
+      `INSERT INTO live_meetings
+       (id, title, description, created_by, scheduled_at, duration_minutes, meeting_link, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'scheduled')`,
+      [
+        meetingId,
+        title,
+        description || null,
+        req.user.id,
+        scheduled_at ? new Date(scheduled_at) : new Date(),
+        duration || 60,
+        meetingLink
+      ]
+    );
+
+    io.emit("dashboard_update", {
+      newMeeting: true
+    });
+
+    res.redirect(`/live-meetings/${meetingId}`);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error creating meeting");
+  }
+});
+
+
+// Join meeting from form
+app.get("/live-meetings/join", mustBeLoggedIn, async (req, res) => {
+  try {
+    const meetingId = req.query.meetingId;
+
+    if (!meetingId) {
+      return res.redirect("/live-meetings");
+    }
+
+    return res.redirect(`/live-meetings/${meetingId}`);
+
+  } catch (err) {
+    console.error(err);
+    res.redirect("/live-meetings");
+  }
+});
+
+
+// Open meeting room
+app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
+  try {
+    const { meetingId } = req.params;
+
+    const result = await pool.query(
+      `SELECT * FROM live_meetings WHERE id = $1`,
+      [meetingId]
+    );
+
+    if (!result.rowCount) {
+      return res.redirect("/live-meetings");
+    }
+
+    const meeting = result.rows[0];
+    const isHost = meeting.created_by === req.user.id;
+
+    await pool.query(
+      `INSERT INTO meeting_participants (meeting_id, user_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [meetingId, req.user.id]
+    );
+
+    res.render("video-counseling", {
+      users: [],
+      pendingRequests: [],
+      groupDocuments: [],
+      counselingDocuments: [],
+      roomId: null,
+      meeting,
+      isHost,
+      userId: req.user.id,
+      meetingMode: true,
+      lang: "en"
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
 
 // ===================================================================
 // 6.13. REACTIONS
