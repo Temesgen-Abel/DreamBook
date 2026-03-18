@@ -1,75 +1,74 @@
 <!DOCTYPE html>
 <html lang="<%= lang %>">
 <head>
-  <%- include("includes/head") %>
+  <%- include('includes/head') %>
   <link rel="stylesheet" href="/style.css">
+
   <style>
-    .dashboard-section { margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; }
-    .videos { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 20px; }
-    video { width: 300px; border-radius: 10px; background: black; }
-    .video-controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 15px; }
-    .participant-list { margin-top: 20px; }
+    .dashboard-section { margin-bottom:30px; padding:20px; background:#f8f9fa; border-radius:10px; }
+    .videos { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:20px; }
+    video { width:300px; border-radius:10px; background:black; }
+    .video-controls { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:15px; }
+    .participant-list { margin-top:20px; }
+    .document-section { margin-top:25px; padding:15px; border:1px solid #ddd; border-radius:8px; background:#fff; }
   </style>
 </head>
 <body>
-
-<%- include("includes/header") %>
+<%- include('includes/header') %>
 
 <div class="container">
 
   <% if (meetingMode && meeting) { %>
     <div class="alert alert-info mt-3">
-      <strong>Meeting ID:</strong> <code><%= meeting.id %></code><br>
+      <strong>Meeting:</strong> <%= meeting.title || 'Untitled' %><br>
+      <strong>ID:</strong> <code><%= meeting.id %></code><br>
       <strong>Link:</strong> <a href="<%= meeting.meeting_link %>" target="_blank"><%= meeting.meeting_link %></a>
       <button class="btn btn-sm btn-outline-secondary ml-2" onclick="copyLink()">Copy</button>
     </div>
   <% } %>
 
   <section class="dashboard-section">
-    <h2>
-      🎥
-      <% if (meetingMode && meeting) { %>
-        <%= meeting.title || "Meeting" %>
-      <% } else { %>
-        Counseling Session
-      <% } %>
+    <h2>🎥
+      <% if (meetingMode && meeting) { %> <%= meeting.title || "Meeting" %> <% } else { %> Counseling Session <% } %>
     </h2>
 
-    <% if (!meetingMode && users.length && <%= currentUser?.role %> === 'user') { %>
-      <form action="/video-counseling" method="POST">
+    <% if (!meetingMode && users.length && !roomId) { %>
+      <form method="POST" action="/video-counseling">
         <div class="form-group">
-          <label for="counselorId">Request Session with Counselor</label>
-          <select name="counselorId" id="counselorId" class="form-control">
+          <label>Select Counselor:</label>
+          <select name="counselorId" class="form-control" required>
             <% users.forEach(u => { %>
               <option value="<%= u.id %>"><%= u.username %></option>
             <% }) %>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary mt-2">Request Session</button>
+        <button class="btn btn-primary mt-2">Request Session</button>
       </form>
     <% } %>
 
-    <% if (!meetingMode && pendingRequests.length && <%= currentUser?.role %> === 'counselor') { %>
+    <% if (pendingRequests.length) { %>
       <h4 class="mt-3">Pending Requests</h4>
-      <ul class="list-group">
-        <% pendingRequests.forEach(req => { %>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <%= req.username %>
-            <form action="/video-counseling/accept/<%= req.id %>" method="POST">
-              <button type="submit" class="btn btn-success btn-sm">Accept</button>
+      <ul>
+        <% pendingRequests.forEach(r => { %>
+          <li>
+            <%= r.username %>
+            <form style="display:inline;" method="POST" action="/video-counseling/accept/<%= r.id %>">
+              <button class="btn btn-success btn-sm">Accept</button>
             </form>
           </li>
         <% }) %>
       </ul>
     <% } %>
 
+    <!-- Video Section -->
     <div class="videos" id="group-video-container"></div>
 
-    <div class="video-controls mt-3">
+    <div class="video-controls">
       <button id="startCamBtn" class="btn btn-secondary">Start Camera</button>
       <button id="toggleAudioBtn" class="btn btn-primary">Mute</button>
       <button id="toggleVideoBtn" class="btn btn-primary">Stop Video</button>
       <button id="shareScreenBtn" class="btn btn-info">Share Screen</button>
+      <button id="recordBtn" class="btn btn-warning">Start Recording</button>
       <button id="leaveBtn" class="btn btn-danger">Leave</button>
       <% if (meetingMode && isHost) { %>
         <button id="endMeetingBtn" class="btn btn-danger">End Meeting</button>
@@ -77,18 +76,38 @@
     </div>
 
     <% if (meetingMode) { %>
-      <div class="participant-list mt-3">
+      <!-- Participants -->
+      <div class="participant-list">
         <h4>Waiting Participants</h4>
         <ul id="waitingUsers"></ul>
         <p id="noWaiting">No waiting participants.</p>
       </div>
-
-      <div class="participant-list mt-3">
+      <div class="participant-list">
         <h4>Active Participants</h4>
         <ul id="activeUsers"></ul>
         <p id="noActive">No active participants.</p>
       </div>
     <% } %>
+
+    <!-- Document Sharing Section -->
+    <div class="document-section">
+      <h4>Shared Documents</h4>
+      <form id="docUploadForm" enctype="multipart/form-data">
+        <input type="file" name="document" id="documentInput" required>
+        <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+      </form>
+      <ul id="sharedDocs">
+        <% (counselingDocuments.concat(groupDocuments)).forEach(doc => { %>
+          <li>
+            <a href="/documents/<%= doc.id %>" target="_blank"><%= doc.name %></a>
+            <% if(doc.editable) { %>
+              <button class="btn btn-sm btn-secondary" onclick="editDocument('<%= doc.id %>')">Edit</button>
+            <% } %>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+
   </section>
 </div>
 
@@ -97,117 +116,88 @@
 const socket = io();
 const pcs = {};
 const pendingCandidates = {};
-
 const meetingId = "<%= meeting ? meeting.id : '' %>";
 const roomId = "<%= roomId || '' %>";
 const userId = "<%= userId %>";
-
 let localStream = null;
 let audioEnabled = true;
 let videoEnabled = true;
 
 function copyLink() {
-  const link = "<%= meeting && meeting.meeting_link ? meeting.meeting_link : '' %>";
+  const link = "<%= meeting ? meeting.meeting_link : '' %>";
   if (!link) return;
   navigator.clipboard.writeText(link);
   alert("Link copied");
 }
 
+// Start camera
 async function startLocalStream() {
   if (localStream) return localStream;
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
     let localVideo = document.getElementById("local-video");
-    if (!localVideo) {
+    if(!localVideo){
       localVideo = document.createElement("video");
-      localVideo.id = "local-video";
-      localVideo.autoplay = true;
-      localVideo.muted = true;
-      localVideo.playsInline = true;
+      localVideo.id="local-video"; localVideo.autoplay=true; localVideo.muted=true; localVideo.playsInline=true;
       document.getElementById("group-video-container").appendChild(localVideo);
     }
     localVideo.srcObject = localStream;
-    document.getElementById("startCamBtn").style.display = "none";
+    document.getElementById("startCamBtn").style.display="none";
     return localStream;
-  } catch (err) {
-    console.error(err);
-    alert("Camera/Microphone access denied");
-  }
+  } catch(err){ console.error(err); alert("Camera/Microphone denied"); }
 }
 
-function createPeerConnection(remoteSocketId) {
-  const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
-  pc.onicecandidate = e => { if(e.candidate) socket.emit("webrtc_ice_candidate", { to: remoteSocketId, candidate: e.candidate, from: socket.id }); };
-  pc.ontrack = e => {
-    let remoteVideo = document.getElementById(`remote-${remoteSocketId}`);
-    if (!remoteVideo) {
-      remoteVideo = document.createElement("video");
-      remoteVideo.id = `remote-${remoteSocketId}`;
-      remoteVideo.autoplay = true;
-      remoteVideo.playsInline = true;
-      document.getElementById("group-video-container").appendChild(remoteVideo);
-    }
-    remoteVideo.srcObject = e.streams[0];
+// Peer connection for video
+function createPeerConnection(remoteSocketId){
+  const pc = new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});
+  pc.onicecandidate=e=>{ if(e.candidate) socket.emit("webrtc_ice_candidate",{to:remoteSocketId,candidate:e.candidate,from:socket.id}); };
+  pc.ontrack=e=>{
+    let remoteVideo=document.getElementById(`remote-${remoteSocketId}`);
+    if(!remoteVideo){ remoteVideo=document.createElement("video"); remoteVideo.id=`remote-${remoteSocketId}`; remoteVideo.autoplay=true; remoteVideo.playsInline=true; document.getElementById("group-video-container").appendChild(remoteVideo);}
+    remoteVideo.srcObject=e.streams[0];
   };
-  if (localStream) localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-  pcs[remoteSocketId] = pc;
-  if (pendingCandidates[remoteSocketId]) {
-    pendingCandidates[remoteSocketId].forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)));
-    delete pendingCandidates[remoteSocketId];
-  }
+  if(localStream) localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+  pcs[remoteSocketId]=pc;
+  if(pendingCandidates[remoteSocketId]){ pendingCandidates[remoteSocketId].forEach(c=>pc.addIceCandidate(new RTCIceCandidate(c))); delete pendingCandidates[remoteSocketId]; }
   return pc;
 }
 
-// ===== Event Listeners =====
-document.getElementById("startCamBtn")?.addEventListener("click", startLocalStream);
-document.getElementById("toggleAudioBtn")?.addEventListener("click", () => { audioEnabled = !audioEnabled; localStream?.getAudioTracks().forEach(t => t.enabled = audioEnabled); });
-document.getElementById("toggleVideoBtn")?.addEventListener("click", () => { videoEnabled = !videoEnabled; localStream?.getVideoTracks().forEach(t => t.enabled = videoEnabled); });
-document.getElementById("leaveBtn")?.addEventListener("click", () => { socket.disconnect(); window.location.href = "/dashboard"; });
-document.getElementById("endMeetingBtn")?.addEventListener("click", () => { socket.emit("end_meeting", { meetingId }); });
+// Event listeners
+document.getElementById("startCamBtn")?.addEventListener("click",startLocalStream);
+document.getElementById("toggleAudioBtn")?.addEventListener("click",()=>{if(!localStream) return; audioEnabled=!audioEnabled; localStream.getAudioTracks().forEach(t=>t.enabled=audioEnabled);});
+document.getElementById("toggleVideoBtn")?.addEventListener("click",()=>{if(!localStream) return; videoEnabled=!videoEnabled; localStream.getVideoTracks().forEach(t=>t.enabled=videoEnabled);});
+document.getElementById("leaveBtn")?.addEventListener("click",()=>{socket.disconnect(); window.location.href="/dashboard";});
+document.getElementById("endMeetingBtn")?.addEventListener("click",()=>{socket.emit("end_meeting",{meetingId});});
 
-// ===== Join room / meeting =====
-if (meetingId) {
-  startLocalStream().then(() => { socket.emit("join_meeting", { meetingId, userId, isHost: <%= isHost %> }); });
-} else if (roomId) {
-  startLocalStream().then(() => { socket.emit("join_room", { roomId, userId }); });
-}
+// Join session / meeting
+if(meetingId){
+  <% if(isHost){ %> startLocalStream().then(()=>{ socket.emit("join_meeting",{meetingId,userId}); }); <% } else { %>
+  socket.emit("request_join_meeting",{meetingId,userId}); <% } %>
+} else if(roomId){ startLocalStream().then(()=>{ socket.emit("join_room",{roomId,userId}); }); }
 
-// ===== Socket events =====
-socket.on("approved", async () => { await startLocalStream(); });
-socket.on("waiting_user", data => {
-  const waitingUsers = document.getElementById("waitingUsers");
-  const noWaiting = document.getElementById("noWaiting");
-  if (!waitingUsers) return;
-  noWaiting.style.display = "none";
-  const li = document.createElement("li");
-  li.id = `waiting-${data.socketId}`;
-  li.innerHTML = `User ${data.userId} <button onclick="approveUser('${data.socketId}')">Approve</button> <button onclick="rejectUser('${data.socketId}')">Reject</button>`;
-  waitingUsers.appendChild(li);
+// Socket handlers
+socket.on("approved",async()=>{await startLocalStream();});
+socket.on("waiting_user",data=>{ const waitingUsers=document.getElementById("waitingUsers"); const noWaiting=document.getElementById("noWaiting"); if(!waitingUsers)return; noWaiting.style.display="none"; const li=document.createElement("li"); li.innerHTML=`User ${data.userId} <button onclick="approveUser('${data.socketId}')">Approve</button> <button onclick="rejectUser('${data.socketId}')">Reject</button>`; li.id=`waiting-${data.socketId}`; waitingUsers.appendChild(li); });
+function approveUser(socketId){ socket.emit("approve_user",{socketId,meetingId}); document.getElementById(`waiting-${socketId}`)?.remove(); }
+function rejectUser(socketId){ socket.emit("reject_user",{socketId}); document.getElementById(`waiting-${socketId}`)?.remove(); }
+socket.on("participant_joined",async data=>{ if(data.socketId===socket.id) return; const activeUsers=document.getElementById("activeUsers"); const noActive=document.getElementById("noActive"); if(activeUsers){ noActive.style.display="none"; const li=document.createElement("li"); li.id=`active-${data.socketId}`; li.textContent=`User ${data.userId}`; activeUsers.appendChild(li);} const pc=createPeerConnection(data.socketId); const offer=await pc.createOffer(); await pc.setLocalDescription(offer); socket.emit("webrtc_offer",{to:data.socketId,sdp:offer,from:socket.id}); });
+socket.on("webrtc_offer",async({from,sdp})=>{const pc=createPeerConnection(from); await pc.setRemoteDescription(new RTCSessionDescription(sdp)); const answer=await pc.createAnswer(); await pc.setLocalDescription(answer); socket.emit("webrtc_answer",{to:from,sdp:answer,from:socket.id});});
+socket.on("webrtc_answer",async({from,sdp})=>{ if(pcs[from]) await pcs[from].setRemoteDescription(new RTCSessionDescription(sdp)); });
+socket.on("webrtc_ice_candidate",({from,candidate})=>{ if(pcs[from]) pcs[from].addIceCandidate(new RTCIceCandidate(candidate)); else { if(!pendingCandidates[from]) pendingCandidates[from]=[]; pendingCandidates[from].push(candidate); }});
+socket.on("participant_left",({socketId})=>{ pcs[socketId]?.close(); delete pcs[socketId]; document.getElementById(`remote-${socketId}`)?.remove(); document.getElementById(`active-${socketId}`)?.remove(); });
+socket.on("meeting_ended",()=>{ alert("Meeting ended"); window.location.href="/dashboard"; });
+
+// Document upload (example)
+document.getElementById("docUploadForm")?.addEventListener("submit",async e=>{
+  e.preventDefault();
+  const file=document.getElementById("documentInput").files[0];
+  if(!file) return alert("Select file");
+  const formData=new FormData(); formData.append("document",file); formData.append("roomId",roomId); formData.append("meetingId",meetingId);
+  await fetch("/upload-document",{method:"POST",body:formData});
+  alert("Document uploaded"); location.reload();
 });
-function approveUser(socketId) { socket.emit("approve_user", { socketId, meetingId }); document.getElementById(`waiting-${socketId}`)?.remove(); }
-function rejectUser(socketId) { socket.emit("reject_user", { socketId }); document.getElementById(`waiting-${socketId}`)?.remove(); }
-socket.on("participant_joined", async data => {
-  if (data.socketId === socket.id) return;
-  const activeUsers = document.getElementById("activeUsers");
-  const noActive = document.getElementById("noActive");
-  if (activeUsers) { noActive.style.display = "none"; const li = document.createElement("li"); li.id = `active-${data.socketId}`; li.textContent = `User ${data.userId}`; activeUsers.appendChild(li); }
-  const pc = createPeerConnection(data.socketId);
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  socket.emit("webrtc_offer", { to: data.socketId, sdp: offer, from: socket.id });
-});
-socket.on("webrtc_offer", async ({ from, sdp }) => {
-  const pc = createPeerConnection(from);
-  await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
-  socket.emit("webrtc_answer", { to: from, sdp: answer, from: socket.id });
-});
-socket.on("webrtc_answer", async ({ from, sdp }) => { pcs[from] && pcs[from].setRemoteDescription(new RTCSessionDescription(sdp)); });
-socket.on("webrtc_ice_candidate", ({ from, candidate }) => { pcs[from] ? pcs[from].addIceCandidate(new RTCIceCandidate(candidate)) : (pendingCandidates[from] = pendingCandidates[from] || []).push(candidate); });
-socket.on("participant_left", ({ socketId }) => { pcs[socketId]?.close(); delete pcs[socketId]; document.getElementById(`remote-${socketId}`)?.remove(); document.getElementById(`active-${socketId}`)?.remove(); });
-socket.on("meeting_ended", () => { alert("Meeting ended"); window.location.href = "/dashboard"; });
+
+function editDocument(docId){ alert("Document editor not implemented yet: "+docId); }
 </script>
-
 </body>
 </html>
