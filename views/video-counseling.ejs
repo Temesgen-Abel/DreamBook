@@ -119,7 +119,7 @@
           <div id="meetingControls" class="video-controls">
             <button id="toggleAudioBtn" class="btn btn-outline-primary">Mute</button>
             <button id="toggleVideoBtn" class="btn btn-outline-primary">Stop Video</button>          <label for="volumeSlider" class="sr-only">Volume</label>
-          <input id="volumeSlider" type="range" min="0" max="1" step="0.05" value="1" title="Speaker volume" style="width: 120px;">            <button id="leaveBtn" class="btn btn-outline-danger">Leave</button>
+          <input id="volumeSlider" type="range" min="0" max="1" step="0.05" value="1" title="Speaker volume" style="width: 120px;">            <button id="unmuteAudioBtn" class="btn btn-outline-warning">Unmute Audio</button>            <button id="leaveBtn" class="btn btn-outline-danger">Leave</button>
           </div>
           <!-- video elements injected here -->
         </div>
@@ -239,6 +239,7 @@
       if (localStream) return localStream;
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        console.log('Local stream tracks:', localStream.getTracks().map(t => t.kind));
         const vid = document.createElement('video');
         vid.autoplay = true;
         vid.muted = true; // prevent echo
@@ -249,6 +250,7 @@
         // add tracks to existing peer connections and renegotiate
         Object.entries(pcs).forEach(async ([remoteId, pc]) => {
           localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+          console.log('Renegotiating, added tracks to PC for', remoteId, localStream.getTracks().map(t => t.kind));
           try {
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
@@ -302,6 +304,18 @@
         setOutputVolume(Number(evt.target.value));
       });
     }
+
+    const unmuteAudioBtn = document.getElementById('unmuteAudioBtn');
+    if (unmuteAudioBtn) {
+      unmuteAudioBtn.addEventListener('click', () => {
+        document.querySelectorAll('#group-video-container video:not([data-local])').forEach(v => {
+          v.muted = false;
+          v.play().catch(console.error);
+        });
+        unmuteAudioBtn.style.display = 'none';
+      });
+    }
+
     if (leaveBtn) {
       leaveBtn.addEventListener('click', () => {
         socket.disconnect();
@@ -338,6 +352,7 @@
         }
       };
       pc.ontrack = e => {
+        console.log('Remote stream tracks:', e.streams[0].getTracks().map(t => t.kind));
         const vid = document.createElement('video');
         vid.autoplay = true;
         vid.playsInline = true;
@@ -352,6 +367,7 @@
       // attach local tracks once available
       if (localStream) {
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+        console.log('Added local tracks to PC for', remoteSocketId, localStream.getTracks().map(t => t.kind));
       } else {
         // if not ready yet, wait
         startLocalStream().then(s => s.getTracks().forEach(track => pc.addTrack(track, s)));
