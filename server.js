@@ -231,6 +231,7 @@ CREATE TABLE IF NOT EXISTS meeting_participants (
       `);
 
     // Ensure we can upsert participants by meeting+user
+    // If duplicates exist, remove them before adding the unique constraint.
     await dbRun(`
       DO $$
       BEGIN
@@ -239,6 +240,13 @@ CREATE TABLE IF NOT EXISTS meeting_participants (
           FROM pg_constraint
           WHERE conname = 'meeting_participants_unique' AND conrelid = 'meeting_participants'::regclass
         ) THEN
+          -- remove any duplicates (keep the earliest inserted row)
+          DELETE FROM meeting_participants a
+          USING meeting_participants b
+          WHERE a.id > b.id
+            AND a.meeting_id = b.meeting_id
+            AND a.user_id = b.user_id;
+
           ALTER TABLE meeting_participants
             ADD CONSTRAINT meeting_participants_unique UNIQUE (meeting_id, user_id);
         END IF;
