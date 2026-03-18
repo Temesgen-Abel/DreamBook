@@ -1021,6 +1021,7 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
       meeting: null,
       isHost: false,
       isApproved: true,
+      requestStatus: null,
       userId: currentUser.id,
       meetingMode: false,
       lang: "en"
@@ -1137,6 +1138,7 @@ app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
       meeting: null,
       isHost: false,
       isApproved: true,
+      requestStatus: null,
       userId: req.user.id,
       meetingMode: false,
       lang: "en"
