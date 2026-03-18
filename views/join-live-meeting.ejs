@@ -9,208 +9,52 @@
 <%- include('includes/header') %>
 
 <div class="container" style="margin-top:40px;">
+  <h1>Create Live Meeting</h1>
 
-  <h1>Join a Live Meeting</h1>
+  <% if (preLink) { %>
+    <div class="alert alert-info">
+      <strong>Pre-generated Meeting Link:</strong>
+      <a href="<%= preLink %>" target="_blank"><%= preLink %></a>
+      <button class="btn btn-sm btn-outline-secondary ml-2" onclick="copyLink()">Copy</button>
+    </div>
+  <% } %>
 
-  <!-- ========================= -->
-  <!-- JOIN FORM -->
-  <!-- ========================= -->
-
-  <form id="joinForm" action="/live-meetings/join" method="get" class="mt-3">
+  <form action="/live-meetings/create" method="POST" class="mt-3">
+    <input type="hidden" name="preId" value="<%= preId %>">
 
     <div class="form-group">
-      <label for="meetingId">Meeting ID or Link</label>
-      <input
-        type="text"
-        class="form-control"
-        id="meetingId"
-        name="meetingId"
-        required
-        placeholder="Enter meeting ID or full URL"
-      >
+      <label for="title">Meeting Title</label>
+      <input type="text" class="form-control" id="title" name="title" required placeholder="Enter meeting title">
     </div>
 
-    <button type="submit" class="btn btn-primary mt-2">Join</button>
+    <div class="form-group mt-2">
+      <label for="description">Description</label>
+      <textarea class="form-control" id="description" name="description" rows="3" placeholder="Optional meeting description"></textarea>
+    </div>
 
-    <button
-      type="button"
-      class="btn btn-secondary mt-2 ml-2"
-      onclick="document.getElementById('meetingId').value=''"
-    >
-      Clear
-    </button>
+    <div class="form-group mt-2">
+      <label for="scheduled_at">Scheduled Date & Time</label>
+      <input type="datetime-local" class="form-control" id="scheduled_at" name="scheduled_at">
+      <small class="form-text text-muted">Leave empty for immediate meeting.</small>
+    </div>
 
+    <div class="form-group mt-2">
+      <label for="duration">Duration (minutes)</label>
+      <input type="number" class="form-control" id="duration" name="duration" min="10" max="480" value="60">
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Create Meeting</button>
   </form>
-
-  <p class="mt-2 text-muted">
-    Paste full meeting link or meeting ID.
-  </p>
-
-  <!-- ========================= -->
-  <!-- AVAILABLE MEETINGS -->
-  <!-- ========================= -->
-
-  <% if (typeof meetings !== 'undefined' && meetings.length) { %>
-
-    <hr>
-
-    <h2>Available Meetings</h2>
-
-    <form id="bulkDeleteForm" action="/live-meetings/delete" method="post">
-
-      <div class="mb-2">
-        <button id="bulkDeleteButton" class="btn btn-danger btn-sm" type="submit" disabled>
-          Delete Selected
-        </button>
-        <span class="small text-muted ml-2">
-          Deletes only meetings you created.
-        </span>
-      </div>
-
-      <ul class="list-group">
-
-        <% meetings.forEach(m => { %>
-
-          <% const canDelete = m.created_by == userId; %>
-
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-
-            <div>
-
-              <% if (canDelete) { %>
-                <input
-                  type="checkbox"
-                  name="meetingIds"
-                  value="<%= m.id %>"
-                  class="delete-checkbox mr-2"
-                />
-              <% } else { %>
-                <span class="mr-3" style="width:18px; display:inline-block;"></span>
-              <% } %>
-
-              <strong><%= m.title || 'Untitled' %></strong>
-
-              <% if (m.scheduled_at) { %>
-                – <%= new Date(m.scheduled_at).toLocaleString() %>
-              <% } %>
-
-              <% if (m.status) { %>
-                [<%= m.status %>]
-              <% } %>
-
-            </div>
-
-            <div>
-
-              <span class="small text-muted">ID: <%= m.id %></span>
-
-              <!-- HOST -->
-              <% if (m.created_by == userId) { %>
-
-                <a
-                  href="/live-meetings/host/<%= m.id %>"
-                  class="btn btn-sm btn-warning ml-2"
-                >
-                  Enter as Host
-                </a>
-
-              <% } else { %>
-
-                <a
-                  href="/live-meetings/join?meetingId=<%= m.id %>"
-                  class="btn btn-sm btn-success ml-2"
-                >
-                  Join
-                </a>
-
-              <% } %>
-
-              <!-- DELETE -->
-              <% if (canDelete) { %>
-
-                <button
-                  class="btn btn-sm btn-danger ml-2"
-                  type="button"
-                  onclick="confirmSingleDelete('<%= m.id %>')"
-                >
-                  Delete
-                </button>
-
-              <% } %>
-
-            </div>
-
-          </li>
-
-        <% }); %>
-
-      </ul>
-
-    </form>
-
-  <% } %>
 
 </div>
 
-<!-- ========================= -->
-<!-- JAVASCRIPT -->
-<!-- ========================= -->
-
 <script>
-
-const joinForm = document.getElementById("joinForm");
-const meetingInput = document.getElementById("meetingId");
-
-joinForm.addEventListener("submit", function(e) {
-
-  let value = meetingInput.value.trim();
-
-  if (value.includes("meetingId=")) {
-    const url = new URL(value);
-    const extracted = url.searchParams.get("meetingId");
-    if (extracted) {
-      meetingInput.value = extracted;
-    }
-  }
-
-});
-
-const bulkDeleteButton = document.getElementById("bulkDeleteButton");
-const checkboxes = Array.from(document.querySelectorAll(".delete-checkbox"));
-
-function updateBulkDeleteState() {
-  bulkDeleteButton.disabled = !checkboxes.some(c => c.checked);
+function copyLink() {
+  const link = "<%= preLink %>";
+  if (!link) return;
+  navigator.clipboard.writeText(link);
+  alert("Meeting link copied to clipboard!");
 }
-
-checkboxes.forEach(cb => {
-  cb.addEventListener("change", updateBulkDeleteState);
-});
-
-document.getElementById("bulkDeleteForm")?.addEventListener("submit", function(e) {
-  if (!checkboxes.some(c => c.checked)) {
-    e.preventDefault();
-    alert("Select at least one meeting.");
-  }
-});
-
-function confirmSingleDelete(meetingId) {
-
-  if (!confirm("Delete this meeting?")) return;
-
-  const form = document.createElement("form");
-  form.method = "post";
-  form.action = "/live-meetings/delete";
-
-  const input = document.createElement("input");
-  input.type = "hidden";
-  input.name = "meetingIds";
-  input.value = meetingId;
-
-  form.appendChild(input);
-  document.body.appendChild(form);
-  form.submit();
-}
-
 </script>
 
 </body>
