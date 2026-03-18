@@ -5,84 +5,213 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <%- include('includes/header') %>
-  <div class="container" style="margin-top:40px;">
-    <h1>Join a Live Meeting</h1>
-    <form action="/live-meetings/join" method="get" class="mt-3">
-      <div class="form-group">
-        <label for="meetingId">Meeting ID or Link</label>
-        <input type="text" class="form-control" id="meetingId" name="meetingId" required placeholder="Enter meeting ID or URL">
+
+<%- include('includes/header') %>
+
+<div class="container" style="margin-top:40px;">
+
+  <h1>Join a Live Meeting</h1>
+
+  <!-- ========================= -->
+  <!-- JOIN FORM -->
+  <!-- ========================= -->
+
+  <form id="joinForm" action="/live-meetings/join" method="get" class="mt-3">
+
+    <div class="form-group">
+      <label for="meetingId">Meeting ID or Link</label>
+      <input
+        type="text"
+        class="form-control"
+        id="meetingId"
+        name="meetingId"
+        required
+        placeholder="Enter meeting ID or full URL"
+      >
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-2">Join</button>
+
+    <button
+      type="button"
+      class="btn btn-secondary mt-2 ml-2"
+      onclick="document.getElementById('meetingId').value=''"
+    >
+      Clear
+    </button>
+
+  </form>
+
+  <p class="mt-2 text-muted">
+    Paste full meeting link or meeting ID.
+  </p>
+
+  <!-- ========================= -->
+  <!-- AVAILABLE MEETINGS -->
+  <!-- ========================= -->
+
+  <% if (typeof meetings !== 'undefined' && meetings.length) { %>
+
+    <hr>
+
+    <h2>Available Meetings</h2>
+
+    <form id="bulkDeleteForm" action="/live-meetings/delete" method="post">
+
+      <div class="mb-2">
+        <button id="bulkDeleteButton" class="btn btn-danger btn-sm" type="submit" disabled>
+          Delete Selected
+        </button>
+        <span class="small text-muted ml-2">
+          Deletes only meetings you created.
+        </span>
       </div>
-      <button type="submit" class="btn btn-primary mt-2">Join</button>
-      <button type="button" class="btn btn-secondary mt-2 ml-2" onclick="document.getElementById('meetingId').value=''">Clear</button>
+
+      <ul class="list-group">
+
+        <% meetings.forEach(m => { %>
+
+          <% const canDelete = m.created_by == userId; %>
+
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+
+            <div>
+
+              <% if (canDelete) { %>
+                <input
+                  type="checkbox"
+                  name="meetingIds"
+                  value="<%= m.id %>"
+                  class="delete-checkbox mr-2"
+                />
+              <% } else { %>
+                <span class="mr-3" style="width:18px; display:inline-block;"></span>
+              <% } %>
+
+              <strong><%= m.title || 'Untitled' %></strong>
+
+              <% if (m.scheduled_at) { %>
+                – <%= new Date(m.scheduled_at).toLocaleString() %>
+              <% } %>
+
+              <% if (m.status) { %>
+                [<%= m.status %>]
+              <% } %>
+
+            </div>
+
+            <div>
+
+              <span class="small text-muted">ID: <%= m.id %></span>
+
+              <!-- HOST -->
+              <% if (m.created_by == userId) { %>
+
+                <a
+                  href="/live-meetings/host/<%= m.id %>"
+                  class="btn btn-sm btn-warning ml-2"
+                >
+                  Enter as Host
+                </a>
+
+              <% } else { %>
+
+                <a
+                  href="/live-meetings/join?meetingId=<%= m.id %>"
+                  class="btn btn-sm btn-success ml-2"
+                >
+                  Join
+                </a>
+
+              <% } %>
+
+              <!-- DELETE -->
+              <% if (canDelete) { %>
+
+                <button
+                  class="btn btn-sm btn-danger ml-2"
+                  type="button"
+                  onclick="confirmSingleDelete('<%= m.id %>')"
+                >
+                  Delete
+                </button>
+
+              <% } %>
+
+            </div>
+
+          </li>
+
+        <% }); %>
+
+      </ul>
+
     </form>
-    <p class="mt-2 text-muted">Don't know the ID? Below is a list of available sessions with their IDs/links:</p>
-    <p class="mt-3 text-muted">If you have a full link, just paste it above. We'll extract the ID automatically.</p>
 
-    <% if (typeof meetings !== 'undefined' && meetings.length) { %>
-      <hr>
-      <h2>Available meetings</h2>
-      <form id="bulkDeleteForm" action="/live-meetings/delete" method="post">
-        <div class="mb-2">
-          <button id="bulkDeleteButton" class="btn btn-danger btn-sm" type="submit" disabled>Delete selected</button>
-          <span class="small text-muted ml-2">Deletes meetings you created (for your own account).</span>
-        </div>
-        <ul class="list-group">
-          <% meetings.forEach(m => { %>
-            <% const canDelete = m.created_by == userId; %>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <% if (canDelete) { %>
-                  <input type="checkbox" name="meetingIds" value="<%= m.id %>" class="delete-checkbox mr-2" />
-                <% } else { %>
-                  <span class="mr-3" style="width: 18px; display:inline-block;"></span>
-                <% } %>
-                <strong><%= m.title || 'Untitled' %></strong>
-                <% if (m.scheduled_at) { %> – <%= new Date(m.scheduled_at).toLocaleString() %><% } %>
-                <% if (m.status) { %> [<%= m.status %>]<% } %>
-              </div>
-              <div>
-                <span class="small text-muted">ID: <%= m.id %></span>
-                <% if (m.meeting_link) { %>
-                  <a href="<%= m.meeting_link %>" class="btn btn-sm btn-success ml-2" target="_blank">Join</a>
-                  <% if (canDelete) { %>
-                    <button class="btn btn-sm btn-danger ml-2" type="button" onclick="confirmSingleDelete('<%= m.id %>')">Delete</button>
-                  <% } %>
-                <% } else { %>
-                  <span class="small text-muted ml-2">No link available</span>
-                <% } %>
-              </div>
-            </li>
-          <% }); %>
-        </ul>
-      </form>
+  <% } %>
 
-      <script>
-        const bulkDeleteButton = document.getElementById('bulkDeleteButton');
-        const checkboxes = Array.from(document.querySelectorAll('.delete-checkbox'));
+</div>
 
-        const updateBulkDeleteState = () => {
-          bulkDeleteButton.disabled = !checkboxes.some(c => c.checked);
-        };
+<!-- ========================= -->
+<!-- JAVASCRIPT -->
+<!-- ========================= -->
 
-        checkboxes.forEach(cb => cb.addEventListener('change', updateBulkDeleteState));
+<script>
 
-        function confirmSingleDelete(meetingId) {
-          if (!confirm('Are you sure you want to delete this meeting?')) return;
-          const form = document.createElement('form');
-          form.method = 'post';
-          form.action = '/live-meetings/delete';
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = 'meetingIds';
-          input.value = meetingId;
-          form.appendChild(input);
-          document.body.appendChild(form);
-          form.submit();
-        }
-      </script>
-    <% } %>
+const joinForm = document.getElementById("joinForm");
+const meetingInput = document.getElementById("meetingId");
 
-  </div>
+joinForm.addEventListener("submit", function(e) {
+
+  let value = meetingInput.value.trim();
+
+  if (value.includes("meetingId=")) {
+    const url = new URL(value);
+    const extracted = url.searchParams.get("meetingId");
+    if (extracted) {
+      meetingInput.value = extracted;
+    }
+  }
+
+});
+
+const bulkDeleteButton = document.getElementById("bulkDeleteButton");
+const checkboxes = Array.from(document.querySelectorAll(".delete-checkbox"));
+
+function updateBulkDeleteState() {
+  bulkDeleteButton.disabled = !checkboxes.some(c => c.checked);
+}
+
+checkboxes.forEach(cb => {
+  cb.addEventListener("change", updateBulkDeleteState);
+});
+
+document.getElementById("bulkDeleteForm")?.addEventListener("submit", function(e) {
+  if (!checkboxes.some(c => c.checked)) {
+    e.preventDefault();
+    alert("Select at least one meeting.");
+  }
+});
+
+function confirmSingleDelete(meetingId) {
+
+  if (!confirm("Delete this meeting?")) return;
+
+  const form = document.createElement("form");
+  form.method = "post";
+  form.action = "/live-meetings/delete";
+
+  const input = document.createElement("input");
+  input.type = "hidden";
+  input.name = "meetingIds";
+  input.value = meetingId;
+
+  form.appendChild(input);
+  document.body.appendChild(form);
+  form.submit();
+}
+
+</script>
+
 </body>
 </html>

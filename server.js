@@ -13,7 +13,7 @@ const http = require("http");
 const fs = require("fs");
 const { SitemapStream, streamToPromise } = require("sitemap");
 const { Readable } = require("stream");
-const multer = require("multer");
+const multer = require("multer")
 // Setup storage folder and filename
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -956,49 +956,43 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
     const currentUser = req.user;
-    const groupDocuments = [];
-    const counselingDocuments = [];
-
     let users = [];
     let pendingRequests = [];
 
     if (currentUser.role === "user") {
-
       const result = await pool.query(
-        "SELECT id, username FROM users WHERE role = 'counselor'"
+        "SELECT id, username FROM users WHERE role='counselor'"
       );
       users = result.rows;
+    }
 
-    } else if (currentUser.role === "counselor") {
-
+    if (currentUser.role === "counselor") {
       const result = await pool.query(
-        "SELECT id, username FROM users WHERE role = 'user'"
+        "SELECT id, username FROM users WHERE role='user'"
       );
       users = result.rows;
 
       const pending = await pool.query(
-        `SELECT vs.id, u.username
+        `SELECT vs.id,u.username
          FROM video_sessions vs
-         JOIN users u ON vs.user_id = u.id
-         WHERE vs.counselor_id = $1 AND vs.status = 'pending'`,
+         JOIN users u ON vs.user_id=u.id
+         WHERE vs.counselor_id=$1 AND vs.status='pending'`,
         [currentUser.id]
       );
 
       pendingRequests = pending.rows;
-
-    } else {
-      return res.status(403).send("Admins cannot start sessions.");
     }
 
     res.render("video-counseling", {
-      groupDocuments,
-      counselingDocuments,
       users,
       pendingRequests,
+      groupDocuments: [],
+      counselingDocuments: [],
       roomId: null,
       meeting: null,
       isHost: false,
       userId: currentUser.id,
+      meetingMode: false,
       lang: "en"
     });
 
@@ -1007,7 +1001,6 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
     res.status(500).send("Server error");
   }
 });
-
 
 app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   const client = await pool.connect();
@@ -1181,14 +1174,11 @@ app.get("/live-meetings/join", mustBeLoggedIn, async (req, res) => {
 
 //live meeting get route
 app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
-
   try {
-
     const { meetingId } = req.params;
-    console.log("fetching meeting", meetingId);
 
     const result = await pool.query(
-      "SELECT * FROM live_meetings WHERE id = $1",
+      "SELECT * FROM live_meetings WHERE id=$1",
       [meetingId]
     );
 
@@ -1200,7 +1190,7 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
     const isHost = meeting.created_by === req.user.id;
 
     await pool.query(
-      `INSERT INTO meeting_participants (meeting_id, user_id)
+      `INSERT INTO meeting_participants (meeting_id,user_id)
        VALUES ($1,$2)
        ON CONFLICT DO NOTHING`,
       [meetingId, req.user.id]
@@ -1213,8 +1203,9 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
       counselingDocuments: [],
       roomId: null,
       meeting,
+      isHost,
       userId: req.user.id,
-      isHost,          // ✅ Important for socket
+      meetingMode: true,
       lang: "en"
     });
 
@@ -1396,21 +1387,27 @@ app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
 
     const participant = await pool.query(
       `SELECT * FROM room_participants
-       WHERE room_id = $1 AND user_id = $2`,
+       WHERE room_id=$1 AND user_id=$2`,
       [roomId, req.user.id]
     );
 
-    if (!participant.rowCount) return res.redirect("/video-counseling");
+    if (!participant.rowCount) {
+      return res.redirect("/video-counseling");
+    }
 
     res.render("video-counseling", {
-      users: [],                // always defined
-      pendingRequests: [],      // always defined
+      users: [],
+      pendingRequests: [],
+      groupDocuments: [],
+      counselingDocuments: [],
       roomId,
       meeting: null,
       isHost: false,
       userId: req.user.id,
+      meetingMode: false,
       lang: "en"
     });
+
   } catch (err) {
     console.error(err);
     res.redirect("/video-counseling");
@@ -1897,12 +1894,15 @@ app.post("/dream-realness", (req, res) => {
   });
 });
 
-/// ===============================
+// ===============================
 // SOCKET.IO COMPLETE SYSTEM
 // ===============================
 
-const userSockets = new Map();   // userId -> Set(socketIds)
-const lastSeen = new Map();      // userId -> timestamp
+const userSockets = new Map();
+const lastSeen = new Map();
+
+const waitingUsers = {};
+const activeSessions = {};
 
 io.on("connection", (socket) => {
 
@@ -1912,7 +1912,7 @@ io.on("connection", (socket) => {
   // 1️⃣ USER PRESENCE SYSTEM
   // =====================================================
 
-  socket.on("join_room", (userId) => {
+  socket.on("join_user_room", (userId) => {
     userId = Number(userId);
     if (!userId) return;
 
@@ -1928,7 +1928,6 @@ io.on("connection", (socket) => {
 
     io.emit("online_users", [...userSockets.keys()]);
   });
-
 
   // =====================================================
   // 2️⃣ PRIVATE CHAT SYSTEM
@@ -1948,7 +1947,6 @@ io.on("connection", (socket) => {
     io.to(`user_${socket.userId}`).emit("private_message", payload);
   });
 
-
   // =====================================================
   // 3️⃣ NOTIFICATION SYSTEM
   // =====================================================
@@ -1956,13 +1954,11 @@ io.on("connection", (socket) => {
   socket.on("send_notification", ({ toUserId, notification }) => {
     if (!socket.userId) return;
 
-    const payload = {
+    io.to(`user_${toUserId}`).emit("new_notification", {
       ...notification,
       fromUserId: socket.userId,
       timestamp: new Date().toISOString()
-    };
-
-    io.to(`user_${toUserId}`).emit("new_notification", payload);
+    });
   });
 
   socket.on("broadcast_notification", (notification) => {
@@ -1972,23 +1968,14 @@ io.on("connection", (socket) => {
     });
   });
 
+  // =====================================================
+  // 4️⃣ LIVE MEETING HOST JOIN
+  // =====================================================
 
-  /// ===============================================
-// PROFESSIONAL LIVE MEETING + DOC SYSTEM
-// ===============================================
-
-const waitingUsers = {};
-const activeMeetings = {};
-
-io.on("connection", (socket) => {
-
-  // ==================================================
-  // HOST JOINS MEETING
-  // ==================================================
   socket.on("join_meeting", async ({ meetingId, userId }) => {
     try {
       const result = await pool.query(
-        `SELECT created_by FROM live_meetings WHERE id = $1`,
+        `SELECT created_by FROM live_meetings WHERE id=$1`,
         [meetingId]
       );
 
@@ -2004,35 +1991,36 @@ io.on("connection", (socket) => {
       socket.join(`meeting_${meetingId}`);
       socket.join(`host_${meetingId}`);
 
-      activeMeetings[socket.id] = {
+      activeSessions[socket.id] = {
         meetingId,
         userId,
         role: "host"
       };
 
+      socket.meetingId = meetingId;
+      socket.userId = userId;
+
       await pool.query(
-        `UPDATE live_meetings
-         SET status = 'live'
-         WHERE id = $1`,
+        `UPDATE live_meetings SET status='live' WHERE id=$1`,
         [meetingId]
       );
 
       socket.emit("host_ready");
 
     } catch (err) {
-      console.error("join_meeting error:", err);
+      console.error(err);
     }
   });
 
-  // ==================================================
-  // USER REQUESTS TO JOIN
-  // ==================================================
-  socket.on("request_join_meeting", ({ meetingId, userId }) => {
+  // =====================================================
+  // 5️⃣ PARTICIPANT REQUEST JOIN
+  // =====================================================
 
-    waitingUsers[socket.id] = {
-      meetingId,
-      userId
-    };
+  socket.on("request_join_meeting", ({ meetingId, userId }) => {
+    waitingUsers[socket.id] = { meetingId, userId };
+
+    socket.meetingId = meetingId;
+    socket.userId = userId;
 
     io.to(`host_${meetingId}`).emit("waiting_user", {
       socketId: socket.id,
@@ -2040,18 +2028,17 @@ io.on("connection", (socket) => {
     });
   });
 
-  // ==================================================
-  // HOST APPROVES USER
-  // ==================================================
-  socket.on("approve_user", async ({ socketId, meetingId }) => {
+  // =====================================================
+  // 6️⃣ APPROVE USER
+  // =====================================================
 
+  socket.on("approve_user", ({ socketId, meetingId }) => {
     const target = io.sockets.sockets.get(socketId);
-
     if (!target) return;
 
     target.join(`meeting_${meetingId}`);
 
-    activeMeetings[socketId] = {
+    activeSessions[socketId] = {
       meetingId,
       userId: waitingUsers[socketId]?.userId,
       role: "participant"
@@ -2067,88 +2054,58 @@ io.on("connection", (socket) => {
     delete waitingUsers[socketId];
   });
 
-  // ==================================================
-  // HOST REJECTS USER
-  // ==================================================
+  // =====================================================
+  // 7️⃣ REJECT USER
+  // =====================================================
+
   socket.on("reject_user", ({ socketId }) => {
-
     io.to(socketId).emit("rejected");
-
     delete waitingUsers[socketId];
   });
 
-  // ==================================================
-  // HOST KICKS PARTICIPANT
-  // ==================================================
-  socket.on("kick_user", ({ socketId, meetingId }) => {
-    const meeting = activeMeetings[socketId];
-    if (!meeting || meeting.role !== "host") return;
+  // =====================================================
+  // 8️⃣ KICK USER
+  // =====================================================
 
+  socket.on("kick_user", ({ socketId }) => {
     io.to(socketId).emit("kicked");
-    // Optionally, remove from activeMeetings, but disconnect will handle
+
+    delete activeSessions[socketId];
   });
 
-  // ==================================================
-  // WEBRTC OFFER
-  // ==================================================
-  socket.on("webrtc_offer", ({ to, sdp, from }) => {
-    io.to(to).emit("webrtc_offer", {
-      from,
-      sdp
-    });
-  });
+  // =====================================================
+  // 9️⃣ END LIVE MEETING
+  // =====================================================
 
-  // ==================================================
-  // WEBRTC ANSWER
-  // ==================================================
-  socket.on("webrtc_answer", ({ to, sdp, from }) => {
-    io.to(to).emit("webrtc_answer", {
-      from,
-      sdp
-    });
-  });
-
-  // ==================================================
-  // ICE CANDIDATE
-  // ==================================================
-  socket.on("webrtc_ice_candidate", ({ to, candidate, from }) => {
-    io.to(to).emit("webrtc_ice_candidate", {
-      from,
-      candidate
-    });
-  });
-
-  // ==================================================
-  // END MEETING
-  // ==================================================
   socket.on("end_meeting", async ({ meetingId }) => {
     try {
       await pool.query(
-        `UPDATE live_meetings
-         SET status = 'ended'
-         WHERE id = $1`,
+        `UPDATE live_meetings SET status='ended' WHERE id=$1`,
         [meetingId]
       );
 
       io.to(`meeting_${meetingId}`).emit("meeting_ended");
 
     } catch (err) {
-      console.error("end_meeting error:", err);
+      console.error(err);
     }
   });
 
-  // ==================================================
-  // COUNSELING ROOM JOIN
-  // ==================================================
-  socket.on("join_counseling_room", ({ roomId, userId }) => {
+  // =====================================================
+  // 🔟 COUNSELING ROOM JOIN
+  // =====================================================
 
+  socket.on("join_room", ({ roomId, userId }) => {
     socket.join(`room_${roomId}`);
 
-    activeMeetings[socket.id] = {
+    activeSessions[socket.id] = {
       roomId,
       userId,
       role: "counseling"
     };
+
+    socket.roomId = roomId;
+    socket.userId = userId;
 
     socket.to(`room_${roomId}`).emit("participant_joined", {
       socketId: socket.id,
@@ -2156,15 +2113,16 @@ io.on("connection", (socket) => {
     });
   });
 
-  // ==================================================
-  // END COUNSELING SESSION
-  // ==================================================
+  // =====================================================
+  // 1️⃣1️⃣ END COUNSELING
+  // =====================================================
+
   socket.on("end_counseling", async ({ roomId }) => {
     try {
       await pool.query(
         `UPDATE video_sessions
          SET status='ended'
-         WHERE room_id = $1`,
+         WHERE room_id=$1`,
         [roomId]
       );
 
@@ -2175,64 +2133,56 @@ io.on("connection", (socket) => {
     }
   });
 
-  // ==================================================
-  // DISCONNECT CLEANUP
-  // ==================================================
-  socket.on("disconnect", async () => {
+  // =====================================================
+  // 1️⃣2️⃣ WEBRTC SIGNALING
+  // =====================================================
 
-    const session = activeMeetings[socket.id];
+  socket.on("webrtc_offer", ({ to, sdp, from }) => {
+    io.to(to).emit("webrtc_offer", { from, sdp });
+  });
 
-    if (!session) return;
+  socket.on("webrtc_answer", ({ to, sdp, from }) => {
+    io.to(to).emit("webrtc_answer", { from, sdp });
+  });
 
-    if (session.meetingId) {
+  socket.on("webrtc_ice_candidate", ({ to, candidate, from }) => {
+    io.to(to).emit("webrtc_ice_candidate", { from, candidate });
+  });
+
+  // =====================================================
+  // 1️⃣3️⃣ CLEAN DISCONNECT
+  // =====================================================
+
+  socket.on("disconnect", () => {
+
+    console.log("❌ Disconnected:", socket.id);
+
+    if (socket.userId && userSockets.has(Number(socket.userId))) {
+      userSockets.get(Number(socket.userId)).delete(socket.id);
+
+      if (userSockets.get(Number(socket.userId)).size === 0) {
+        userSockets.delete(Number(socket.userId));
+      }
+
+      io.emit("online_users", [...userSockets.keys()]);
+    }
+
+    const session = activeSessions[socket.id];
+
+    if (session?.meetingId) {
       io.to(`meeting_${session.meetingId}`).emit("participant_left", {
         socketId: socket.id
       });
     }
 
-    if (session.roomId) {
+    if (session?.roomId) {
       io.to(`room_${session.roomId}`).emit("participant_left", {
         socketId: socket.id
       });
     }
 
     delete waitingUsers[socket.id];
-    delete activeMeetings[socket.id];
-  });
-
-});
-  // =====================================================
-  // WEBRTC SIGNALING (Mesh)
-  // =====================================================
-  socket.on("webrtc_offer", (data) => {
-    io.to(data.to).emit("webrtc_offer", data);
-  });
-
-  socket.on("webrtc_answer", (data) => {
-    io.to(data.to).emit("webrtc_answer", data);
-  });
-
-  socket.on("webrtc_ice_candidate", (data) => {
-    io.to(data.to).emit("webrtc_ice_candidate", data);
-  });
-
-
-  // =====================================================
-  // CLEAN DISCONNECT
-  // =====================================================
-  socket.on("disconnect", () => {
-
-    const { meetingId, userId } = socket;
-    if (!meetingId || !meetings[meetingId]) return;
-
-    const meeting = meetings[meetingId];
-
-    delete meeting.waiting[userId];
-    delete meeting.participants[userId];
-
-    socket.to(`meeting_${meetingId}`).emit("participant_left", {
-      userId
-    });
+    delete activeSessions[socket.id];
   });
 
 });
