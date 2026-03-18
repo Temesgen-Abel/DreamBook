@@ -1977,200 +1977,227 @@ io.on("connection", (socket) => {
 // PROFESSIONAL LIVE MEETING + DOC SYSTEM
 // ===============================================
 
-const meetings = {};
-// meetings[meetingId] = {
-//   hostId,
-//   hostSocket,
-//   participants: { userId: socketId },
-//   waiting: { userId: socketId }
-// }
+const waitingUsers = {};
+const activeMeetings = {};
 
 io.on("connection", (socket) => {
 
-  // =====================================================
-  // JOIN MEETING
-  // =====================================================
+  // ==================================================
+  // HOST JOINS MEETING
+  // ==================================================
   socket.on("join_meeting", async ({ meetingId, userId }) => {
     try {
-      userId = Number(userId);
-      socket.userId = userId;
-      socket.meetingId = meetingId;
-
-      const meetingRes = await pool.query(
-        "SELECT created_by FROM live_meetings WHERE id=$1",
+      const result = await pool.query(
+        `SELECT created_by FROM live_meetings WHERE id = $1`,
         [meetingId]
       );
-      if (!meetingRes.rowCount) return;
 
-      const hostId = meetingRes.rows[0].created_by;
+      if (!result.rowCount) return;
 
-      if (!meetings[meetingId]) {
-        meetings[meetingId] = {
-          hostId,
-          hostSocket: null,
-          participants: {},
-          waiting: {} // still kept for potential manual use
-        };
-      }
+      const meeting = result.rows[0];
 
-      const meeting = meetings[meetingId];
-
-      // HOST JOIN
-      if (userId === hostId) {
-        meeting.hostSocket = socket.id;
-        meeting.participants[userId] = socket.id;
-        socket.join(`meeting_${meetingId}`);
-        await pool.query(
-          "UPDATE live_meetings SET status='live' WHERE id=$1",
-          [meetingId]
-        );
-        socket.emit("host_ready");
-        // let everyone (existing participants) know the host is here
-        io.to(`meeting_${meetingId}`).emit("participant_joined", {
-          userId,
-          socketId: socket.id
-        });
+      if (meeting.created_by !== Number(userId)) {
+        socket.emit("not_host");
         return;
       }
 
-      // NORMAL USER -> automatically join the meeting
-      meeting.participants[userId] = socket.id;
       socket.join(`meeting_${meetingId}`);
-      // notify everyone that a participant joined (including the new user)
-      io.to(`meeting_${meetingId}`).emit("participant_joined", {
+      socket.join(`host_${meetingId}`);
+
+      activeMeetings[socket.id] = {
+        meetingId,
         userId,
-        socketId: socket.id
-      });
+        role: "host"
+      };
+
+      await pool.query(
+        `UPDATE live_meetings
+         SET status = 'live'
+         WHERE id = $1`,
+        [meetingId]
+      );
+
+      socket.emit("host_ready");
+
+    } catch (err) {
+      console.error("join_meeting error:", err);
+    }
+  });
+
+  // ==================================================
+  // USER REQUESTS TO JOIN
+  // ==================================================
+  socket.on("request_join_meeting", ({ meetingId, userId }) => {
+
+    waitingUsers[socket.id] = {
+      meetingId,
+      userId
+    };
+
+    io.to(`host_${meetingId}`).emit("waiting_user", {
+      socketId: socket.id,
+      userId
+    });
+  });
+
+  // ==================================================
+  // HOST APPROVES USER
+  // ==================================================
+  socket.on("approve_user", async ({ socketId, meetingId }) => {
+
+    const target = io.sockets.sockets.get(socketId);
+
+    if (!target) return;
+
+    target.join(`meeting_${meetingId}`);
+
+    activeMeetings[socketId] = {
+      meetingId,
+      userId: waitingUsers[socketId]?.userId,
+      role: "participant"
+    };
+
+    target.emit("approved");
+
+    io.to(`meeting_${meetingId}`).emit("participant_joined", {
+      socketId,
+      userId: waitingUsers[socketId]?.userId
+    });
+
+    delete waitingUsers[socketId];
+  });
+
+  // ==================================================
+  // HOST REJECTS USER
+  // ==================================================
+  socket.on("reject_user", ({ socketId }) => {
+
+    io.to(socketId).emit("rejected");
+
+    delete waitingUsers[socketId];
+  });
+
+  // ==================================================
+  // HOST KICKS PARTICIPANT
+  // ==================================================
+  socket.on("kick_user", ({ socketId, meetingId }) => {
+    const meeting = activeMeetings[socketId];
+    if (!meeting || meeting.role !== "host") return;
+
+    io.to(socketId).emit("kicked");
+    // Optionally, remove from activeMeetings, but disconnect will handle
+  });
+
+  // ==================================================
+  // WEBRTC OFFER
+  // ==================================================
+  socket.on("webrtc_offer", ({ to, sdp, from }) => {
+    io.to(to).emit("webrtc_offer", {
+      from,
+      sdp
+    });
+  });
+
+  // ==================================================
+  // WEBRTC ANSWER
+  // ==================================================
+  socket.on("webrtc_answer", ({ to, sdp, from }) => {
+    io.to(to).emit("webrtc_answer", {
+      from,
+      sdp
+    });
+  });
+
+  // ==================================================
+  // ICE CANDIDATE
+  // ==================================================
+  socket.on("webrtc_ice_candidate", ({ to, candidate, from }) => {
+    io.to(to).emit("webrtc_ice_candidate", {
+      from,
+      candidate
+    });
+  });
+
+  // ==================================================
+  // END MEETING
+  // ==================================================
+  socket.on("end_meeting", async ({ meetingId }) => {
+    try {
+      await pool.query(
+        `UPDATE live_meetings
+         SET status = 'ended'
+         WHERE id = $1`,
+        [meetingId]
+      );
+
+      io.to(`meeting_${meetingId}`).emit("meeting_ended");
+
+    } catch (err) {
+      console.error("end_meeting error:", err);
+    }
+  });
+
+  // ==================================================
+  // COUNSELING ROOM JOIN
+  // ==================================================
+  socket.on("join_counseling_room", ({ roomId, userId }) => {
+
+    socket.join(`room_${roomId}`);
+
+    activeMeetings[socket.id] = {
+      roomId,
+      userId,
+      role: "counseling"
+    };
+
+    socket.to(`room_${roomId}`).emit("participant_joined", {
+      socketId: socket.id,
+      userId
+    });
+  });
+
+  // ==================================================
+  // END COUNSELING SESSION
+  // ==================================================
+  socket.on("end_counseling", async ({ roomId }) => {
+    try {
+      await pool.query(
+        `UPDATE video_sessions
+         SET status='ended'
+         WHERE room_id = $1`,
+        [roomId]
+      );
+
+      io.to(`room_${roomId}`).emit("meeting_ended");
 
     } catch (err) {
       console.error(err);
     }
   });
 
-  // =====================================================
-  // APPROVE USER
-  // =====================================================
-  socket.on("approve_user", ({ meetingId, userId }) => {
+  // ==================================================
+  // DISCONNECT CLEANUP
+  // ==================================================
+  socket.on("disconnect", async () => {
 
-    const meeting = meetings[meetingId];
-    if (!meeting) return;
-    if (socket.userId !== meeting.hostId) return;
+    const session = activeMeetings[socket.id];
 
-    const targetSocket = meeting.waiting[userId];
-    if (!targetSocket) return;
+    if (!session) return;
 
-    delete meeting.waiting[userId];
-    meeting.participants[userId] = targetSocket;
+    if (session.meetingId) {
+      io.to(`meeting_${session.meetingId}`).emit("participant_left", {
+        socketId: socket.id
+      });
+    }
 
-    const target = io.sockets.sockets.get(targetSocket);
-    target.join(`meeting_${meetingId}`);
+    if (session.roomId) {
+      io.to(`room_${session.roomId}`).emit("participant_left", {
+        socketId: socket.id
+      });
+    }
 
-    io.to(targetSocket).emit("approved");
-    io.to(`meeting_${meetingId}`).emit("participant_joined", {
-      userId,
-      socketId: targetSocket
-    });
-  });
-
-  // =====================================================
-  // REJECT
-  // =====================================================
-  socket.on("reject_user", ({ meetingId, userId }) => {
-
-    const meeting = meetings[meetingId];
-    if (!meeting) return;
-    if (socket.userId !== meeting.hostId) return;
-
-    const targetSocket = meeting.waiting[userId];
-    if (!targetSocket) return;
-
-    io.to(targetSocket).emit("rejected");
-    delete meeting.waiting[userId];
-  });
-
-  // =====================================================
-  // WEBRTC SIGNALING (MESH)
-  // =====================================================
-  socket.on("webrtc_offer", data => {
-    io.to(data.to).emit("webrtc_offer", data);
-  });
-
-  socket.on("webrtc_answer", data => {
-    io.to(data.to).emit("webrtc_answer", data);
-  });
-
-  socket.on("webrtc_ice_candidate", data => {
-    io.to(data.to).emit("webrtc_ice_candidate", data);
-  });
-
-  // =====================================================
-  // DOCUMENT LIVE EDIT
-  // =====================================================
-  socket.on("doc_change", ({ meetingId, content }) => {
-    socket.to(`meeting_${meetingId}`)
-      .emit("doc_change", content);
-  });
-
-  socket.on("save_document", async ({ meetingId, content }) => {
-    await pool.query(
-      "UPDATE live_meetings SET description=$1 WHERE id=$2",
-      [content, meetingId]
-    );
-  });
-
-  // =====================================================
-  // MUTE
-  // =====================================================
-  socket.on("mute_user", ({ meetingId, userId }) => {
-    const meeting = meetings[meetingId];
-    if (!meeting) return;
-    if (socket.userId !== meeting.hostId) return;
-
-    const target = meeting.participants[userId];
-    if (target) io.to(target).emit("muted_by_host");
-  });
-
-  socket.on("mute_all", ({ meetingId }) => {
-    const meeting = meetings[meetingId];
-    if (!meeting) return;
-    if (socket.userId !== meeting.hostId) return;
-
-    Object.entries(meeting.participants).forEach(([uid, sockId]) => {
-      if (Number(uid) !== meeting.hostId) {
-        io.to(sockId).emit("muted_by_host");
-      }
-    });
-  });
-
-  // =====================================================
-  // END MEETING
-  // =====================================================
-  socket.on("end_meeting", async ({ meetingId }) => {
-    const meeting = meetings[meetingId];
-    if (!meeting) return;
-    if (socket.userId !== meeting.hostId) return;
-
-    io.to(`meeting_${meetingId}`).emit("meeting_ended");
-
-    await pool.query(
-      "UPDATE live_meetings SET status='ended' WHERE id=$1",
-      [meetingId]
-    );
-
-    delete meetings[meetingId];
-  });
-
-  // =====================================================
-  // DISCONNECT
-  // =====================================================
-  socket.on("disconnect", () => {
-    const { meetingId, userId } = socket;
-    if (!meetingId || !meetings[meetingId]) return;
-
-    delete meetings[meetingId].participants[userId];
-
-    socket.to(`meeting_${meetingId}`)
-      .emit("participant_left", { userId });
+    delete waitingUsers[socket.id];
+    delete activeMeetings[socket.id];
   });
 
 });
