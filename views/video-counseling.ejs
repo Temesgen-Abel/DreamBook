@@ -9,6 +9,10 @@
     .video-controls { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:15px; }
     .links { margin-top:20px; }
     .document-section { margin-top:25px; padding:15px; border:1px solid #ddd; border-radius:8px; background:#fff; }
+    .participants-section { margin-top:25px; padding:15px; border:1px solid #ddd; border-radius:8px; background:#fff; }
+    .participants-section ul { list-style:none; padding:0; margin:0; }
+    .participants-section li { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #eee; }
+    .participants-section li:last-child { border-bottom:none; }
   </style>
 </head>
 <body>
@@ -89,6 +93,11 @@
         <% if (meetingMode && isHost) { %>
           <button id="endMeetingBtn" class="btn btn-danger">End Meeting</button>
         <% } %>
+      </div>
+
+      <div class="participants-section">
+        <h4>Participants</h4>
+        <ul id="participantList"></ul>
       </div>
 
       <div class="document-section">
@@ -214,8 +223,46 @@ function removePendingRequest(userId) {
   if (item) item.remove();
 }
 
+function renderParticipantList(participants) {
+  const list = document.getElementById('participantList');
+  if (!list) return;
+  list.innerHTML = '';
+
+  participants.forEach((p) => {
+    const li = document.createElement('li');
+    const me = p.userId === userId;
+    const roleLabel = p.role === 'host' ? ' (Host)' : '';
+    const displayName = p.username || `User ${p.userId}`;
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = `${displayName}${me ? ' (You)' : ''}${roleLabel}`;
+    li.appendChild(nameSpan);
+
+    if (isHost && !me) {
+      const kickBtn = document.createElement('button');
+      kickBtn.className = 'btn btn-sm btn-danger';
+      kickBtn.textContent = 'Kick';
+      kickBtn.onclick = () => {
+        socket.emit('kick_user', { socketId: p.socketId });
+      };
+      li.appendChild(kickBtn);
+    }
+
+    list.appendChild(li);
+  });
+}
+
 if (meetingMode) {
   socket.emit('join_user_room', userId);
+
+  socket.on('meeting_participants', (participants) => {
+    renderParticipantList(participants);
+  });
+
+  socket.on('kicked', () => {
+    alert('You have been removed from the meeting.');
+    window.location.href = '/live-meetings';
+  });
 
   if (isHost) {
     socket.emit('join_meeting', { meetingId, userId });

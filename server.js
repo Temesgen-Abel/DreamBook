@@ -1284,7 +1284,6 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
         )).rows
       : [];
 
-
     res.render("video-counseling", {
       users: [],
       pendingRequests,
@@ -1752,6 +1751,41 @@ const lastSeen = new Map();
 const waitingUsers = {};
 const activeSessions = {};
 
+async function emitMeetingParticipants(meetingId) {
+  const participants = [];
+
+  for (const [socketId, session] of Object.entries(activeSessions)) {
+    if (session.meetingId !== meetingId) continue;
+    participants.push({
+      socketId,
+      userId: session.userId,
+      username: session.username || null,
+      role: session.role
+    });
+  }
+
+  const missingUserIds = participants
+    .filter((p) => !p.username)
+    .map((p) => p.userId);
+
+  if (missingUserIds.length) {
+    try {
+      const rows = await pool.query(
+        `SELECT id, username FROM users WHERE id = ANY($1::int[])`,
+        [missingUserIds]
+      );
+      const usernameMap = new Map(rows.rows.map((r) => [r.id, r.username]));
+      participants.forEach((p) => {
+        if (!p.username) p.username = usernameMap.get(p.userId) || `User ${p.userId}`;
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  io.to(`meeting_${meetingId}`).emit("meeting_participants", participants);
+}
+
 io.on("connection", (socket) => {
 
   console.log("🔌 Connected:", socket.id);
@@ -1839,9 +1873,18 @@ io.on("connection", (socket) => {
       socket.join(`meeting_${meetingId}`);
       socket.join(`host_${meetingId}`);
 
+      let username = null;
+      try {
+        const res = await pool.query(`SELECT username FROM users WHERE id=$1`, [userId]);
+        if (res.rowCount) username = res.rows[0].username;
+      } catch (err) {
+        console.error(err);
+      }
+
       activeSessions[socket.id] = {
         meetingId,
         userId,
+        username: username || `User ${userId}`,
         role: "host"
       };
 
@@ -1877,6 +1920,7 @@ io.on("connection", (socket) => {
         [meetingId]
       );
 
+      await emitMeetingParticipants(meetingId);
       socket.emit("host_ready");
 
     } catch (err) {
@@ -1974,13 +2018,24 @@ io.on("connection", (socket) => {
 
     target.join(`meeting_${meetingId}`);
 
+    let username = null;
+    try {
+      const res = await pool.query(`SELECT username FROM users WHERE id=$1`, [resolvedUserId]);
+      if (res.rowCount) username = res.rows[0].username;
+    } catch (err) {
+      console.error(err);
+    }
+
     activeSessions[socketId] = {
       meetingId,
       userId: resolvedUserId,
+      username: username || `User ${resolvedUserId}`,
       role: "participant"
     };
 
     target.emit("approved");
+
+    await emitMeetingParticipants(meetingId);
 
     io.to(`meeting_${meetingId}`).emit("participant_joined", {
       socketId,
@@ -2035,9 +2090,21 @@ io.on("connection", (socket) => {
   // =====================================================
 
   socket.on("kick_user", ({ socketId }) => {
+    const session = activeSessions[socketId];
+    const meetingId = session?.meetingId;
+
+    const target = io.sockets.sockets.get(socketId);
+    if (target && meetingId) {
+      target.leave(`meeting_${meetingId}`);
+    }
+
     io.to(socketId).emit("kicked");
 
     delete activeSessions[socketId];
+
+    if (meetingId) {
+      emitMeetingParticipants(meetingId).catch(console.error);
+    }
   });
 
   // =====================================================
@@ -2140,6 +2207,7 @@ io.on("connection", (socket) => {
       io.to(`meeting_${session.meetingId}`).emit("participant_left", {
         socketId: socket.id
       });
+      emitMeetingParticipants(session.meetingId).catch(console.error);
     }
 
     if (session?.roomId) {
