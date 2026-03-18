@@ -1066,6 +1066,7 @@ app.post("/create-group-meeting", mustBeLoggedIn, (req, res) => {
   return res.redirect(307, "/live-meetings/create");
 });
 
+
 // Main live meetings page - redirect to join
 app.get("/live-meetings", mustBeLoggedIn, (req, res) => {
   res.redirect("/live-meetings/join");
@@ -1240,6 +1241,25 @@ app.post("/live-meetings/:id/delete", mustBeLoggedIn, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send("Error deleting meeting");
+  }
+});
+
+// delete all meetings created by the current user (clear request history)
+app.post("/live-meetings/clear-history", mustBeLoggedIn, async (req, res) => {
+  try {
+    await pool.query(
+      `DELETE FROM live_meetings WHERE created_by = $1`,
+      [req.user.id]
+    );
+
+    io.emit("dashboard_update", {
+      deletedMeeting: true
+    });
+
+    res.redirect("/live-meetings/join");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error clearing meeting history");
   }
 });
 

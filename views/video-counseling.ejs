@@ -118,8 +118,8 @@
           <!-- meeting controls overlay -->
           <div id="meetingControls" class="video-controls">
             <button id="toggleAudioBtn" class="btn btn-outline-primary">Mute</button>
-            <button id="toggleVideoBtn" class="btn btn-outline-primary">Stop Video</button>
-            <button id="leaveBtn" class="btn btn-outline-danger">Leave</button>
+            <button id="toggleVideoBtn" class="btn btn-outline-primary">Stop Video</button>          <label for="volumeSlider" class="sr-only">Volume</label>
+          <input id="volumeSlider" type="range" min="0" max="1" step="0.05" value="1" title="Speaker volume" style="width: 120px;">            <button id="leaveBtn" class="btn btn-outline-danger">Leave</button>
           </div>
           <!-- video elements injected here -->
         </div>
@@ -224,6 +224,16 @@
     const seenParticipants = new Set(); // prevent duplicate UI entries
     let audioEnabled = true;
     let videoEnabled = true;
+    let outputVolume = 1;
+
+    function setOutputVolume(volume) {
+      outputVolume = volume;
+      document.querySelectorAll('#group-video-container video').forEach(v => {
+        // keep local preview muted to avoid echo
+        if (v.dataset.local === 'true') return;
+        v.volume = outputVolume;
+      });
+    }
 
     async function startLocalStream() {
       if (localStream) return localStream;
@@ -232,6 +242,7 @@
         const vid = document.createElement('video');
         vid.autoplay = true;
         vid.muted = true; // prevent echo
+        vid.dataset.local = 'true';
         vid.srcObject = localStream;
         document.getElementById('group-video-container').appendChild(vid);
         if (startCamBtn) startCamBtn.style.display = 'none';
@@ -284,6 +295,13 @@
         updateControlLabels();
       });
     }
+
+    const volumeSlider = document.getElementById('volumeSlider');
+    if (volumeSlider) {
+      volumeSlider.addEventListener('input', (evt) => {
+        setOutputVolume(Number(evt.target.value));
+      });
+    }
     if (leaveBtn) {
       leaveBtn.addEventListener('click', () => {
         socket.disconnect();
@@ -297,6 +315,15 @@
     <% if (meeting && meeting.id) { %>
       startLocalStream();
     <% } %>
+
+    // Some browsers block autoplay audio; resuming on first user interaction helps.
+    document.addEventListener('click', () => {
+      document.querySelectorAll('#group-video-container video').forEach(v => {
+        if (v.paused) {
+          v.play().catch(() => {});
+        }
+      });
+    }, { once: true });
 
     // utility to create new RTCPeerConnection for a socket
     function createPeerConnection(remoteSocketId) {
@@ -314,8 +341,13 @@
         const vid = document.createElement('video');
         vid.autoplay = true;
         vid.playsInline = true;
+        vid.volume = outputVolume;
         vid.srcObject = e.streams[0];
         document.getElementById('group-video-container').appendChild(vid);
+        vid.play().catch(() => {
+          // Some browsers block autoplay with sound; user interaction is needed.
+          // We'll keep the element in the DOM and allow the user to click anywhere to start.
+        });
       };
       // attach local tracks once available
       if (localStream) {

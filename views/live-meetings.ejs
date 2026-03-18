@@ -58,7 +58,7 @@
       <h2>Existing Meetings</h2>
       <% if (meetings && meetings.length) { %>
         <form action="/live-meetings/clear-history" method="post" style="margin-bottom:20px;">
-          <button class="btn btn-danger btn-sm" type="submit" onclick="return confirm('Are you sure you want to clear all meeting history?');">Clear All Meeting History</button>
+          <button class="btn btn-danger btn-sm" type="submit" onclick="return confirm('Are you sure you want to clear all your meeting history?');">Clear My Meeting History</button>
         </form>
         <ul class="list-group">
           <% meetings.forEach(m => { %>
@@ -74,6 +74,11 @@
                 <span class="small text-muted">ID: <%= m.id %></span>
                 <% if (m.meeting_link) { %>
                   <a href="<%= m.meeting_link %>" class="btn btn-sm btn-success ml-2" target="_blank">Join</a>
+                <% } %>
+                <% if (m.created_by === userId) { %>
+                  <form action="/live-meetings/<%= m.id %>/delete" method="post" style="display:inline;" onsubmit="return confirm('Delete this meeting? This cannot be undone.');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger ml-2">Delete</button>
+                  </form>
                 <% } %>
               </div>
             </li>
