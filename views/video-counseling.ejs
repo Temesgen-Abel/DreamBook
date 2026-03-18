@@ -114,7 +114,9 @@ let mediaRecorder = null;
 let recordedChunks = [];
 
 function copyLink() {
-  navigator.clipboard.writeText("<%= meeting.meeting_link %>");
+  const link = "<%= meeting && meeting.meeting_link ? meeting.meeting_link : '' %>";
+  if (!link) return;
+  navigator.clipboard.writeText(link);
   alert("Link copied");
 }
 
