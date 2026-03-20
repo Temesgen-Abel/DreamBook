@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="<%= lang %>">
+<head>
+  <%- include("includes/head") %>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<%- include("includes/header") %>
+
+<div class="container mt-4">
+  <h1>Create Live Meeting</h1>
+
+  <form action="/live-meetings/create" method="POST" class="mb-4">
+    <div class="form-group">
+      <label for="title">Title</label>
+      <input id="title" name="title" class="form-control" required placeholder="Meeting title">
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea id="description" name="description" class="form-control" rows="3" placeholder="Optional description"></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="scheduled_at">Scheduled at</label>
+        <input type="datetime-local" id="scheduled_at" name="scheduled_at" class="form-control">
+      </div>
+      <div class="form-group col-md-6">
+        <label for="duration">Duration (minutes)</label>
+        <input type="number" id="duration" name="duration" class="form-control" value="60" min="1">
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-success">Create Meeting</button>
+    <a href="/live-meetings" class="btn btn-secondary ml-2">Cancel</a>
+  </form>
+
+  <p class="text-muted">After creation, you will be redirected to meeting room with a unique share link.</p>
+</div>
+
+</body>
+</html>

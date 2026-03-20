@@ -8,7 +8,10 @@
 <%- include('includes/header') %>
 
 <div class="container mt-4">
-  <h1>Join a Live Meeting</h1>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Live Meetings</h1>
+    <a href="/live-meetings/create" class="btn btn-primary">Create New Meeting</a>
+  </div>
   <% if(meetings && meetings.length){ %>
     <ul class="list-group">
       <% meetings.forEach(m => { %>
