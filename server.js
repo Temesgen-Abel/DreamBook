@@ -1079,8 +1079,6 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
     client.release();
   }
 });
-
-<<<<<<< HEAD
 // 6.13 Group live meetings routes
 
 // legacy alias used by some links / bookmarks
@@ -1088,23 +1086,26 @@ app.get("/create-group-meeting", mustBeLoggedIn, (req, res) => {
   // simply forward the user to the new path
   return res.redirect("/live-meetings/create");
 });
+
 app.post("/create-group-meeting", mustBeLoggedIn, (req, res) => {
   // preserve verb for forms if any are still pointing here
   return res.redirect(307, "/live-meetings/create");
 });
-
 
 // Main live meetings page - redirect to join
 app.get("/live-meetings", mustBeLoggedIn, (req, res) => {
   res.redirect("/live-meetings/join");
 });
 
-//Get live meetings page
+// Get live meetings page
 app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
-=======
+  // your existing create page code continues here...
+});
+
 // Accept a counseling request (counselor)
 app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
->>>>>>> 7d47ff65973bff0aa8d67ab023c9feb9fe7c9aca
+  // your existing accept logic continues here...
+});
   try {
     const sessionId = req.params.id;
 
