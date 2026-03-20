@@ -1,3 +1,4 @@
+
 require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
@@ -11,9 +12,11 @@ const sanitizeHTML = require("sanitize-html");
 const path = require("path");
 const http = require("http");
 const fs = require("fs");
-const { SitemapStream, streamToPromise } = require("sitemap");
-const { Readable } = require("stream");
-const multer = require("multer")
+
+const app = express();
+
+// ===================================================================
+// const multer = require("multer")
 // Setup storage folder and filename
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -115,17 +118,6 @@ CREATE TABLE IF NOT EXISTS users (
     )
   `);
     
-    // Meeting documents (for live meetings file sharing)
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS meeting_documents (
-        id SERIAL PRIMARY KEY,
-        meeting_id UUID,
-        file_path TEXT,
-        content TEXT,
-        uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
   await dbRun(`
     CREATE TABLE IF NOT EXISTS reactions (
       id SERIAL PRIMARY KEY,
@@ -156,6 +148,16 @@ CREATE TABLE IF NOT EXISTS users (
       meaning_am TEXT
     );
   `);
+// Meeting documents (for live meetings file sharing)
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS meeting_documents (
+        id SERIAL PRIMARY KEY,
+        meeting_id UUID,
+        file_path TEXT,
+        content TEXT,
+        uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
   // Video counseling sessions
     await dbRun(`
@@ -1078,28 +1080,6 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   } finally {
     client.release();
   }
-});
-// 6.13 Group live meetings routes
-
-// legacy alias used by some links / bookmarks
-app.get("/create-group-meeting", mustBeLoggedIn, (req, res) => {
-  // simply forward the user to the new path
-  return res.redirect("/live-meetings/create");
-});
-
-app.post("/create-group-meeting", mustBeLoggedIn, (req, res) => {
-  // preserve verb for forms if any are still pointing here
-  return res.redirect(307, "/live-meetings/create");
-});
-
-// Main live meetings page - redirect to join
-app.get("/live-meetings", mustBeLoggedIn, (req, res) => {
-  res.redirect("/live-meetings/join");
-});
-
-// Get live meetings page
-app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
-  // your existing create page code continues here...
 });
 
 // Accept a counseling request (counselor)
@@ -2250,72 +2230,3 @@ io.on("connection", (socket) => {
 
     delete waitingUsers[socket.id];
     delete activeSessions[socket.id];
-  });
-
-});
-
-//  20. ADMIN AUTO-CREATE
-// ===================================================================
-async function ensureAdmin() {
-  if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
-    console.log("Admin credentials missing; skipping admin auto-create.");
-    return;
-  }
-
-  const existing = await dbGet("SELECT * FROM users WHERE username=$1", [process.env.ADMIN_USERNAME]);
-
-  if (!existing) {
-    const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10);
-    await dbRun(
-      "INSERT INTO users (username, password, role) VALUES ($1,$2,'admin')",
-      [process.env.ADMIN_USERNAME, hash]
-    );
-    console.log("✔ Admin user created");
-  } else {
-    console.log("✔ Admin already exists");
-  }
-}
-//sitemap route
-app.get('/sitemap.xml', async (req, res) => {
-  try {
-    res.set('Content-Type', 'application/xml');
-
-    const urls = [
-      'https://dreambook.com.et/',
-      'https://dreambook.com.et/dictionary',
-      'https://dreambook.com.et/dream-realness',
-      'https://dreambook.com.et/create-post',
-      'https://dreambook.com.et/dashboard'
-      // Add more static URLs as needed
-    ];
-
-    const body = urls.map(url => `
-  <url>
-    <loc>${url}</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>`).join('');
-
-    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${body}
-</urlset>`;
-
-    res.status(200).send(sitemap);
-  } catch (err) {
-    console.error('Sitemap error:', err);
-    res.status(500).end();
-  }
-});
-
-// ===================================================================
-// 8. START SERVER
-// ===================================================================
-(async () => {
-  await createPoolOrExit();
-  await initDb();
-  await ensureAdmin();
-
-  const PORT = process.env.PORT || 5733;
-  server.listen(PORT, () => console.log("✔ DreamBook server running on port", PORT));
-})();
