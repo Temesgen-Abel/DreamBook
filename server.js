@@ -1104,8 +1104,6 @@ app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
 
 // Accept a counseling request (counselor)
 app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
-  // your existing accept logic continues here...
-});
   try {
     const sessionId = req.params.id;
 
