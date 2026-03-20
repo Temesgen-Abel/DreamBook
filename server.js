@@ -1296,7 +1296,7 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
         )).rows
       : [];
 
-    res.render("video-counseling", {
+    res.render("live-meeting", {
       users: [],
       pendingRequests,
       groupDocuments: [],

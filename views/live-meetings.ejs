@@ -231,6 +231,10 @@ socket.on("approved", async () => {
   await startLocalStream();
 });
 
+socket.on("host_ready", async () => {
+  await startLocalStream();
+});
+
 socket.on("waiting_user", data => {
 
   <% if (isHost) { %>
@@ -274,6 +278,8 @@ socket.on("waiting_user", data => {
 socket.on("participant_joined", async data => {
 
   if (data.socketId === socket.id) return;
+
+  await startLocalStream();
 
   const pc = createPeerConnection(data.socketId);
 
