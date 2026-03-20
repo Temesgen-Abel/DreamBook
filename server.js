@@ -1259,7 +1259,7 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
     const userId = req.user?.id || req.session.user.id;
 
     const result = await pool.query(
-      `SELECT * FROM live_meetings WHERE meeting_id=$1`,
+      `SELECT * FROM live_meetings WHERE id=$1`,
       [meetingId]
     );
 
