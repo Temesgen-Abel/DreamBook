@@ -1313,6 +1313,8 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
     res.status(500).send("Server error");
   }
 });
+
+
 // ===================================================================
 // 6.14. MESSAGES (inbox)
 
@@ -2227,3 +2229,15 @@ io.on("connection", (socket) => {
 
     delete waitingUsers[socket.id];
     delete activeSessions[socket.id];
+
+  });
+});
+
+// =====================================================
+// START SERVER
+// =====================================================
+const PORT = process.env.PORT || 5733;
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
+
