@@ -22,11 +22,11 @@
 
   <% if (!roomId && !meetingMode) { %>
     <div class="links">
-      <h3>Available Counselors:</h3>
+      <h3>select live meeting participants:</h3>
       <ul>
-        <% users.forEach(c => { %>
+        <% users.forEach(u => { %>
           <li>
-            <a href="/video-counseling/<%= c.roomId || '' %>?counselorId=<%= c.id %>">Start session with <%= c.username %></a>
+            <a href="/video-counseling/<%= u.roomId || '' %>?counselorId=<%= u.id %>">Start session with <%= u.username %></a>
           </li>
         <% }) %>
       </ul>
