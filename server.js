@@ -12,11 +12,10 @@ const sanitizeHTML = require("sanitize-html");
 const path = require("path");
 const http = require("http");
 const fs = require("fs");
+const multer = require("multer");
 
 const app = express();
 
-// ===================================================================
-// const multer = require("multer")
 // Setup storage folder and filename
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
