@@ -1256,30 +1256,36 @@ app.get("/live-meetings/join", mustBeLoggedIn, async (req, res) => {
 app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
   try {
     const { meetingId } = req.params;
-    const result = await pool.query(`SELECT * FROM live_meetings WHERE id=$1`, [meetingId]);
+    const userId = req.user?.id || req.session.user.id;
+
+    const result = await pool.query(
+      `SELECT * FROM live_meetings WHERE meeting_id=$1`,
+      [meetingId]
+    );
+
     if (!result.rowCount) return res.redirect("/live-meetings");
 
-      const meeting = result.rows[0];
-    const isHost = meeting.created_by === req.user.id;
+    const meeting = result.rows[0];
+    const isHost = meeting.created_by === userId;
 
-    // Track participants and join requests
     const participantRow = await pool.query(
       `SELECT status FROM meeting_participants WHERE meeting_id=$1 AND user_id=$2`,
-      [meetingId, req.user.id]
+      [meetingId, userId]
     );
 
     const requestStatus = isHost
-      ? 'joined'
-      : (participantRow.rowCount ? participantRow.rows[0].status : 'none');
+      ? "joined"
+      : (participantRow.rowCount ? participantRow.rows[0].status : "none");
 
-    const isApproved = isHost || requestStatus === 'joined';
+    const isApproved = isHost || requestStatus === "joined";
 
     if (isHost) {
       await pool.query(
         `INSERT INTO meeting_participants (meeting_id, user_id, status)
          VALUES ($1,$2,'joined')
-         ON CONFLICT (meeting_id,user_id) DO UPDATE SET status='joined', joined_at=NOW()`,
-        [meetingId, req.user.id]
+         ON CONFLICT (meeting_id,user_id)
+         DO UPDATE SET status='joined', joined_at=NOW()`,
+        [meetingId, userId]
       );
     }
 
@@ -1303,7 +1309,7 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
       isHost,
       isApproved,
       requestStatus,
-      userId: req.user.id,
+      userId,
       meetingMode: true,
       lang: "en"
     });
