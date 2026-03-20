@@ -29,9 +29,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-
-const app = express();
-
 //backup schedule
 const cron = require("node-cron");
 
