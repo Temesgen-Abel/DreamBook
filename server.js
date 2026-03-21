@@ -44,8 +44,7 @@ async function createPoolOrExit() {
   const conn = process.env.DATABASE_URL || process.env.PG_CONNECTION;
 
   if (!conn) {
-    console.error("ERROR: Missing DATABASE_URL or PG_CONNECTION");
-    process.exit(1);
+    throw new Error("Missing DATABASE_URL or PG_CONNECTION");
   }
   pool = new Pool({
     connectionString: conn,
@@ -58,7 +57,7 @@ async function createPoolOrExit() {
   } catch (err) {
     console.error("PostgreSQL connection error:", err.message);
     console.error("Connection string (hidden password):", conn.split('@')[1] ? `...@${conn.split('@')[1]}` : conn);
-    process.exit(1);
+    throw new Error("Failed to connect to PostgreSQL");
   }
 }
 
