@@ -26,7 +26,7 @@
       <ul>
         <% users.forEach(u => { %>
           <li>
-            <a href="/video-counseling/<%= u.roomId || '' %>?counselorId=<%= u.id %>">Start session with <%= u.username %></a>
+            <a href="/video-counseling/<%= u.roomId || '' %>?counselorId=<%= u.id %>">Start session with <%= u.link %></a>
           </li>
         <% }) %>
       </ul>
