@@ -978,8 +978,6 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 // VIDEO COUNSELING + LIVE MEETINGS FULL CORRECTED ROUTES
 // ======================================================
 
-
-// ================= VIDEO COUNSELING =================
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
     const currentUser = req.user;
@@ -1214,7 +1212,7 @@ app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
 // Create meeting POST
 app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   try {
-    const { title, description, scheduled_at, duration, preId, selectedContacts } = req.body;
+    const { title, description, scheduled_at, duration, preId, selectedContacts, inviteEmails } = req.body;
     const meetingId = preId || crypto.randomUUID();
     const meetingLink = `${req.protocol}://${req.get("host")}/live-meetings/${meetingId}`;
 
@@ -1267,6 +1265,22 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
               [meetingId, user.id]
             );
           }
+        }
+      }
+    }
+
+    // Handle invite emails
+    if (inviteEmails) {
+      const emails = inviteEmails.split(',').map(e => e.trim()).filter(e => e);
+      for (const email of emails) {
+        const user = await dbGet('SELECT id FROM users WHERE email = $1', [email]);
+        if (user) {
+          await pool.query(
+            `INSERT INTO meeting_participants (meeting_id, user_id, status)
+             VALUES ($1, $2, 'pending')
+             ON CONFLICT (meeting_id, user_id) DO NOTHING`,
+            [meetingId, user.id]
+          );
         }
       }
     }
