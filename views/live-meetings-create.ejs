@@ -32,12 +32,49 @@
       </div>
     </div>
 
+    <div class="form-group">
+      <label>Invite Participants</label>
+      <button type="button" id="selectContactsBtn" class="btn btn-info">Select from Phone Contacts</button>
+      <div id="selectedContacts" class="mt-2"></div>
+      <input type="hidden" id="selectedContactsData" name="selectedContacts">
+    </div>
+
     <button type="submit" class="btn btn-success">Create Meeting</button>
     <a href="/live-meetings" class="btn btn-secondary ml-2">Cancel</a>
   </form>
 
   <p class="text-muted">After creation, you will be redirected to meeting room with a unique share link.</p>
 </div>
+
+<script>
+document.getElementById('selectContactsBtn').addEventListener('click', async () => {
+  if ('contacts' in navigator && 'select' in navigator.contacts) {
+    try {
+      const contacts = await navigator.contacts.select(['name', 'email', 'tel'], { multiple: true });
+      displaySelectedContacts(contacts);
+    } catch (error) {
+      console.error('Error selecting contacts:', error);
+      alert('Unable to access contacts. Please ensure your browser supports the Contacts API and you grant permission.');
+    }
+  } else {
+    alert('Your browser does not support selecting contacts. This feature is available in Chrome on Android and some other browsers.');
+  }
+});
+
+function displaySelectedContacts(contacts) {
+  const container = document.getElementById('selectedContacts');
+  container.innerHTML = '<h5>Selected Contacts:</h5><ul>';
+  contacts.forEach(contact => {
+    const name = contact.name ? contact.name.join(' ') : 'Unknown';
+    const email = contact.email ? contact.email.join(', ') : '';
+    const tel = contact.tel ? contact.tel.join(', ') : '';
+    container.innerHTML += `<li>${name} - ${email} ${tel}</li>`;
+  });
+  container.innerHTML += '</ul>';
+  // Store contacts data in hidden input
+  document.getElementById('selectedContactsData').value = JSON.stringify(contacts);
+}
+</script>
 
 </body>
 </html>

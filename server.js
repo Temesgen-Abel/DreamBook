@@ -1214,7 +1214,7 @@ app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
 // Create meeting POST
 app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   try {
-    const { title, description, scheduled_at, duration, preId } = req.body;
+    const { title, description, scheduled_at, duration, preId, selectedContacts } = req.body;
     const meetingId = preId || crypto.randomUUID();
     const meetingLink = `${req.protocol}://${req.get("host")}/live-meetings/${meetingId}`;
 
@@ -1232,6 +1232,44 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
         meetingLink
       ]
     );
+
+    // Handle selected contacts
+    if (selectedContacts) {
+      let contacts;
+      try {
+        contacts = JSON.parse(selectedContacts);
+      } catch (e) {
+        console.error('Invalid selectedContacts JSON:', e);
+      }
+      if (contacts && Array.isArray(contacts)) {
+        for (const contact of contacts) {
+          const emails = contact.email || [];
+          const tels = contact.tel || [];
+          let user = null;
+          // Try to find user by email
+          for (const email of emails) {
+            user = await dbGet('SELECT id FROM users WHERE email = $1', [email]);
+            if (user) break;
+          }
+          // If not found by email, try by phone
+          if (!user) {
+            for (const tel of tels) {
+              user = await dbGet('SELECT id FROM users WHERE phone = $1', [tel]);
+              if (user) break;
+            }
+          }
+          if (user) {
+            // Insert as pending participant
+            await pool.query(
+              `INSERT INTO meeting_participants (meeting_id, user_id, status)
+               VALUES ($1, $2, 'pending')
+               ON CONFLICT (meeting_id, user_id) DO NOTHING`,
+              [meetingId, user.id]
+            );
+          }
+        }
+      }
+    }
 
     io.emit("dashboard_update", { newMeeting: true });
 
