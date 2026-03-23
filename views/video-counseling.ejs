@@ -23,28 +23,50 @@
   <% if (!roomId && !meetingMode) { %>
     <div class="links">
       <h3>select live meeting participants:</h3>
-      <ul>
-        <% users.forEach(u => { %>
-          <li>
-            <a href="/video-counseling/<%= u.roomId || '' %>?counselorId=<%= u.id %>">Start session with <%= u.link %></a>
-          </li>
-        <% }) %>
-      </ul>
+      <form action="/video-counseling" method="get">
+        <select name="userId" required>
+          <option value="">-- Select User --</option>
+          <% users.forEach(u => { %>
+            <option value="<%= u.id %>"><%= u.link %></option>
+          <% }) %>
+        </select>
+        <button type="submit" class="btn">Start Session</button>
+      </form>
+
+      <h3>or join an existing session:</h3>
+      <form action="/video-counseling" method="get">
+        <input
+          name="roomId"
+          placeholder="Enter Room ID"
+          required
+        />
+
+        <button type="submit" class="btn">Join Session</button>
+      </form>
     </div>
   <% } %>
+
 
   <% if (pendingRequests.length && !meetingMode) { %>
     <div class="links">
       <h3>Pending Requests:</h3>
+      <form action="/video-counseling/<%= r.room_id %>" method="post"></form>
       <ul>
         <% pendingRequests.forEach(r => { %>
           <li>
-            <a href="/video-counseling/<%= r.room_id %>">Accept session request from <%= r.username %></a>
+            <%= r.username %>
+            <form action="/video-counseling/<%= r.room_id %>" method="post" style="display:inline;">
+              <input type="hidden" name="action" value="approve">
+              <input type="hidden" name="userId" value="<%= r.user_id %>">
+              <button type="submit" class="btn btn-sm btn-success">Approve</button>
+            </form>
+            <form action="/video-counseling/<%= r.room_id %>" method="post" style="display:inline;">
+              <input type="hidden" name="action" value="reject">
+              <input type="hidden" name="userId" value="<%= r.user_id %>">
+              <button type="submit" class="btn btn-sm btn-secondary">Reject</button>
+            </form>
           </li>
         <% }) %>
-      </ul>
-    </div>
-  <% } %>
 
   <% if (roomId || meetingMode) { %>
     <h2><%= meetingMode ? (meeting.title || 'Live Meeting') : 'Counseling Session' %></h2>
