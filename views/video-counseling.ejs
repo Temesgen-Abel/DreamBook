@@ -61,6 +61,15 @@
 <%- include('includes/header') %>
 
 <div class="container">
+<h2>create meeting</h2>
+<form action="/live-meetings/create" method="POST">
+  <input type="text" name="title" placeholder="Meeting Title" required>
+  <button type="submit" class="btn">Create Meeting</button>
+</form>
+
+</div>
+
+<div class="container">
 
   <% if (!roomId && !meetingMode) { %>
 
