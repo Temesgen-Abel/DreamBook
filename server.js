@@ -1163,7 +1163,29 @@ app.post("/video-counseling/end/:roomId", mustBeLoggedIn, async (req, res) => {
 // ================= LIVE MEETINGS =================
 
 // Create / Join redirects
-app.get("/create-group-meeting", mustBeLoggedIn, (req, res) => res.redirect("/live-meetings/create"));
+app.get("/live-meetings/:id", async (req, res) => {
+  const meetingId = req.params.id;
+
+  // Fetch meeting info from DB if needed
+  const meeting = await pool.query(
+    `SELECT * FROM live_meetings WHERE id=$1`,
+    [meetingId]
+  );
+
+  res.render("video-counseling", { 
+    roomId: null,           // you can leave null or set as needed
+    meetingMode: true,      // to switch EJS to meeting mode
+    meeting: meeting.rows[0],
+    userId: req.user.id,
+    isHost: req.user.id === meeting.rows[0].created_by,
+    isApproved: true,       // or fetch participant status
+    pendingRequests: [],    // fetch from DB if needed
+    counselingDocuments: [],
+    groupDocuments: []
+  });
+});
+
+
 app.post("/create-group-meeting", mustBeLoggedIn, (req, res) => res.redirect(307, "/live-meetings/create"));
 
 // Live meetings main page
