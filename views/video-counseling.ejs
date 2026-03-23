@@ -197,46 +197,142 @@
 
 </div>
 
-
 <script src="/socket.io/socket.io.js"></script>
 
 <script>
 const socket = io();
-let localStream = null;
 
-const meetingMode = <%= JSON.stringify(meetingMode) %>;
+let localStream;
+const peers = {};
+
+const roomId = <%= roomId ? JSON.stringify(roomId) : 'null' %>;
 const meetingId = <%= meetingMode && meeting ? JSON.stringify(meeting.id) : 'null' %>;
-const isHost = <%= JSON.stringify(isHost) %>;
+const currentRoom = meetingId || roomId;
 const userId = <%= JSON.stringify(userId) %>;
 
-async function startLocalStream() {
-  if(localStream) return;
+const config = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" }
+  ]
+};
 
+async function startLocalStream() {
   localStream = await navigator.mediaDevices.getUserMedia({
     video:true,
     audio:true
   });
 
-  const video = document.createElement('video');
+  const video = document.createElement("video");
+  video.srcObject = localStream;
   video.autoplay = true;
   video.muted = true;
   video.playsInline = true;
-  video.srcObject = localStream;
 
-  document.getElementById('group-video-container').appendChild(video);
+  document.getElementById("group-video-container").appendChild(video);
 }
 
-document.getElementById('startCamBtn')?.addEventListener('click', startLocalStream);
+async function createPeer(targetId, initiator=false) {
+  const pc = new RTCPeerConnection(config);
 
-document.getElementById('leaveBtn')?.addEventListener('click', () => {
-  window.location.href = '/dashboard';
+  peers[targetId] = pc;
+
+  localStream.getTracks().forEach(track => {
+    pc.addTrack(track, localStream);
+  });
+
+  pc.ontrack = event => {
+    let remoteVideo = document.getElementById(targetId);
+
+    if (!remoteVideo) {
+      remoteVideo = document.createElement("video");
+      remoteVideo.id = targetId;
+      remoteVideo.autoplay = true;
+      remoteVideo.playsInline = true;
+      document.getElementById("group-video-container").appendChild(remoteVideo);
+    }
+
+    remoteVideo.srcObject = event.streams[0];
+  };
+
+  pc.onicecandidate = event => {
+    if (event.candidate) {
+      socket.emit("ice-candidate", {
+        target: targetId,
+        candidate: event.candidate
+      });
+    }
+  };
+
+  if (initiator) {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    socket.emit("offer", {
+      target: targetId,
+      offer
+    });
+  }
+
+  return pc;
+}
+
+socket.on("user_joined", async ({ socketId }) => {
+  await createPeer(socketId, true);
 });
 
-if (meetingMode && isHost) {
-  document.getElementById('endMeetingBtn')?.addEventListener('click', () => {
-    socket.emit('end_meeting', { meetingId });
+socket.on("offer", async ({ offer, sender }) => {
+  const pc = await createPeer(sender);
+
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  socket.emit("answer", {
+    target: sender,
+    answer
   });
-}
+});
+
+socket.on("answer", async ({ answer, sender }) => {
+  await peers[sender].setRemoteDescription(
+    new RTCSessionDescription(answer)
+  );
+});
+
+socket.on("ice-candidate", async ({ candidate, sender }) => {
+  if (peers[sender]) {
+    await peers[sender].addIceCandidate(
+      new RTCIceCandidate(candidate)
+    );
+  }
+});
+
+socket.on("user_left", socketId => {
+  if (peers[socketId]) {
+    peers[socketId].close();
+    delete peers[socketId];
+  }
+
+  const video = document.getElementById(socketId);
+  if (video) video.remove();
+});
+
+document.getElementById("startCamBtn").onclick = async () => {
+  await startLocalStream();
+
+  socket.emit(
+    meetingId ? "join_meeting" : "join_room",
+    {
+      [meetingId ? "meetingId" : "roomId"]: currentRoom,
+      userId
+    }
+  );
+};
+
+document.getElementById("leaveBtn").onclick = () => {
+  window.location.href = "/dashboard";
+};
 </script>
 
 </body>
