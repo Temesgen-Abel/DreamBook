@@ -1742,7 +1742,6 @@ app.post("/dream-realness", (req, res) => {
 
 const userSockets = new Map();
 const lastSeen = new Map();
-
 const waitingUsers = {};
 const activeSessions = {};
 
@@ -1751,31 +1750,13 @@ async function emitMeetingParticipants(meetingId) {
 
   for (const [socketId, session] of Object.entries(activeSessions)) {
     if (session.meetingId !== meetingId) continue;
+
     participants.push({
       socketId,
       userId: session.userId,
-      username: session.username || null,
+      username: session.username || `User ${session.userId}`,
       role: session.role
     });
-  }
-
-  const missingUserIds = participants
-    .filter((p) => !p.username)
-    .map((p) => p.userId);
-
-  if (missingUserIds.length) {
-    try {
-      const rows = await pool.query(
-        `SELECT id, username FROM users WHERE id = ANY($1::int[])`,
-        [missingUserIds]
-      );
-      const usernameMap = new Map(rows.rows.map((r) => [r.id, r.username]));
-      participants.forEach((p) => {
-        if (!p.username) p.username = usernameMap.get(p.userId) || `User ${p.userId}`;
-      });
-    } catch (err) {
-      console.error(err);
-    }
   }
 
   io.to(`meeting_${meetingId}`).emit("meeting_participants", participants);
@@ -1786,11 +1767,8 @@ io.on("connection", (socket) => {
   console.log("🔌 Connected:", socket.id);
 
   // =====================================================
-  // 1️⃣ USER PRESENCE SYSTEM
+  // USER PRESENCE
   // =====================================================
-  socket.on("host_mute_user", ({ targetSocketId }) => {
-  io.to(targetSocketId).emit("force_mute");
-    });
 
   socket.on("join_user_room", (userId) => {
     userId = Number(userId);
@@ -1810,7 +1788,7 @@ io.on("connection", (socket) => {
   });
 
   // =====================================================
-  // 2️⃣ PRIVATE CHAT SYSTEM
+  // PRIVATE MESSAGE
   // =====================================================
 
   socket.on("private_message", ({ toUserId, message }) => {
@@ -1828,7 +1806,7 @@ io.on("connection", (socket) => {
   });
 
   // =====================================================
-  // 3️⃣ NOTIFICATION SYSTEM
+  // NOTIFICATION SYSTEM
   // =====================================================
 
   socket.on("send_notification", ({ toUserId, notification }) => {
@@ -1841,56 +1819,68 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("broadcast_notification", (notification) => {
-    io.emit("new_notification", {
-      ...notification,
-      timestamp: new Date().toISOString()
-    });
-  });
-
   // =====================================================
-  // 4️⃣ LIVE MEETING HOST JOIN
+  // LIVE MEETING JOIN
   // =====================================================
 
   socket.on("join_meeting", async ({ meetingId, userId }) => {
     try {
-      const result = await pool.query(
+      const meetingRes = await pool.query(
         `SELECT created_by FROM live_meetings WHERE id=$1`,
         [meetingId]
       );
 
-      if (!result.rowCount) return;
+      if (!meetingRes.rowCount) return;
 
-      const meeting = result.rows[0];
+      const meeting = meetingRes.rows[0];
+      let role = "participant";
 
-      if (meeting.created_by !== Number(userId)) {
-        socket.emit("not_host");
-        return;
+      if (meeting.created_by === Number(userId)) {
+        role = "host";
+        socket.join(`host_${meetingId}`);
+      } else {
+        const participantRes = await pool.query(
+          `SELECT status FROM meeting_participants
+           WHERE meeting_id=$1 AND user_id=$2`,
+          [meetingId, userId]
+        );
+
+        if (
+          !participantRes.rowCount ||
+          participantRes.rows[0].status !== "joined"
+        ) {
+          socket.emit("not_approved");
+          return;
+        }
       }
 
       socket.join(`meeting_${meetingId}`);
-      socket.join(`host_${meetingId}`);
 
-      let username = null;
-      try {
-        const res = await pool.query(`SELECT username FROM users WHERE id=$1`, [userId]);
-        if (res.rowCount) username = res.rows[0].username;
-      } catch (err) {
-        console.error(err);
-      }
+      const userRes = await pool.query(
+        `SELECT username FROM users WHERE id=$1`,
+        [userId]
+      );
+
+      const username = userRes.rowCount
+        ? userRes.rows[0].username
+        : `User ${userId}`;
 
       activeSessions[socket.id] = {
         meetingId,
         userId,
-        username: username || `User ${userId}`,
-        role: "host"
+        username,
+        role
       };
 
       socket.meetingId = meetingId;
       socket.userId = userId;
 
-      // If there are existing pending join requests (from DB), notify host.
-      try {
+      if (role === "host") {
+        await pool.query(
+          `UPDATE live_meetings SET status='live' WHERE id=$1`,
+          [meetingId]
+        );
+
         const pending = await pool.query(
           `SELECT mp.user_id, u.username
            FROM meeting_participants mp
@@ -1901,25 +1891,32 @@ io.on("connection", (socket) => {
 
         pending.rows.forEach((row) => {
           const sockets = userSockets.get(row.user_id);
-          if (!sockets || !sockets.size) return;
-          const waitingSocketId = [...sockets][0];
-          waitingUsers[waitingSocketId] = { meetingId, userId: row.user_id };
-          socket.emit("waiting_user", {
-            socketId: waitingSocketId,
-            userId: row.user_id
-          });
+
+          if (sockets?.size) {
+            const waitingSocketId = [...sockets][0];
+
+            waitingUsers[waitingSocketId] = {
+              meetingId,
+              userId: row.user_id
+            };
+
+            socket.emit("waiting_user", {
+              socketId: waitingSocketId,
+              userId: row.user_id,
+              username: row.username
+            });
+          }
         });
-      } catch (err) {
-        console.error(err);
+
+        socket.emit("host_ready");
       }
 
-      await pool.query(
-        `UPDATE live_meetings SET status='live' WHERE id=$1`,
-        [meetingId]
-      );
+      socket.to(`meeting_${meetingId}`).emit("participant_joined", {
+        socketId: socket.id,
+        userId
+      });
 
       await emitMeetingParticipants(meetingId);
-      socket.emit("host_ready");
 
     } catch (err) {
       console.error(err);
@@ -1927,196 +1924,86 @@ io.on("connection", (socket) => {
   });
 
   // =====================================================
-  // 5️⃣ PARTICIPANT REQUEST JOIN
+  // REQUEST JOIN
   // =====================================================
 
   socket.on("request_join_meeting", async ({ meetingId, userId }) => {
-    waitingUsers[socket.id] = { meetingId, userId };
-
-    socket.meetingId = meetingId;
-    socket.userId = userId;
-
     try {
+      waitingUsers[socket.id] = { meetingId, userId };
+
       await pool.query(
         `INSERT INTO meeting_participants (meeting_id, user_id, status)
          VALUES ($1,$2,'pending')
-         ON CONFLICT (meeting_id,user_id) DO UPDATE SET status='pending', joined_at=NOW()`,
+         ON CONFLICT (meeting_id,user_id)
+         DO UPDATE SET status='pending', joined_at=NOW()`,
         [meetingId, userId]
       );
-    } catch (err) {
-      console.error(err);
-    }
 
-    let username = null;
-    try {
-      const userRes = await pool.query(`SELECT username FROM users WHERE id=$1`, [userId]);
-      if (userRes.rowCount) username = userRes.rows[0].username;
-    } catch (err) {
-      console.error(err);
-    }
-
-    io.to(`host_${meetingId}`).emit("waiting_user", {
-      socketId: socket.id,
-      userId,
-      username
-    });
-  });
-
-  // =====================================================
-  // 5️⃣.1️⃣ CANCEL JOIN REQUEST
-  //
-  // User cancels their pending interview/join request.
-  socket.on("cancel_request", async ({ meetingId, userId }) => {
-    const resolvedUserId = userId || socket.userId;
-    if (!meetingId || !resolvedUserId) return;
-
-    try {
-      await pool.query(
-        `UPDATE meeting_participants SET status='cancelled' WHERE meeting_id=$1 AND user_id=$2`,
-        [meetingId, resolvedUserId]
+      const userRes = await pool.query(
+        `SELECT username FROM users WHERE id=$1`,
+        [userId]
       );
+
+      io.to(`host_${meetingId}`).emit("waiting_user", {
+        socketId: socket.id,
+        userId,
+        username: userRes.rows[0]?.username
+      });
+
     } catch (err) {
       console.error(err);
     }
-
-    io.to(`host_${meetingId}`).emit("request_cancelled", {
-      userId: resolvedUserId
-    });
   });
 
   // =====================================================
-  // 6️⃣ APPROVE USER
+  // APPROVE USER
   // =====================================================
 
   socket.on("approve_user", async ({ socketId, meetingId, userId }) => {
-    // Allow approving by userId (use first active socket if available)
-    if (!socketId && userId) {
-      const sockets = userSockets.get(Number(userId));
-      if (sockets && sockets.size) {
-        socketId = [...sockets][0];
-      }
-    }
-
-    const target = io.sockets.sockets.get(socketId);
-    if (!target) return;
-
-    const resolvedUserId = userId || waitingUsers[socketId]?.userId;
-    if (!resolvedUserId) return;
-
     try {
+      if (!socketId && userId) {
+        const sockets = userSockets.get(Number(userId));
+        if (sockets?.size) socketId = [...sockets][0];
+      }
+
+      if (!socketId) return;
+
       await pool.query(
         `INSERT INTO meeting_participants (meeting_id, user_id, status)
          VALUES ($1,$2,'joined')
-         ON CONFLICT (meeting_id,user_id) DO UPDATE SET status='joined', joined_at=NOW()`,
-        [meetingId, resolvedUserId]
+         ON CONFLICT (meeting_id,user_id)
+         DO UPDATE SET status='joined', joined_at=NOW()`,
+        [meetingId, userId]
       );
-    } catch (err) {
-      console.error(err);
-    }
 
-    target.join(`meeting_${meetingId}`);
+      io.to(socketId).emit("approved");
 
-    let username = null;
-    try {
-      const res = await pool.query(`SELECT username FROM users WHERE id=$1`, [resolvedUserId]);
-      if (res.rowCount) username = res.rows[0].username;
-    } catch (err) {
-      console.error(err);
-    }
-
-    activeSessions[socketId] = {
-      meetingId,
-      userId: resolvedUserId,
-      username: username || `User ${resolvedUserId}`,
-      role: "participant"
-    };
-
-    target.emit("approved");
-
-    await emitMeetingParticipants(meetingId);
-
-    io.to(`meeting_${meetingId}`).emit("participant_joined", {
-      socketId,
-      userId: resolvedUserId
-    });
-
-    if (socketId) {
       delete waitingUsers[socketId];
+
+      await emitMeetingParticipants(meetingId);
+
+    } catch (err) {
+      console.error(err);
     }
   });
 
   // =====================================================
-  // 7️⃣ REJECT USER
+  // REJECT USER
   // =====================================================
 
   socket.on("reject_user", async ({ socketId, userId, meetingId }) => {
-    // Allow rejection by userId too
-    if (!socketId && userId) {
-      const sockets = userSockets.get(Number(userId));
-      if (sockets && sockets.size) {
-        socketId = [...sockets][0];
-      }
-    }
-
-    if (!socketId && !meetingId) return;
-
-    const resolvedUserId = userId || waitingUsers[socketId]?.userId;
-
-    try {
-      if (resolvedUserId && meetingId) {
-        await pool.query(
-          `UPDATE meeting_participants SET status='rejected' WHERE meeting_id=$1 AND user_id=$2`,
-          [meetingId, resolvedUserId]
-        );
-      }
-    } catch (err) {
-      console.error(err);
-    }
-
-    if (socketId) {
-      io.to(socketId).emit("rejected");
-      delete waitingUsers[socketId];
-    }
-
-    if (meetingId) {
-      io.to(`host_${meetingId}`).emit("request_cancelled", { userId: resolvedUserId });
-    }
-  });
-
-  // =====================================================
-  // 8️⃣ KICK USER
-  // =====================================================
-
-  socket.on("kick_user", ({ socketId }) => {
-    const session = activeSessions[socketId];
-    const meetingId = session?.meetingId;
-
-    const target = io.sockets.sockets.get(socketId);
-    if (target && meetingId) {
-      target.leave(`meeting_${meetingId}`);
-    }
-
-    io.to(socketId).emit("kicked");
-
-    delete activeSessions[socketId];
-
-    if (meetingId) {
-      emitMeetingParticipants(meetingId).catch(console.error);
-    }
-  });
-
-  // =====================================================
-  // 9️⃣ END LIVE MEETING
-  // =====================================================
-
-  socket.on("end_meeting", async ({ meetingId }) => {
     try {
       await pool.query(
-        `UPDATE live_meetings SET status='ended' WHERE id=$1`,
-        [meetingId]
+        `UPDATE meeting_participants
+         SET status='rejected'
+         WHERE meeting_id=$1 AND user_id=$2`,
+        [meetingId, userId]
       );
 
-      io.to(`meeting_${meetingId}`).emit("meeting_ended");
+      if (socketId) {
+        io.to(socketId).emit("rejected");
+        delete waitingUsers[socketId];
+      }
 
     } catch (err) {
       console.error(err);
@@ -2124,7 +2011,7 @@ io.on("connection", (socket) => {
   });
 
   // =====================================================
-  // 🔟 COUNSELING ROOM JOIN
+  // COUNSELING ROOM
   // =====================================================
 
   socket.on("join_room", ({ roomId, userId }) => {
@@ -2146,19 +2033,17 @@ io.on("connection", (socket) => {
   });
 
   // =====================================================
-  // 1️⃣1️⃣ END COUNSELING
+  // END MEETING
   // =====================================================
 
-  socket.on("end_counseling", async ({ roomId }) => {
+  socket.on("end_meeting", async ({ meetingId }) => {
     try {
       await pool.query(
-        `UPDATE video_sessions
-         SET status='ended'
-         WHERE room_id=$1`,
-        [roomId]
+        `UPDATE live_meetings SET status='ended' WHERE id=$1`,
+        [meetingId]
       );
 
-      io.to(`room_${roomId}`).emit("meeting_ended");
+      io.to(`meeting_${meetingId}`).emit("meeting_ended");
 
     } catch (err) {
       console.error(err);
@@ -2166,7 +2051,7 @@ io.on("connection", (socket) => {
   });
 
   // =====================================================
-  // 1️⃣2️⃣ WEBRTC SIGNALING
+  // WEBRTC SIGNALING
   // =====================================================
 
   socket.on("webrtc_offer", ({ to, sdp, from }) => {
@@ -2182,11 +2067,10 @@ io.on("connection", (socket) => {
   });
 
   // =====================================================
-  // 1️⃣3️⃣ CLEAN DISCONNECT
+  // DISCONNECT CLEANUP
   // =====================================================
 
-  socket.on("disconnect", () => {
-
+  socket.on("disconnect", async () => {
     console.log("❌ Disconnected:", socket.id);
 
     if (socket.userId && userSockets.has(Number(socket.userId))) {
@@ -2205,7 +2089,8 @@ io.on("connection", (socket) => {
       io.to(`meeting_${session.meetingId}`).emit("participant_left", {
         socketId: socket.id
       });
-      emitMeetingParticipants(session.meetingId).catch(console.error);
+
+      await emitMeetingParticipants(session.meetingId);
     }
 
     if (session?.roomId) {
@@ -2216,9 +2101,11 @@ io.on("connection", (socket) => {
 
     delete waitingUsers[socket.id];
     delete activeSessions[socket.id];
-
   });
+
 });
+```
+
 
 // =====================================================
 // START SERVER

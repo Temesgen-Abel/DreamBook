@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="<%= lang %>">
 <head>
@@ -5,130 +6,125 @@
   <link rel="stylesheet" href="/style.css">
 
   <style>
-    .videos{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-      gap:12px;
+    .videos {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px,1fr));
+      gap: 12px;
+      margin-top: 20px;
     }
 
-    .video-box{
-      position:relative;
+    .video-box {
+      position: relative;
     }
 
-    video{
-      width:100%;
-      border-radius:10px;
-      background:black;
+    video {
+      width: 100%;
+      border-radius: 10px;
+      background: black;
     }
 
-    .participant-name{
-      position:absolute;
-      bottom:5px;
-      left:5px;
-      background:rgba(0,0,0,.6);
-      color:white;
-      padding:4px 8px;
-      border-radius:6px;
+    .participant-name {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      background: rgba(0,0,0,.6);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
     }
 
-    @media(max-width:768px){
-      .video-controls{
-        flex-direction:column;
+    .video-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .links {
+      margin: 20px 0;
+    }
+
+    @media(max-width:768px) {
+      .video-controls {
+        flex-direction: column;
       }
     }
-    </style>
+  </style>
 </head>
 <body>
 
 <%- include('includes/header') %>
 
 <div class="container">
-<h2>create meeting</h2>
-<form action="/live-meetings/create" method="POST">
-  <input type="text" name="title" placeholder="Meeting Title" required>
-  <button type="submit" class="btn">Create Meeting</button>
-</form>
-
-</div>
-
-<div class="container">
 
   <% if (!roomId && !meetingMode) { %>
 
-    <div class="links">
-      <h3>Select Counselor / User</h3>
+    <h2>Video Counseling</h2>
 
-      <form action="/video-counseling" method="POST">
-        <select name="counselorId" required>
-          <option value="">-- Select --</option>
-
-            <% users.forEach(u => { %>
+    <form action="/video-counseling" method="POST">
+      <select name="counselorId" required>
+        <option value="">-- Select Counselor --</option>
+        <% users.forEach(u => { %>
           <option value="<%= u.id %>"><%= u.username %></option>
         <% }) %>
-        </select>
+      </select>
 
-        <button type="submit" class="btn">Request Session</button>
-      </form>
-    </div>
+      <button type="submit" class="btn">Request Session</button>
+    </form>
 
     <% if (pendingRequests.length > 0) { %>
       <div class="links">
         <h3>Pending Requests</h3>
         <ul>
-
           <% pendingRequests.forEach(r => { %>
             <li>
               <%= r.username %>
-
               <form action="/video-counseling/accept/<%= r.id %>" method="POST" style="display:inline;">
                 <button type="submit" class="btn btn-success">Accept</button>
               </form>
             </li>
           <% }) %>
-
         </ul>
       </div>
     <% } %>
 
   <% } %>
 
+  <% if (meetingMode) { %>
+
+    <h2>Create Live Meeting</h2>
+
+    <form action="/live-meetings/create" method="POST">
+      <input type="text" name="title" placeholder="Meeting Title" required>
+      <button type="submit" class="btn">Create Meeting</button>
+    </form>
+
+  <% } %>
 
   <% if (roomId || meetingMode) { %>
 
-    <h2>
-      <%= meetingMode ? (meeting?.title || 'Live Meeting') : 'Counseling Session' %>
-    </h2>
+    <h2><%= meetingMode ? (meeting?.title || 'Live Meeting') : 'Counseling Session' %></h2>
 
-
-    <% if (meetingMode && !isApproved) { %>
-      <div class="links" id="meetingRequestSection">
-
-        <% if (requestStatus === 'pending') { %>
-          <p>Your request is pending.</p>
-          <button id="cancelRequestBtn" class="btn btn-secondary">Cancel Request</button>
-
-        <% } else if (requestStatus === 'rejected') { %>
-          <p>Your request was rejected.</p>
-          <button id="requestJoinBtn" class="btn btn-primary">Request Again</button>
-
-        <% } else { %>
-          <p>Request permission to join meeting.</p>
-          <button id="requestJoinBtn" class="btn btn-primary">Request Join</button>
-        <% } %>
-
+    <% if (meetingMode && meeting?.meeting_link) { %>
+      <div class="links">
+        <input type="text" value="<%= meeting.meeting_link %>" readonly style="width:100%">
       </div>
     <% } %>
 
+    <% if (meetingMode && !isApproved) { %>
+      <div id="meetingRequestSection">
+        <button id="requestJoinBtn" class="btn btn-primary">Request Join</button>
+      </div>
+    <% } %>
 
     <% if (meetingMode && isHost) { %>
       <div class="links">
         <h3>Pending Join Requests</h3>
-
         <ul id="pendingRequestsList">
           <% pendingRequests.forEach(r => { %>
-            <li data-user-id="<%= r.user_id %>">
+            <li>
               <%= r.username %>
-
               <button class="btn btn-success approveBtn" data-user-id="<%= r.user_id %>">Admit</button>
               <button class="btn btn-secondary rejectBtn" data-user-id="<%= r.user_id %>">Reject</button>
             </li>
@@ -136,7 +132,6 @@
         </ul>
       </div>
     <% } %>
-
 
     <div id="meetingUi" style="display:<%= (!meetingMode || isApproved) ? 'block' : 'none' %>">
 
@@ -154,31 +149,9 @@
         <% } %>
       </div>
 
-
       <div class="participants-section">
         <h4>Participants</h4>
         <ul id="participantList"></ul>
-      </div>
-
-
-      <div class="document-section">
-        <h4>Shared Documents</h4>
-
-        <ul id="sharedDocs">
-
-          <% [...counselingDocuments, ...groupDocuments].forEach(doc => { %>
-            <li>
-              <a href="/documents/<%= doc.id %>" target="_blank"><%= doc.name %></a>
-
-              <% if (doc.editable) { %>
-                <button onclick="editDocument('<%= doc.id %>')" class="btn btn-secondary btn-sm">
-                  Edit
-                </button>
-              <% } %>
-            </li>
-          <% }) %>
-
-        </ul>
       </div>
 
     </div>
@@ -192,92 +165,85 @@
 <script>
 const socket = io();
 
-let localStream;
-let screenStream;
+let localStream = null;
+let screenStream = null;
 const peers = {};
-const recordings = {};
 
 const roomId = <%= roomId ? JSON.stringify(roomId) : 'null' %>;
 const meetingId = <%= meetingMode && meeting ? JSON.stringify(meeting.id) : 'null' %>;
-const currentRoom = meetingId || roomId;
 const userId = <%= JSON.stringify(userId) %>;
-const isHost = <%= meetingMode && isHost ? 'true' : 'false' %>;
 
-// ===================== ICE SERVERS (STUN + TURN) =====================
 const configuration = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
-
     {
       urls: "turn:openrelay.metered.ca:80",
-      username: "openrelayproject",
-      credential: "openrelayproject"
-    },
-
-    {
-      urls: "turn:openrelay.metered.ca:443",
       username: "openrelayproject",
       credential: "openrelayproject"
     }
   ]
 };
 
-// ===================== UTILITY =====================
 function createVideoElement(id, label, muted=false) {
   const container = document.getElementById("group-video-container");
+
+  if (document.getElementById(id)) return document.getElementById(id);
+
   const wrapper = document.createElement("div");
   wrapper.id = `wrapper_${id}`;
-  wrapper.style.position = "relative";
-  wrapper.style.flex = "1 1 200px";
-  wrapper.style.maxWidth = "400px";
+  wrapper.className = "video-box";
 
   const video = document.createElement("video");
   video.id = id;
   video.autoplay = true;
   video.playsInline = true;
   video.muted = muted;
-  video.style.width = "100%";
-  video.style.borderRadius = "10px";
+
+  const name = document.createElement("div");
+  name.className = "participant-name";
+  name.innerText = label;
+
   wrapper.appendChild(video);
-
-  const nameTag = document.createElement("div");
-  nameTag.innerText = label;
-  nameTag.style.position = "absolute";
-  nameTag.style.bottom = "8px";
-  nameTag.style.left = "8px";
-  nameTag.style.color = "#fff";
-  nameTag.style.background = "rgba(0,0,0,0.5)";
-  nameTag.style.padding = "2px 6px";
-  nameTag.style.borderRadius = "4px";
-  nameTag.style.fontSize = "12px";
-  wrapper.appendChild(nameTag);
-
+  wrapper.appendChild(name);
   container.appendChild(wrapper);
+
   return video;
 }
 
-// ===================== LOCAL STREAM =====================
 async function startLocalStream() {
-  if (localStream) return;
+  try {
+    if (localStream) return;
 
-  localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
-  createVideoElement(socket.id, "You", true).srcObject = localStream;
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true
+    });
+
+    createVideoElement("localVideo", "You", true).srcObject = localStream;
+
+  } catch (err) {
+    console.error(err);
+    alert("Camera access denied");
+  }
 }
 
-// ===================== PEER CONNECTION =====================
 async function createPeer(socketId, initiator=false) {
-  const pc = new RTCPeerConnection(config);
+  const pc = new RTCPeerConnection(configuration);
   peers[socketId] = pc;
 
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-  if (screenStream) screenStream.getTracks().forEach(track => pc.addTrack(track, screenStream));
+  if (localStream) {
+    localStream.getTracks().forEach(track => {
+      pc.addTrack(track, localStream);
+    });
+  }
 
   pc.ontrack = event => {
     let remoteVideo = document.getElementById(socketId);
+
     if (!remoteVideo) {
-      const label = event.streams[0].label || `User ${socketId}`;
-      remoteVideo = createVideoElement(socketId, label);
+      remoteVideo = createVideoElement(socketId, `User ${socketId}`);
     }
+
     remoteVideo.srcObject = event.streams[0];
   };
 
@@ -294,112 +260,117 @@ async function createPeer(socketId, initiator=false) {
   if (initiator) {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    socket.emit("webrtc_offer", { to: socketId, from: socket.id, sdp: offer });
+
+    socket.emit("webrtc_offer", {
+      to: socketId,
+      from: socket.id,
+      sdp: offer
+    });
   }
 
   return pc;
 }
 
-// ===================== SIGNALING =====================
-socket.on("participant_joined", async ({ socketId }) => { await createPeer(socketId, true); });
+socket.on("participant_joined", async ({ socketId }) => {
+  await createPeer(socketId, true);
+});
 
 socket.on("webrtc_offer", async ({ from, sdp }) => {
   const pc = await createPeer(from);
   await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
-  socket.emit("webrtc_answer", { to: from, from: socket.id, sdp: answer });
+
+  socket.emit("webrtc_answer", {
+    to: from,
+    from: socket.id,
+    sdp: answer
+  });
 });
 
 socket.on("webrtc_answer", async ({ from, sdp }) => {
-  if (peers[from]) await peers[from].setRemoteDescription(new RTCSessionDescription(sdp));
-});
-
-socket.on("webrtc_ice_candidate", async ({ from, candidate }) => {
-  if (peers[from]) await peers[from].addIceCandidate(new RTCIceCandidate(candidate));
-});
-
-socket.on("participant_left", ({ socketId }) => {
-  if (peers[socketId]) peers[socketId].close();
-  delete peers[socketId];
-  const video = document.getElementById(socketId);
-  if (video) video.parentElement.remove();
-});
-
-// ===================== HOST CONTROLS =====================
-function muteAll() {
-  Object.values(peers).forEach(pc => {
-    pc.getSenders().forEach(sender => {
-      if (sender.track && sender.track.kind === "audio") sender.track.enabled = false;
-    });
-  });
-}
-
-function unmuteAll() {
-  Object.values(peers).forEach(pc => {
-    pc.getSenders().forEach(sender => {
-      if (sender.track && sender.track.kind === "audio") sender.track.enabled = true;
-    });
-  });
-}
-
-document.getElementById("toggleAudioBtn")?.addEventListener("click", () => {
-  if (!localStream) return;
-  localStream.getAudioTracks().forEach(track => track.enabled = !track.enabled);
-});
-
-document.getElementById("toggleVideoBtn")?.addEventListener("click", () => {
-  if (!localStream) return;
-  localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled);
-});
-
-document.getElementById("shareScreenBtn")?.addEventListener("click", async () => {
-  if (!screenStream) {
-    screenStream = await navigator.mediaDevices.getDisplayMedia({ video:true });
-    Object.values(peers).forEach(pc => {
-      screenStream.getTracks().forEach(track => pc.addTrack(track, screenStream));
-    });
-    screenStream.getVideoTracks()[0].onended = () => { screenStream = null; };
+  if (peers[from]) {
+    await peers[from].setRemoteDescription(new RTCSessionDescription(sdp));
   }
 });
 
-// ===================== RECORDING =====================
-document.getElementById("startRecordingBtn")?.addEventListener("click", () => {
-  const combinedStream = new MediaStream([...localStream.getTracks()]);
-  const recorder = new MediaRecorder(combinedStream);
-  recordings.local = recorder;
-  const chunks = [];
-  recorder.ondataavailable = e => chunks.push(e.data);
-  recorder.onstop = () => {
-    const blob = new Blob(chunks, { type: "video/webm" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "recording.webm";
-    a.click();
-  };
-  recorder.start();
+socket.on("webrtc_ice_candidate", async ({ from, candidate }) => {
+  if (peers[from]) {
+    await peers[from].addIceCandidate(new RTCIceCandidate(candidate));
+  }
 });
 
-document.getElementById("stopRecordingBtn")?.addEventListener("click", () => {
-  recordings.local?.stop();
+socket.on("participant_left", ({ socketId }) => {
+  peers[socketId]?.close();
+  delete peers[socketId];
+
+  const wrapper = document.getElementById(`wrapper_${socketId}`);
+  if (wrapper) wrapper.remove();
 });
 
-// ===================== JOIN ROOM / MEETING =====================
 document.getElementById("startCamBtn")?.addEventListener("click", async () => {
   await startLocalStream();
-  if (meetingId) socket.emit("join_meeting", { meetingId, userId });
-  else if (roomId) socket.emit("join_room", { roomId, userId });
+
+  if (!localStream) return;
+
+  if (meetingId) {
+    socket.emit("join_meeting", { meetingId, userId });
+  } else {
+    socket.emit("join_room", { roomId, userId });
+  }
 });
 
-// ===================== END MEETING =====================
+document.getElementById("toggleAudioBtn")?.addEventListener("click", () => {
+  localStream?.getAudioTracks().forEach(track => track.enabled = !track.enabled);
+});
+
+document.getElementById("toggleVideoBtn")?.addEventListener("click", () => {
+  localStream?.getVideoTracks().forEach(track => track.enabled = !track.enabled);
+});
+
+document.getElementById("shareScreenBtn")?.addEventListener("click", async () => {
+  screenStream = await navigator.mediaDevices.getDisplayMedia({ video:true });
+
+  Object.values(peers).forEach(pc => {
+    screenStream.getTracks().forEach(track => pc.addTrack(track, screenStream));
+  });
+});
+
+document.getElementById("requestJoinBtn")?.addEventListener("click", () => {
+  socket.emit("request_join_meeting", { meetingId, userId });
+});
+
+document.querySelectorAll(".approveBtn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    socket.emit("approve_user", {
+      meetingId,
+      userId: btn.dataset.userId
+    });
+  });
+});
+
+document.querySelectorAll(".rejectBtn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    socket.emit("reject_user", {
+      meetingId,
+      userId: btn.dataset.userId
+    });
+  });
+});
+
 document.getElementById("endMeetingBtn")?.addEventListener("click", () => {
-  if (meetingId) socket.emit("end_meeting", { meetingId });
-  Object.values(peers).forEach(pc => pc.close());
-  document.getElementById("group-video-container").innerHTML = "";
+  socket.emit("end_meeting", { meetingId });
 });
 
+document.getElementById("leaveBtn")?.addEventListener("click", () => {
+  location.href = "/video-counseling";
+});
+
+socket.on("approved", () => location.reload());
+socket.on("meeting_ended", () => location.href = "/video-counseling");
 </script>
 
 </body>
 </html>
+```
