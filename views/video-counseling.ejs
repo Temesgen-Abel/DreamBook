@@ -66,7 +66,7 @@
       <select name="counselorId" required>
         <option value="">-- Select Counselor --</option>
         <% users.forEach(u => { %>
-          <option value="<%= u.id %>"><%= u.username %></option>
+          <option value="<%= c.id %>"><%= c.username %></option>
         <% }) %>
       </select>
 
@@ -97,8 +97,88 @@
 
     <form action="/live-meetings/create" method="POST">
       <input type="text" name="title" placeholder="Meeting Title" required>
-      <button type="submit" class="btn">Create Meeting</button>
+      <input type="text" name="description" placeholder="Description (optional)">
+       <button type="submit" class="btn">Create Meeting</button>
+      <input type="hidden" name="isCounseling" value="true">
+      <input type="hidden" name="counselorId" value="<%= counselorId %>">
+    
     </form>
+
+    // If user is counselor, show their meetings
+    <% if (isCounselor) { %>
+      <div class="links">
+        <h3>Your Meetings</h3>
+        <ul>
+          <% meetings.forEach(m => { %>
+            <li>
+              <%= m.title %> - <%= m.is_active ? 'Active' : 'Ended' %>
+              <% if (m.is_active) { %>
+                <a href="/video-counseling?meetingId=<%= m.id %>" class="btn btn-primary">Join</a>
+              <% } %>
+            </li>
+          <% }) %>
+        </ul>
+      </div>
+
+      // If user is student, show their requested sessions
+    <% } else { %>
+      <div class="links">
+        <h3>Your Counseling Sessions</h3>
+        <ul>
+          <% meetings.forEach(m => { %>
+            <li>
+              <%= m.title %> - <%= m.is_active ? 'Active' : 'Ended' %>
+              <% if (m.is_active) { %>
+                <a href="/video-counseling?meetingId=<%= m.id %>" class="btn btn-primary">Join</a>
+              <% } %>
+            </li>
+          <% }) %>
+        </ul>
+      </div>
+
+      //shared meetings links to the social websites for the students to share their ongoing sessions with their friends and family for support and encouragement
+
+      <div class="links">
+        <h3>Shared Meetings</h3>
+        <ul>
+          <% sharedMeetings.forEach(m => { %>
+            <li>
+              <%= m.title %> - <%= m.is_active ? 'Active' : 'Ended' %>
+              <% if (m.is_active) { %>
+                <a href="/video-counseling?meetingId=<%= m.id %>" class="btn btn-primary">Join</a>
+              <% } %>
+            </li>
+          <% }) %>
+        </ul>
+      </div>
+
+      //emotional reaction feature for the ongoing live-meeting
+      <% if (meetingMode && meeting && meeting.is_active) { %>
+        <div class="links">
+          <h3>Send Emotional Reaction</h3>
+          <form id="reactionForm">
+            <select name="reaction" required>
+              <option value="">-- Select Reaction --</option>
+              <option value="like">Like</option>
+              <option value="love">Love</option>
+              <option value="laugh">Laugh</option>
+              <option value="sad">Sad</option>
+              <option value="angry">Angry</option>
+            </select>
+            <button type="submit" class="btn btn-info">Send Reaction</button>
+          </form>
+        </div>
+
+
+        <script>
+          document.getElementById("reactionForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const reaction = this.reaction.value;
+            socket.emit("send_reaction", { meetingId: <%= meeting.id %>, reaction });
+            alert("Reaction sent: " + reaction);
+          });
+        </script>
+
 
   <% } %>
 
