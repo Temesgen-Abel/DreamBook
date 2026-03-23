@@ -976,6 +976,15 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 // VIDEO COUNSELING + LIVE MEETINGS FULL CORRECTED ROUTES
 // ======================================================
 
+// ======================================================
+// VIDEO COUNSELING + LIVE MEETINGS CONSOLIDATED ROUTES
+// ======================================================
+
+const crypto = require("crypto");
+
+// ---------------------
+// 1️⃣ VIDEO COUNSELING LIST / REQUEST
+// ---------------------
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
   try {
     const currentUser = req.user;
@@ -987,9 +996,7 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
         "SELECT id, username FROM users WHERE role='counselor'"
       );
       users = result.rows;
-    }
-
-    if (currentUser.role === "counselor") {
+    } else if (currentUser.role === "counselor") {
       const result = await pool.query(
         "SELECT id, username FROM users WHERE role='user'"
       );
@@ -999,7 +1006,7 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
         `SELECT vs.id, u.username
          FROM video_sessions vs
          JOIN users u ON vs.user_id = u.id
-         WHERE vs.counselor_id = $1 AND vs.status='pending'`,
+         WHERE vs.counselor_id=$1 AND vs.status='pending'`,
         [currentUser.id]
       );
       pendingRequests = pending.rows;
@@ -1019,14 +1026,15 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
       meetingMode: false,
       lang: "en"
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
   }
 });
 
-// Request a counseling session
+// ---------------------
+// 2️⃣ REQUEST COUNSELING SESSION
+// ---------------------
 app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   const client = await pool.connect();
   try {
@@ -1063,7 +1071,6 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
     io.emit("dashboard_update", { pendingSessions: true });
 
     res.redirect("/video-counseling?requested=1");
-
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
@@ -1073,7 +1080,9 @@ app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
   }
 });
 
-// Accept a counseling request (counselor)
+// ---------------------
+// 3️⃣ ACCEPT COUNSELING REQUEST
+// ---------------------
 app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
   try {
     const sessionId = req.params.id;
@@ -1102,14 +1111,15 @@ app.post("/video-counseling/accept/:id", mustBeLoggedIn, async (req, res) => {
     io.emit("dashboard_update", { activeSession: true });
 
     res.redirect(`/video-counseling/${room_id}`);
-
   } catch (err) {
     console.error(err);
     res.redirect("/video-counseling");
   }
 });
 
-// Counseling session room
+// ---------------------
+// 4️⃣ COUNSELING SESSION ROOM
+// ---------------------
 app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -1136,14 +1146,15 @@ app.get("/video-counseling/:roomId", mustBeLoggedIn, async (req, res) => {
       meetingMode: false,
       lang: "en"
     });
-
   } catch (err) {
     console.error(err);
     res.redirect("/video-counseling");
   }
 });
 
-// End counseling session
+// ---------------------
+// 5️⃣ END COUNSELING
+// ---------------------
 app.post("/video-counseling/end/:roomId", mustBeLoggedIn, async (req, res) => {
   try {
     await pool.query(
@@ -1160,195 +1171,34 @@ app.post("/video-counseling/end/:roomId", mustBeLoggedIn, async (req, res) => {
   }
 });
 
-// ================= LIVE MEETINGS =================
-
-// Create / Join redirects
-app.get("/live-meetings/:id", async (req, res) => {
-  const meetingId = req.params.id;
-
-  // Fetch meeting info from DB if needed
-  const meeting = await pool.query(
-    `SELECT * FROM live_meetings WHERE id=$1`,
-    [meetingId]
-  );
-
-  res.render("video-counseling", { 
-    roomId: null,           // you can leave null or set as needed
-    meetingMode: true,      // to switch EJS to meeting mode
-    meeting: meeting.rows[0],
-    userId: req.user.id,
-    isHost: req.user.id === meeting.rows[0].created_by,
-    isApproved: true,       // or fetch participant status
-    pendingRequests: [],    // fetch from DB if needed
-    counselingDocuments: [],
-    groupDocuments: []
-  });
-});
-
-
-app.post("/create-group-meeting", mustBeLoggedIn, (req, res) => res.redirect(307, "/live-meetings/create"));
-
-// Live meetings main page
-app.get("/live-meetings", mustBeLoggedIn, async (req, res) => {
-  try {
-    const meetingsResult = await pool.query(
-      `SELECT lm.*, u.username AS creator_username
-       FROM live_meetings lm
-       JOIN users u ON lm.created_by = u.id
-       ORDER BY lm.created_at DESC`
-    );
-
-    res.render("join-live-meeting", {
-      meetings: meetingsResult.rows,
-      userId: req.user.id,
-      lang: "en"
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
-});
-
-// Create meeting page
-app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
-  try {
-    const preId = crypto.randomUUID();
-    const preLink = `${req.protocol}://${req.get("host")}/live-meetings/${preId}`;
-
-    res.render("live-meetings-create", {
-      preId,
-      preLink,
-      userId: req.user.id,
-      lang: "en"
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
-});
-
-// Create meeting POST
-app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
-  try {
-    const { title, description, scheduled_at, duration, preId, selectedContacts, inviteEmails } = req.body;
-    const meetingId = preId || crypto.randomUUID();
-    const meetingLink = `${req.protocol}://${req.get("host")}/live-meetings/${meetingId}`;
-
-    await pool.query(
-      `INSERT INTO live_meetings
-       (id, title, description, created_by, scheduled_at, duration_minutes, meeting_link, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'scheduled')`,
-      [
-        meetingId,
-        title,
-        description || null,
-        req.user.id,
-        scheduled_at ? new Date(scheduled_at) : new Date(),
-        duration || 60,
-        meetingLink
-      ]
-    );
-
-    // Handle selected contacts
-    if (selectedContacts) {
-      let contacts;
-      try {
-        contacts = JSON.parse(selectedContacts);
-      } catch (e) {
-        console.error('Invalid selectedContacts JSON:', e);
-      }
-      if (contacts && Array.isArray(contacts)) {
-        for (const contact of contacts) {
-          const emails = contact.email || [];
-          const tels = contact.tel || [];
-          let user = null;
-          // Try to find user by email
-          for (const email of emails) {
-            user = await dbGet('SELECT id FROM users WHERE email = $1', [email]);
-            if (user) break;
-          }
-          // If not found by email, try by phone
-          if (!user) {
-            for (const tel of tels) {
-              user = await dbGet('SELECT id FROM users WHERE phone = $1', [tel]);
-              if (user) break;
-            }
-          }
-          if (user) {
-            // Insert as pending participant
-            await pool.query(
-              `INSERT INTO meeting_participants (meeting_id, user_id, status)
-               VALUES ($1, $2, 'pending')
-               ON CONFLICT (meeting_id, user_id) DO NOTHING`,
-              [meetingId, user.id]
-            );
-          }
-        }
-      }
-    }
-
-    // Handle invite emails
-    if (inviteEmails) {
-      const emails = inviteEmails.split(',').map(e => e.trim()).filter(e => e);
-      for (const email of emails) {
-        const user = await dbGet('SELECT id FROM users WHERE email = $1', [email]);
-        if (user) {
-          await pool.query(
-            `INSERT INTO meeting_participants (meeting_id, user_id, status)
-             VALUES ($1, $2, 'pending')
-             ON CONFLICT (meeting_id, user_id) DO NOTHING`,
-            [meetingId, user.id]
-          );
-        }
-      }
-    }
-
-    io.emit("dashboard_update", { newMeeting: true });
-
-    res.redirect(`/live-meetings/${meetingId}`);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error creating meeting");
-  }
-});
-
-// Join meeting by ID
-app.get("/live-meetings/join", mustBeLoggedIn, async (req, res) => {
-  const meetingId = req.query.meetingId;
-  if (!meetingId) return res.redirect("/live-meetings");
-  res.redirect(`/live-meetings/${meetingId}`);
-});
-
-// Open meeting room
+// ---------------------
+// 6️⃣ LIVE MEETINGS ROUTES (reuse video-counseling.ejs)
+// ---------------------
 app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
   try {
     const { meetingId } = req.params;
-    const userId = req.user?.id || req.session.user.id;
+    const userId = req.user.id;
 
     const result = await pool.query(
       `SELECT * FROM live_meetings WHERE id=$1`,
       [meetingId]
     );
-
     if (!result.rowCount) return res.redirect("/live-meetings");
 
     const meeting = result.rows[0];
     const isHost = meeting.created_by === userId;
 
+    // Participant status
     const participantRow = await pool.query(
       `SELECT status FROM meeting_participants WHERE meeting_id=$1 AND user_id=$2`,
       [meetingId, userId]
     );
-
     const requestStatus = isHost
       ? "joined"
       : (participantRow.rowCount ? participantRow.rows[0].status : "none");
-
     const isApproved = isHost || requestStatus === "joined";
 
+    // Insert host as joined if needed
     if (isHost) {
       await pool.query(
         `INSERT INTO meeting_participants (meeting_id, user_id, status)
@@ -1369,7 +1219,7 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
         )).rows
       : [];
 
-    res.render("live-meeting", {
+    res.render("video-counseling", {
       users: [],
       pendingRequests,
       groupDocuments: [],
@@ -1383,13 +1233,77 @@ app.get("/live-meetings/:meetingId", mustBeLoggedIn, async (req, res) => {
       meetingMode: true,
       lang: "en"
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
   }
 });
 
+// ---------------------
+// 7️⃣ CREATE LIVE MEETING
+// ---------------------
+app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
+  try {
+    const preId = crypto.randomUUID();
+    const preLink = `${req.protocol}://${req.get("host")}/live-meetings/${preId}`;
+
+    res.render("video-counseling", {
+      roomId: null,
+      meetingMode: true,
+      meeting: {
+        id: preId,
+        title: "New Meeting",
+        description: "",
+        created_by: req.user.id,
+        meeting_link: preLink,
+        status: "scheduled"
+      },
+      userId: req.user.id,
+      isHost: true,
+      isApproved: true,
+      pendingRequests: [],
+      requestStatus: "joined",
+      groupDocuments: [],
+      counselingDocuments: [],
+      lang: "en"
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+// ---------------------
+// 8️⃣ CREATE MEETING POST
+// ---------------------
+app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
+  try {
+    const { title, description, scheduled_at, duration, preId } = req.body;
+    const meetingId = preId || crypto.randomUUID();
+    const meetingLink = `${req.protocol}://${req.get("host")}/live-meetings/${meetingId}`;
+
+    await pool.query(
+      `INSERT INTO live_meetings
+       (id, title, description, created_by, scheduled_at, duration_minutes, meeting_link, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'scheduled')`,
+      [
+        meetingId,
+        title,
+        description || null,
+        req.user.id,
+        scheduled_at || new Date(),
+        duration || 60,
+        meetingLink
+      ]
+    );
+
+    io.emit("dashboard_update", { newMeeting: true });
+    res.redirect(`/live-meetings/${meetingId}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error creating meeting");
+  }
+});
 
 // ===================================================================
 // 6.14. MESSAGES (inbox)
