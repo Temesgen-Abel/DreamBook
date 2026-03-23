@@ -71,10 +71,9 @@
         <select name="counselorId" required>
           <option value="">-- Select --</option>
 
-          <% users.forEach(u => { %>
-            <option value="<%= u.id %>"><%= u.username %></option>
-          <% }) %>
-
+            <% users.forEach(u => { %>
+          <option value="<%= u.id %>"><%= u.username %></option>
+        <% }) %>
         </select>
 
         <button type="submit" class="btn">Request Session</button>
