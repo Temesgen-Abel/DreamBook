@@ -1858,6 +1858,9 @@ io.on("connection", (socket) => {
   // =====================================================
   // 1️⃣ USER PRESENCE SYSTEM
   // =====================================================
+  socket.on("host_mute_user", ({ targetSocketId }) => {
+  io.to(targetSocketId).emit("force_mute");
+    });
 
   socket.on("join_user_room", (userId) => {
     userId = Number(userId);
