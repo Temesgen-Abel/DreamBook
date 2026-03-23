@@ -844,8 +844,6 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
   res.redirect("/dashboard");
 });
 
-
-
 // 6.9 Single post -------------------
 app.get("/post/:id", async (req, res) => {
   try {
