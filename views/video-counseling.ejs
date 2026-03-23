@@ -216,6 +216,8 @@ const config = {
 };
 
 async function startLocalStream() {
+  if (localStream) return;
+
   localStream = await navigator.mediaDevices.getUserMedia({
     video:true,
     audio:true
@@ -230,23 +232,24 @@ async function startLocalStream() {
   document.getElementById("group-video-container").appendChild(video);
 }
 
-async function createPeer(targetId, initiator=false) {
+async function createPeer(socketId, initiator=false) {
   const pc = new RTCPeerConnection(config);
 
-  peers[targetId] = pc;
+  peers[socketId] = pc;
 
   localStream.getTracks().forEach(track => {
     pc.addTrack(track, localStream);
   });
 
   pc.ontrack = event => {
-    let remoteVideo = document.getElementById(targetId);
+    let remoteVideo = document.getElementById(socketId);
 
     if (!remoteVideo) {
       remoteVideo = document.createElement("video");
-      remoteVideo.id = targetId;
+      remoteVideo.id = socketId;
       remoteVideo.autoplay = true;
       remoteVideo.playsInline = true;
+
       document.getElementById("group-video-container").appendChild(remoteVideo);
     }
 
@@ -255,8 +258,9 @@ async function createPeer(targetId, initiator=false) {
 
   pc.onicecandidate = event => {
     if (event.candidate) {
-      socket.emit("ice-candidate", {
-        target: targetId,
+      socket.emit("webrtc_ice_candidate", {
+        to: socketId,
+        from: socket.id,
         candidate: event.candidate
       });
     }
@@ -266,48 +270,54 @@ async function createPeer(targetId, initiator=false) {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
-    socket.emit("offer", {
-      target: targetId,
-      offer
+    socket.emit("webrtc_offer", {
+      to: socketId,
+      from: socket.id,
+      sdp: offer
     });
   }
 
   return pc;
 }
 
-socket.on("user_joined", async ({ socketId }) => {
+socket.on("participant_joined", async ({ socketId }) => {
   await createPeer(socketId, true);
 });
 
-socket.on("offer", async ({ offer, sender }) => {
-  const pc = await createPeer(sender);
+socket.on("webrtc_offer", async ({ from, sdp }) => {
+  const pc = await createPeer(from);
 
-  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  await pc.setRemoteDescription(
+    new RTCSessionDescription(sdp)
+  );
 
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
 
-  socket.emit("answer", {
-    target: sender,
-    answer
+  socket.emit("webrtc_answer", {
+    to: from,
+    from: socket.id,
+    sdp: answer
   });
 });
 
-socket.on("answer", async ({ answer, sender }) => {
-  await peers[sender].setRemoteDescription(
-    new RTCSessionDescription(answer)
-  );
+socket.on("webrtc_answer", async ({ from, sdp }) => {
+  if (peers[from]) {
+    await peers[from].setRemoteDescription(
+      new RTCSessionDescription(sdp)
+    );
+  }
 });
 
-socket.on("ice-candidate", async ({ candidate, sender }) => {
-  if (peers[sender]) {
-    await peers[sender].addIceCandidate(
+socket.on("webrtc_ice_candidate", async ({ from, candidate }) => {
+  if (peers[from]) {
+    await peers[from].addIceCandidate(
       new RTCIceCandidate(candidate)
     );
   }
 });
 
-socket.on("user_left", socketId => {
+socket.on("participant_left", ({ socketId }) => {
   if (peers[socketId]) {
     peers[socketId].close();
     delete peers[socketId];
@@ -317,21 +327,15 @@ socket.on("user_left", socketId => {
   if (video) video.remove();
 });
 
-document.getElementById("startCamBtn").onclick = async () => {
+document.getElementById("startCamBtn")?.addEventListener("click", async () => {
   await startLocalStream();
 
-  socket.emit(
-    meetingId ? "join_meeting" : "join_room",
-    {
-      [meetingId ? "meetingId" : "roomId"]: currentRoom,
-      userId
-    }
-  );
-};
-
-document.getElementById("leaveBtn").onclick = () => {
-  window.location.href = "/dashboard";
-};
+  if (meetingId) {
+    socket.emit("join_meeting", { meetingId, userId });
+  } else if (roomId) {
+    socket.emit("join_room", { roomId, userId });
+  }
+});
 </script>
 
 </body>
