@@ -974,15 +974,8 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 //live discussion 
 
-```js
 // ======================================================
 // PRODUCTION VIDEO COUNSELING + LIVE MEETING ROUTES
-// ======================================================
-
-const crypto = require("crypto");
-
-// ======================================================
-// VIDEO COUNSELING HOME
 // ======================================================
 
 app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
@@ -993,7 +986,7 @@ app.get("/video-counseling", mustBeLoggedIn, async (req, res) => {
 
     if (currentUser.role === "user") {
       const result = await pool.query(
-        `SELECT id, username FROM users WHERE role='counselor' ORDER BY username`
+        `SELECT id, username FROM users WHERE role='user' ORDER BY username`
       );
       users = result.rows;
     }
