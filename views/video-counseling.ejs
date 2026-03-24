@@ -35,13 +35,19 @@
 
     .video-controls {
       display: flex;
-      gap: 10px;
       flex-wrap: wrap;
+      gap: 10px;
       margin-top: 20px;
     }
 
     .links {
       margin: 20px 0;
+    }
+
+    .share-links a {
+      display: inline-block;
+      margin-right: 10px;
+      margin-top: 8px;
     }
 
     @media(max-width:768px) {
@@ -58,48 +64,27 @@
 <div class="container">
 
   <% if (!roomId && !meetingMode) { %>
-    <h2>Video Counseling</h2>
 
-    <form action="/video-counseling" method="POST">
-      <select name="counselorId" required>
-        <option value="">-- Select Counselor --</option>
-        <% users.forEach(u => { %>
-          <option value="<%= u.id %>"><%= u.username %></option>
-        <% }) %>
-      </select>
-      <button type="submit" class="btn">Request Session</button>
-    </form>
-
-    <% if (pendingRequests && pendingRequests.length > 0) { %>
-      <div class="links">
-        <h3>Pending Requests</h3>
-        <ul>
-          <% pendingRequests.forEach(r => { %>
-            <li>
-              <%= r.username %>
-              <form action="/video-counseling/accept/<%= r.id %>" method="POST" style="display:inline;">
-                <button type="submit" class="btn btn-success">Accept</button>
-              </form>
-            </li>
-          <% }) %>
-        </ul>
-      </div>
-    <% } %>
-  <% } %>
-
-  <% if (meetingMode) { %>
-
-    <h2>Create Live Meeting</h2>
+    <h2>Video Counseling / Live Discussion</h2>
 
     <form action="/live-meetings/create" method="POST">
       <input type="text" name="title" placeholder="Meeting Title" required>
-      <input type="text" name="description" placeholder="Description (optional)">
-      <input type="hidden" name="isCounseling" value="true">
-      <input type="hidden" name="counselorId" value="<%= counselorId %>">
-      <button type="submit" class="btn">Create Meeting</button>
+      <input type="text" name="description" placeholder="Description">
+
+      <label>
+        <input type="checkbox" name="publishToDashboard">
+        Publish on Dashboard
+      </label>
+
+      <label>
+        <input type="checkbox" name="sharePublic" checked>
+        Allow Public Sharing
+      </label>
+
+      <button type="submit" class="btn">Create Live Meeting</button>
     </form>
 
-    <% if (isCounselor) { %>
+    <% if (meetings && meetings.length > 0) { %>
       <div class="links">
         <h3>Your Meetings</h3>
         <ul>
@@ -113,11 +98,13 @@
           <% }) %>
         </ul>
       </div>
-    <% } else { %>
+    <% } %>
+
+    <% if (sharedMeetings && sharedMeetings.length > 0) { %>
       <div class="links">
-        <h3>Your Counseling Sessions</h3>
+        <h3>Shared Meetings</h3>
         <ul>
-          <% meetings.forEach(m => { %>
+          <% sharedMeetings.forEach(m => { %>
             <li>
               <%= m.title %> - <%= m.is_active ? 'Active' : 'Ended' %>
               <% if (m.is_active) { %>
@@ -127,22 +114,6 @@
           <% }) %>
         </ul>
       </div>
-
-      <% if (sharedMeetings && sharedMeetings.length > 0) { %>
-        <div class="links">
-          <h3>Shared Meetings</h3>
-          <ul>
-            <% sharedMeetings.forEach(m => { %>
-              <li>
-                <%= m.title %> - <%= m.is_active ? 'Active' : 'Ended' %>
-                <% if (m.is_active) { %>
-                  <a href="/video-counseling?meetingId=<%= m.id %>" class="btn btn-primary">Join</a>
-                <% } %>
-              </li>
-            <% }) %>
-          </ul>
-        </div>
-      <% } %>
     <% } %>
 
   <% } %>
@@ -151,9 +122,23 @@
 
     <h2><%= meetingMode ? (meeting && meeting.title ? meeting.title : 'Live Meeting') : 'Counseling Session' %></h2>
 
-    <% if (meetingMode && meeting && meeting.meeting_link) { %>
+    <% if (meeting && meeting.meeting_link) { %>
       <div class="links">
         <input type="text" value="<%= meeting.meeting_link %>" readonly style="width:100%">
+
+        <div class="share-links">
+          <a target="_blank"
+             href="https://wa.me/?text=<%= encodeURIComponent(meeting.meeting_link) %>">WhatsApp</a>
+
+          <a target="_blank"
+             href="https://t.me/share/url?url=<%= encodeURIComponent(meeting.meeting_link) %>">Telegram</a>
+
+          <a target="_blank"
+             href="https://www.facebook.com/sharer/sharer.php?u=<%= encodeURIComponent(meeting.meeting_link) %>">Facebook</a>
+
+          <a target="_blank"
+             href="https://twitter.com/intent/tweet?url=<%= encodeURIComponent(meeting.meeting_link) %>">X</a>
+        </div>
       </div>
     <% } %>
 
@@ -203,7 +188,7 @@
         </ul>
       </div>
 
-      <% if (meetingMode && meeting && meeting.is_active) { %>
+      <% if (meeting && meeting.is_active) { %>
         <div class="links">
           <h3>Send Emotional Reaction</h3>
           <form id="reactionForm">
@@ -295,86 +280,11 @@ async function startLocalStream() {
   }
 }
 
-async function createPeer(socketId, initiator=false) {
-  const pc = new RTCPeerConnection(configuration);
-  peers[socketId] = pc;
-
-  if (localStream) {
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-  }
-
-  pc.ontrack = event => {
-    const remoteVideo = createVideoElement(socketId, `User ${socketId}`);
-    if (remoteVideo) remoteVideo.srcObject = event.streams[0];
-  };
-
-  pc.onicecandidate = event => {
-    if (event.candidate) {
-      socket.emit("webrtc_ice_candidate", {
-        to: socketId,
-        from: socket.id,
-        candidate: event.candidate
-      });
-    }
-  };
-
-  if (initiator) {
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-
-    socket.emit("webrtc_offer", {
-      to: socketId,
-      from: socket.id,
-      sdp: offer
-    });
-  }
-
-  return pc;
-}
-
-socket.on("participant_joined", async ({ socketId }) => {
-  await createPeer(socketId, true);
-});
-
-socket.on("webrtc_offer", async ({ from, sdp }) => {
-  const pc = await createPeer(from);
-  await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
-
-  socket.emit("webrtc_answer", {
-    to: from,
-    from: socket.id,
-    sdp: answer
-  });
-});
-
-socket.on("webrtc_answer", async ({ from, sdp }) => {
-  if (peers[from]) {
-    await peers[from].setRemoteDescription(new RTCSessionDescription(sdp));
-  }
-});
-
-socket.on("webrtc_ice_candidate", async ({ from, candidate }) => {
-  if (peers[from]) {
-    await peers[from].addIceCandidate(new RTCIceCandidate(candidate));
-  }
-});
-
-socket.on("participant_left", ({ socketId }) => {
-  peers[socketId]?.close();
-  delete peers[socketId];
-  document.getElementById(`wrapper_${socketId}`)?.remove();
-});
-
 document.getElementById("startCamBtn")?.addEventListener("click", async () => {
   await startLocalStream();
 
   if (meetingId) {
     socket.emit("join_meeting", { meetingId, userId });
-  } else if (roomId) {
-    socket.emit("join_room", { roomId, userId });
   }
 });
 
@@ -388,11 +298,6 @@ document.getElementById("toggleVideoBtn")?.addEventListener("click", () => {
 
 document.getElementById("shareScreenBtn")?.addEventListener("click", async () => {
   screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-
-  Object.values(peers).forEach(pc => {
-    const sender = pc.getSenders().find(s => s.track?.kind === "video");
-    if (sender) sender.replaceTrack(screenStream.getVideoTracks()[0]);
-  });
 });
 
 document.getElementById("requestJoinBtn")?.addEventListener("click", () => {
@@ -417,19 +322,19 @@ document.querySelectorAll(".rejectBtn").forEach(btn => {
   });
 });
 
+document.getElementById("reactionForm")?.addEventListener("submit", function(e) {
+  e.preventDefault();
+  const reaction = this.reaction.value;
+  socket.emit("send_reaction", { meetingId, reaction });
+  alert("Reaction sent: " + reaction);
+});
+
 document.getElementById("endMeetingBtn")?.addEventListener("click", () => {
   socket.emit("end_meeting", { meetingId });
 });
 
 document.getElementById("leaveBtn")?.addEventListener("click", () => {
   location.href = "/video-counseling";
-});
-
-document.getElementById("reactionForm")?.addEventListener("submit", function(e) {
-  e.preventDefault();
-  const reaction = this.reaction.value;
-  socket.emit("send_reaction", { meetingId, reaction });
-  alert("Reaction sent: " + reaction);
 });
 
 socket.on("approved", () => location.reload());
