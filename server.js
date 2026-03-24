@@ -978,7 +978,7 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 // PRODUCTION VIDEO COUNSELING + LIVE MEETING ROUTES
 // ======================================================
 
-app.get("/live-meetings", mustBeLoggedIn, async (req, res) => {
+app.get("/live", mustBeLoggedIn, async (req, res) => {
   try {
     const currentUser = req.user;
     let users = [];
