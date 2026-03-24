@@ -84,7 +84,7 @@
       <button type="submit" class="btn">Create Live Meeting</button>
     </form>
 
-    <% if (meetings && meetings.length > 0) { %>
+    <% if (typeof meetings !== "undefined" && meetings.length > 0) { %>
       <div class="links">
         <h3>Your Meetings</h3>
         <ul>
