@@ -31,18 +31,14 @@
       color:#333;
     }
 
-    select, button{
+    button{
       padding:10px;
       border-radius:8px;
-      border:1px solid #ccc;
+      border:none;
       margin-top:10px;
       width:100%;
-    }
-
-    button{
       background:#007bff;
       color:white;
-      border:none;
       cursor:pointer;
     }
 
@@ -73,20 +69,23 @@
       background:#1f7f34;
     }
 
-    .pending-box{
-      background:#fff3cd;
-      padding:12px;
-      border-radius:8px;
-      margin-bottom:10px;
-    }
-
-    .dashboard-share{
-      margin-top:10px;
-    }
-
     .counter{
       font-size:14px;
       color:#666;
+      margin-top:6px;
+    }
+
+    .share-box{
+      margin-top:10px;
+    }
+
+    .end-btn{
+      background:red;
+      margin-top:10px;
+    }
+
+    .end-btn:hover{
+      background:darkred;
     }
 
   </style>
@@ -95,83 +94,60 @@
 
 <div class="container">
 
-  <!-- CREATE LIVE MEETING -->
+  <!-- START LIVE -->
   <div class="card">
-    <h2>Create Live Meeting 🎥</h2>
+    <h2>Start Live Discussion 🎥</h2>
 
     <form method="POST" action="/live">
 
-      <label>Select participant / counselor:</label>
-      <select name="counselorId" required>
-        <% users.forEach(user => { %>
-          <option value="<%= user.id %>">
-            <%= user.username %>
-          </option>
-        <% }) %>
-      </select>
-
-      <div class="dashboard-share">
+      <div class="share-box">
         <label>
-          <input type="checkbox" name="shareOnDashboard" value="true">
-          Share this live discussion on dashboard
+          <input type="checkbox" name="shareOnDashboard" value="true" checked>
+          Share on dashboard
         </label>
       </div>
 
-      <button type="submit">Create Meeting</button>
+      <button type="submit">Start Live Now</button>
 
     </form>
   </div>
 
 
-  <!-- PENDING REQUESTS -->
-  <% if (pendingRequests && pendingRequests.length > 0) { %>
-    <div class="card">
-      <h2>Pending Requests ⏳</h2>
-
-      <% pendingRequests.forEach(req => { %>
-        <div class="pending-box">
-          <strong><%= req.username %></strong> requested meeting
-
-          <form method="POST" action="/approve-meeting/<%= req.id %>">
-            <button type="submit">Approve</button>
-          </form>
-        </div>
-      <% }) %>
-
-    </div>
-  <% } %>
-
-
-  <!-- AVAILABLE LIVE MEETINGS -->
+  <!-- ACTIVE LIVE DISCUSSIONS -->
   <div class="card">
     <h2>Available Live Discussions 🔴</h2>
 
     <% if (meetings && meetings.length > 0) { %>
 
       <% meetings.forEach(meeting => { %>
+
         <div class="meeting">
 
-          <strong>Host:</strong> <%= meeting.host_name %><br>
-          <strong>Counselor:</strong> <%= meeting.counselor_name %><br>
-          <strong>Room:</strong> <%= meeting.room_id %><br>
+          <strong><%= meeting.host_name %></strong> is live now 🔴
 
           <div class="counter">
-            Participants: <span id="count-<%= meeting.room_id %>">1</span>
+            Room: <%= meeting.room_id %>
+          </div>
+
+          <div class="counter">
+            Participants:
+            <span id="count-<%= meeting.room_id %>">1</span>
           </div>
 
           <a class="join-btn" href="/video-room/<%= meeting.room_id %>">
-            Join Live Discussion
+            Join Discussion
           </a>
 
           <% if (meeting.host_id === userId) { %>
             <form method="POST" action="/end-meeting/<%= meeting.id %>">
-              <button type="submit" style="margin-top:10px;background:red;">
-                End Meeting
+              <button class="end-btn">
+                End Live
               </button>
             </form>
           <% } %>
 
         </div>
+
       <% }) %>
 
     <% } else { %>
@@ -191,11 +167,11 @@
 <script>
 const socket = io();
 
-socket.on("meeting_started", (data) => {
+socket.on("meeting_started", () => {
   location.reload();
 });
 
-socket.on("meeting_ended", (data) => {
+socket.on("meeting_ended", () => {
   location.reload();
 });
 

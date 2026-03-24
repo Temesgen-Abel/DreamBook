@@ -1038,20 +1038,17 @@ app.get("/live", mustBeLoggedIn, async (req, res) => {
        ORDER BY vs.id DESC`
     );
 
-    meetings = meetingResult.rows;
-    res.render("live", {
-      users,
-      pendingRequests,
-      meetings,
-      roomId: null,
-      meeting: null,
-      isHost: false,
-      isApproved: true,
-      requestStatus: null,
-      userId: currentUser.id,
-      meetingMode: false,
-      lang: "en"
-    });
+    const meetingResult = await pool.query(
+  `SELECT vs.id,
+          vs.room_id,
+          vs.status,
+          vs.user_id AS host_id,
+          u.username AS host_name
+   FROM video_sessions vs
+   JOIN users u ON vs.user_id = u.id
+   WHERE vs.status IN ('active','approved')
+   ORDER BY vs.id DESC`
+);
 
   } catch (err) {
     console.error("LIVE PAGE ERROR:", err);
@@ -1061,47 +1058,42 @@ app.get("/live", mustBeLoggedIn, async (req, res) => {
 //create live-meeting
 
 app.post("/live", mustBeLoggedIn, async (req, res) => {
-  const io = req.app.get("io");
   const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
 
-    const { counselorId, shareOnDashboard } = req.body;
+    const { shareOnDashboard } = req.body;
 
+    // Create room
     const roomResult = await client.query(
       `INSERT INTO rooms DEFAULT VALUES RETURNING id`
     );
 
     const roomId = roomResult.rows[0].id;
 
+    // Create open live session
     await client.query(
-      `INSERT INTO video_sessions 
+      `INSERT INTO video_sessions
        (user_id, counselor_id, room_id, status, share_on_dashboard)
-       VALUES ($1,$2,$3,'pending',$4)`,
+       VALUES ($1,NULL,$2,'active',$3)`,
       [
         req.user.id,
-        counselorId,
         roomId,
         shareOnDashboard === "true"
       ]
     );
 
+    // Organizer joins room automatically
     await client.query(
-      `INSERT INTO room_participants (room_id, user_id)
-       VALUES ($1,$2),($1,$3)`,
-      [roomId, req.user.id, counselorId]
+      `INSERT INTO room_participants (room_id,user_id)
+       VALUES ($1,$2)`,
+      [roomId, req.user.id]
     );
 
     await client.query("COMMIT");
 
-    io.to(`user_${counselorId}`).emit("new_notification", {
-      title: "New Live Request",
-      message: `${req.user.username} created a meeting`,
-      roomId
-    });
-
-    res.redirect("/live");
+    res.redirect(`/video-room/${roomId}`);
 
   } catch (err) {
     await client.query("ROLLBACK");
@@ -1157,6 +1149,38 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
 
 });
 
+//counseling 
+app.get("/video-room/:roomId", mustBeLoggedIn, async (req, res) => {
+  try {
+    const roomId = req.params.roomId;
+
+    const meeting = await pool.query(
+      `SELECT vs.*, 
+              u.username AS host_name,
+              c.username AS counselor_name
+       FROM video_sessions vs
+       JOIN users u ON vs.user_id = u.id
+       JOIN users c ON vs.counselor_id = c.id
+       WHERE vs.room_id = $1`,
+      [roomId]
+    );
+
+    if (meeting.rows.length === 0) {
+      return res.redirect("/live");
+    }
+
+    res.render("video-room", {
+      roomId,
+      user: req.user,
+      meeting: meeting.rows[0],
+      lang: "en"
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.redirect("/live");
+  }
+});
 
 //socket
 
