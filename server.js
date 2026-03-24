@@ -143,9 +143,6 @@ CREATE TABLE IF NOT EXISTS users (
       meaning_am TEXT
     );
   `);
-// ======================================================
-// COUNSELOR PROFILE
-// ======================================================
 await dbRun(`
 CREATE TABLE IF NOT EXISTS counselors (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -155,10 +152,6 @@ CREATE TABLE IF NOT EXISTS counselors (
 );
 `);
 
-
-// ======================================================
-// LIVE ROOMS
-// ======================================================
 await dbRun(`
 CREATE TABLE IF NOT EXISTS rooms (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -166,56 +159,26 @@ CREATE TABLE IF NOT EXISTS rooms (
 );
 `);
 
-
-// ======================================================
-// ROOM PARTICIPANTS
-// ======================================================
 await dbRun(`
 CREATE TABLE IF NOT EXISTS room_participants (
   id SERIAL PRIMARY KEY,
   room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(room_id, user_id)
+  joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 `);
 
-
-// ======================================================
-// LIVE VIDEO SESSIONS (PUBLIC LIVE DISCUSSIONS)
-// ======================================================
 await dbRun(`
 CREATE TABLE IF NOT EXISTS video_sessions (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, -- host
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  counselor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
-  status VARCHAR(50) DEFAULT 'active', -- active | ended
-  share_on_dashboard BOOLEAN DEFAULT true,
-  title VARCHAR(200),
-  description TEXT,
+  status VARCHAR(50) DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 `);
 
-
-// ======================================================
-// MEETING DOCUMENTS / FILE SHARING
-// ======================================================
-await dbRun(`
-CREATE TABLE IF NOT EXISTS meeting_documents (
-  id SERIAL PRIMARY KEY,
-  room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
-  uploaded_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  file_path TEXT,
-  content TEXT,
-  uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-`);
-
-
-// ======================================================
-// OPTIONAL SCHEDULED LIVE EVENTS
-// ======================================================
 await dbRun(`
 CREATE TABLE IF NOT EXISTS live_meetings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -225,15 +188,16 @@ CREATE TABLE IF NOT EXISTS live_meetings (
   scheduled_at TIMESTAMPTZ,
   duration_minutes INTEGER DEFAULT 60,
   meeting_link VARCHAR(255) UNIQUE,
-  status VARCHAR(50) DEFAULT 'scheduled', -- scheduled | live | ended
+  status VARCHAR(50) DEFAULT 'scheduled',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 `);
 
+await dbRun(`
+ALTER TABLE live_meetings
+ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ;
+`);
 
-// ======================================================
-// SCHEDULED EVENT PARTICIPANTS
-// ======================================================
 await dbRun(`
 CREATE TABLE IF NOT EXISTS meeting_participants (
   id SERIAL PRIMARY KEY,
@@ -242,6 +206,17 @@ CREATE TABLE IF NOT EXISTS meeting_participants (
   joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   status VARCHAR(50) DEFAULT 'joined',
   UNIQUE(meeting_id, user_id)
+);
+`);
+
+await dbRun(`
+CREATE TABLE IF NOT EXISTS meeting_documents (
+  id SERIAL PRIMARY KEY,
+  meeting_id UUID REFERENCES live_meetings(id) ON DELETE CASCADE,
+  file_path TEXT,
+  content TEXT,
+  uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
 `);
 }
 
