@@ -242,8 +242,8 @@ CREATE TABLE IF NOT EXISTS meeting_participants (
   joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   status VARCHAR(50) DEFAULT 'joined',
   UNIQUE(meeting_id, user_id)
-);
 `);
+}
 
 // ===================================================================
 // 3. UTILITIES
