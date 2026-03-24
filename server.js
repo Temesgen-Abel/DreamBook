@@ -143,115 +143,107 @@ CREATE TABLE IF NOT EXISTS users (
       meaning_am TEXT
     );
   `);
-// Meeting documents (for live meetings file sharing)
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS meeting_documents (
-        id SERIAL PRIMARY KEY,
-        meeting_id UUID,
-        file_path TEXT,
-        content TEXT,
-        uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-  // Video counseling sessions
-    await dbRun(`
-    CREATE TABLE IF NOT EXISTS counselors (
-      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-      specialty VARCHAR(150),
-      bio TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    `);
-
-// Rooms table
-    await dbRun(`
-    CREATE TABLE IF NOT EXISTS rooms (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    `);
-
-// Room participants
-    await dbRun(`
-    CREATE TABLE IF NOT EXISTS room_participants (
-      id SERIAL PRIMARY KEY,
-      room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
-      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-      joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    `);
-
-//video_sessions
- await dbRun(`
-  CREATE TABLE IF NOT EXISTS video_sessions (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    counselor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    room_id UUID REFERENCES rooms(id),
-    status VARCHAR(50) DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
+// ======================================================
+// COUNSELOR PROFILE
+// ======================================================
+await dbRun(`
+CREATE TABLE IF NOT EXISTS counselors (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  specialty VARCHAR(150),
+  bio TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 `);
 
- //Group live meetings
-    await dbRun(`
+
+// ======================================================
+// LIVE ROOMS
+// ======================================================
+await dbRun(`
+CREATE TABLE IF NOT EXISTS rooms (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+`);
+
+
+// ======================================================
+// ROOM PARTICIPANTS
+// ======================================================
+await dbRun(`
+CREATE TABLE IF NOT EXISTS room_participants (
+  id SERIAL PRIMARY KEY,
+  room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(room_id, user_id)
+);
+`);
+
+
+// ======================================================
+// LIVE VIDEO SESSIONS (PUBLIC LIVE DISCUSSIONS)
+// ======================================================
+await dbRun(`
+CREATE TABLE IF NOT EXISTS video_sessions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, -- host
+  room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
+  status VARCHAR(50) DEFAULT 'active', -- active | ended
+  share_on_dashboard BOOLEAN DEFAULT true,
+  title VARCHAR(200),
+  description TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+`);
+
+
+// ======================================================
+// MEETING DOCUMENTS / FILE SHARING
+// ======================================================
+await dbRun(`
+CREATE TABLE IF NOT EXISTS meeting_documents (
+  id SERIAL PRIMARY KEY,
+  room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
+  uploaded_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  file_path TEXT,
+  content TEXT,
+  uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+`);
+
+
+// ======================================================
+// OPTIONAL SCHEDULED LIVE EVENTS
+// ======================================================
+await dbRun(`
 CREATE TABLE IF NOT EXISTS live_meetings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title VARCHAR(200) NOT NULL,
   description TEXT,
   created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  -- legacy column kept for compatibility; new code uses scheduled_at
-  new_date TIMESTAMPTZ,
   scheduled_at TIMESTAMPTZ,
   duration_minutes INTEGER DEFAULT 60,
   meeting_link VARCHAR(255) UNIQUE,
   status VARCHAR(50) DEFAULT 'scheduled', -- scheduled | live | ended
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-    `);
-    // add scheduled_at if table already existed but column did not
-    await dbRun(`
-      ALTER TABLE live_meetings
-      ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ;
-    `);
+`);
 
-//Meeting participants
-      await dbRun(`
+
+// ======================================================
+// SCHEDULED EVENT PARTICIPANTS
+// ======================================================
+await dbRun(`
 CREATE TABLE IF NOT EXISTS meeting_participants (
   id SERIAL PRIMARY KEY,
   meeting_id UUID REFERENCES live_meetings(id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  status VARCHAR(50) DEFAULT 'pending'
+  status VARCHAR(50) DEFAULT 'joined',
+  UNIQUE(meeting_id, user_id)
 );
-      `);
-
-    // Ensure we can upsert participants by meeting+user
-    // If duplicates exist, remove them before adding the unique constraint.
-    await dbRun(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1
-          FROM pg_constraint
-          WHERE conname = 'meeting_participants_unique' AND conrelid = 'meeting_participants'::regclass
-        ) THEN
-          -- remove any duplicates (keep the earliest inserted row)
-          DELETE FROM meeting_participants a
-          USING meeting_participants b
-          WHERE a.id > b.id
-            AND a.meeting_id = b.meeting_id
-            AND a.user_id = b.user_id;
-
-          ALTER TABLE meeting_participants
-            ADD CONSTRAINT meeting_participants_unique UNIQUE (meeting_id, user_id);
-        END IF;
-      END
-      $$;
-    `);
-}
-
+`);
 
 // ===================================================================
 // 3. UTILITIES
@@ -982,79 +974,31 @@ app.get("/live", mustBeLoggedIn, async (req, res) => {
   try {
     const currentUser = req.user;
 
-    let users = [];
-    let pendingRequests = [];
-    let meetings = [];
-
-    // -----------------------------------
-    // Users list for creating meetings
-    // -----------------------------------
-    if (currentUser.role === "user") {
-      const result = await pool.query(
-        `SELECT id, username 
-         FROM users 
-         WHERE role='counselor'
-         ORDER BY username`
-      );
-      users = result.rows;
-    }
-
-    if (currentUser.role === "counselor") {
-      const result = await pool.query(
-        `SELECT id, username 
-         FROM users 
-         WHERE role='user'
-         ORDER BY username`
-      );
-      users = result.rows;
-
-      // Pending requests for counselor
-      const pending = await pool.query(
-        `SELECT vs.id, vs.room_id, u.username, u.id AS user_id
-         FROM video_sessions vs
-         JOIN users u ON vs.user_id = u.id
-         WHERE vs.counselor_id = $1
-         AND vs.status = 'pending'
-         ORDER BY vs.id DESC`,
-        [currentUser.id]
-      );
-
-      pendingRequests = pending.rows;
-    }
-
-    // -----------------------------------
-    // Live meetings visible to all approved participants
-    // -----------------------------------
+    // One single query only
     const meetingResult = await pool.query(
       `SELECT vs.id,
               vs.room_id,
               vs.status,
-              u.username AS host_name,
-              c.username AS counselor_name
+              vs.user_id AS host_id,
+              u.username AS host_name
        FROM video_sessions vs
        JOIN users u ON vs.user_id = u.id
-       JOIN users c ON vs.counselor_id = c.id
-       WHERE vs.status IN ('approved','active')
-       ORDER BY vs.id DESC`
+       WHERE vs.status = 'active'
+       ORDER BY vs.created_at DESC`
     );
 
-    const meetingResult = await pool.query(
-  `SELECT vs.id,
-          vs.room_id,
-          vs.status,
-          vs.user_id AS host_id,
-          u.username AS host_name
-   FROM video_sessions vs
-   JOIN users u ON vs.user_id = u.id
-   WHERE vs.status IN ('active','approved')
-   ORDER BY vs.id DESC`
-);
+    res.render("live", {
+      meetings: meetingResult.rows,
+      userId: currentUser.id,
+      lang: "en"
+    });
 
   } catch (err) {
-    console.error("LIVE PAGE ERROR:", err);
+    console.error("LIVE ERROR:", err);
     res.status(500).send("Server error");
   }
 });
+
 //create live-meeting
 
 app.post("/live", mustBeLoggedIn, async (req, res) => {
