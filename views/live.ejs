@@ -1,344 +1,210 @@
 <!DOCTYPE html>
-<html lang="<%= lang %>">
+<html lang="<%= lang || 'en' %>">
 <head>
-  <%- include('includes/head') %>
+  <meta charset="UTF-8">
+  <title>Live Meetings</title>
   <link rel="stylesheet" href="/style.css">
 
   <style>
-    .videos {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px,1fr));
-      gap: 12px;
-      margin-top: 20px;
+    body{
+      font-family: Arial, sans-serif;
+      background:#f7f8fc;
+      margin:0;
+      padding:20px;
     }
 
-    .video-box {
-      position: relative;
+    .container{
+      max-width:1000px;
+      margin:auto;
     }
 
-    video {
-      width: 100%;
-      border-radius: 10px;
-      background: black;
+    .card{
+      background:white;
+      padding:20px;
+      margin-bottom:20px;
+      border-radius:12px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.08);
     }
 
-    .participant-name {
-      position: absolute;
-      bottom: 6px;
-      left: 6px;
-      background: rgba(0,0,0,.6);
-      color: white;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 12px;
+    h2{
+      margin-bottom:15px;
+      color:#333;
     }
 
-    .video-controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 20px;
+    select, button{
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #ccc;
+      margin-top:10px;
+      width:100%;
     }
 
-    .links {
-      margin: 20px 0;
+    button{
+      background:#007bff;
+      color:white;
+      border:none;
+      cursor:pointer;
     }
 
-    .share-links a {
-      display: inline-block;
-      margin-right: 10px;
-      margin-top: 8px;
+    button:hover{
+      background:#0056b3;
     }
 
-    @media(max-width:768px) {
-      .video-controls {
-        flex-direction: column;
-      }
+    .meeting{
+      padding:15px;
+      border-bottom:1px solid #eee;
     }
+
+    .meeting:last-child{
+      border-bottom:none;
+    }
+
+    .join-btn{
+      display:inline-block;
+      margin-top:8px;
+      padding:8px 14px;
+      background:#28a745;
+      color:white;
+      border-radius:6px;
+      text-decoration:none;
+    }
+
+    .join-btn:hover{
+      background:#1f7f34;
+    }
+
+    .pending-box{
+      background:#fff3cd;
+      padding:12px;
+      border-radius:8px;
+      margin-bottom:10px;
+    }
+
+    .dashboard-share{
+      margin-top:10px;
+    }
+
+    .counter{
+      font-size:14px;
+      color:#666;
+    }
+
   </style>
 </head>
 <body>
 
-<%- include('includes/header') %>
-
 <div class="container">
 
-  <% if (!roomId && !meetingMode) { %>
+  <!-- CREATE LIVE MEETING -->
+  <div class="card">
+    <h2>Create Live Meeting 🎥</h2>
 
-    <h2>Video Counseling / Live Discussion</h2>
+    <form method="POST" action="/live">
 
-    <form action="/live" method="POST">
-      <input type="text" name="title" placeholder="Meeting Title" required>
-      <input type="text" name="description" placeholder="Description">
+      <label>Select participant / counselor:</label>
+      <select name="counselorId" required>
+        <% users.forEach(user => { %>
+          <option value="<%= user.id %>">
+            <%= user.username %>
+          </option>
+        <% }) %>
+      </select>
 
-      <label>
-        <input type="checkbox" name="publishToDashboard">
-        Publish on Dashboard
-      </label>
+      <div class="dashboard-share">
+        <label>
+          <input type="checkbox" name="shareOnDashboard" value="true">
+          Share this live discussion on dashboard
+        </label>
+      </div>
 
-      <label>
-        <input type="checkbox" name="sharePublic" checked>
-        Allow Public Sharing
-      </label>
+      <button type="submit">Create Meeting</button>
 
-      <button type="submit" class="btn">Create Live Meeting</button>
     </form>
+  </div>
 
-    <% if (typeof meetings !== "undefined" && meetings.length > 0) { %>
-      <div class="links">
-        <h3>Your Meetings</h3>
-        <ul>
-          <% meetings.forEach(m => { %>
-            <li>
-              <%= m.title %> - <%= m.is_active ? 'Active' : 'Ended' %>
-              <% if (m.is_active) { %>
-                <a href="/video-counseling?meetingId=<%= m.id %>" class="btn btn-primary">Join</a>
-              <% } %>
-            </li>
-          <% }) %>
-        </ul>
-      </div>
-    <% } %>
 
-    <% if (sharedMeetings && sharedMeetings.length > 0) { %>
-      <div class="links">
-        <h3>Shared Meetings</h3>
-        <ul>
-          <% sharedMeetings.forEach(m => { %>
-            <li>
-              <%= m.title %> - <%= m.is_active ? 'Active' : 'Ended' %>
-              <% if (m.is_active) { %>
-                <a href="/video-counseling?meetingId=<%= m.id %>" class="btn btn-primary">Join</a>
-              <% } %>
-            </li>
-          <% }) %>
-        </ul>
-      </div>
-    <% } %>
+  <!-- PENDING REQUESTS -->
+  <% if (pendingRequests && pendingRequests.length > 0) { %>
+    <div class="card">
+      <h2>Pending Requests ⏳</h2>
 
-  <% } %>
+      <% pendingRequests.forEach(req => { %>
+        <div class="pending-box">
+          <strong><%= req.username %></strong> requested meeting
 
-  <% if (roomId || meetingMode) { %>
-
-    <h2><%= meetingMode ? (meeting && meeting.title ? meeting.title : 'Live Meeting') : 'Counseling Session' %></h2>
-
-    <% if (meeting && meeting.meeting_link) { %>
-      <div class="links">
-        <input type="text" value="<%= meeting.meeting_link %>" readonly style="width:100%">
-
-        <div class="share-links">
-          <a target="_blank"
-             href="https://wa.me/?text=<%= encodeURIComponent(meeting.meeting_link) %>">WhatsApp</a>
-
-          <a target="_blank"
-             href="https://t.me/share/url?url=<%= encodeURIComponent(meeting.meeting_link) %>">Telegram</a>
-
-          <a target="_blank"
-             href="https://www.facebook.com/sharer/sharer.php?u=<%= encodeURIComponent(meeting.meeting_link) %>">Facebook</a>
-
-          <a target="_blank"
-             href="https://twitter.com/intent/tweet?url=<%= encodeURIComponent(meeting.meeting_link) %>">X</a>
-        </div>
-      </div>
-    <% } %>
-
-    <% if (meetingMode && !isApproved) { %>
-      <div id="meetingRequestSection">
-        <button id="requestJoinBtn" class="btn btn-primary">Request Join</button>
-      </div>
-    <% } %>
-
-    <% if (meetingMode && isHost) { %>
-      <div class="links">
-        <h3>Pending Join Requests</h3>
-        <ul id="pendingRequestsList">
-          <% pendingRequests.forEach(r => { %>
-            <li>
-              <%= r.username %>
-              <button class="btn btn-success approveBtn" data-user-id="<%= r.user_id %>">Admit</button>
-              <button class="btn btn-secondary rejectBtn" data-user-id="<%= r.user_id %>">Reject</button>
-            </li>
-          <% }) %>
-        </ul>
-      </div>
-    <% } %>
-
-    <div id="meetingUi" style="display:<%= (!meetingMode || isApproved) ? 'block' : 'none' %>">
-
-      <div class="videos" id="group-video-container"></div>
-
-      <div class="video-controls">
-        <button id="startCamBtn" class="btn btn-secondary">Start Camera</button>
-        <button id="toggleAudioBtn" class="btn btn-primary">Mute</button>
-        <button id="toggleVideoBtn" class="btn btn-primary">Stop Video</button>
-        <button id="shareScreenBtn" class="btn btn-info">Share Screen</button>
-        <button id="leaveBtn" class="btn btn-danger">Leave</button>
-
-        <% if (meetingMode && isHost) { %>
-          <button id="endMeetingBtn" class="btn btn-danger">End Meeting</button>
-        <% } %>
-      </div>
-
-      <div class="participants-section">
-        <h4>Participants</h4>
-        <ul id="participantList">
-          <% usernames.forEach(username => { %>
-            <li><%= username %></li>
-          <% }) %>
-        </ul>
-      </div>
-
-      <% if (meeting && meeting.is_active) { %>
-        <div class="links">
-          <h3>Send Emotional Reaction</h3>
-          <form id="reactionForm">
-            <select name="reaction" required>
-              <option value="">-- Select Reaction --</option>
-              <option value="like">Like</option>
-              <option value="love">Love</option>
-              <option value="laugh">Laugh</option>
-              <option value="sad">Sad</option>
-              <option value="angry">Angry</option>
-            </select>
-            <button type="submit" class="btn btn-info">Send Reaction</button>
+          <form method="POST" action="/approve-meeting/<%= req.id %>">
+            <button type="submit">Approve</button>
           </form>
         </div>
-      <% } %>
+      <% }) %>
 
     </div>
-
   <% } %>
+
+
+  <!-- AVAILABLE LIVE MEETINGS -->
+  <div class="card">
+    <h2>Available Live Discussions 🔴</h2>
+
+    <% if (meetings && meetings.length > 0) { %>
+
+      <% meetings.forEach(meeting => { %>
+        <div class="meeting">
+
+          <strong>Host:</strong> <%= meeting.host_name %><br>
+          <strong>Counselor:</strong> <%= meeting.counselor_name %><br>
+          <strong>Room:</strong> <%= meeting.room_id %><br>
+
+          <div class="counter">
+            Participants: <span id="count-<%= meeting.room_id %>">1</span>
+          </div>
+
+          <a class="join-btn" href="/video-room/<%= meeting.room_id %>">
+            Join Live Discussion
+          </a>
+
+          <% if (meeting.host_id === userId) { %>
+            <form method="POST" action="/end-meeting/<%= meeting.id %>">
+              <button type="submit" style="margin-top:10px;background:red;">
+                End Meeting
+              </button>
+            </form>
+          <% } %>
+
+        </div>
+      <% }) %>
+
+    <% } else { %>
+
+      <p>No live discussions available now.</p>
+
+    <% } %>
+
+  </div>
 
 </div>
 
+
+<!-- SOCKET.IO -->
 <script src="/socket.io/socket.io.js"></script>
 
 <script>
 const socket = io();
 
-let localStream = null;
-let screenStream = null;
-const peers = {};
+socket.on("meeting_started", (data) => {
+  location.reload();
+});
 
-const roomId = <%= roomId ? JSON.stringify(roomId) : 'null' %>;
-const meetingId = <%= meetingMode && meeting ? JSON.stringify(meeting.id) : 'null' %>;
-const userId = <%= JSON.stringify(userId) %>;
+socket.on("meeting_ended", (data) => {
+  location.reload();
+});
 
-const configuration = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    {
-      urls: "turn:openrelay.metered.ca:80",
-      username: "openrelayproject",
-      credential: "openrelayproject"
-    }
-  ]
-};
-
-function createVideoElement(id, label, muted=false) {
-  const container = document.getElementById("group-video-container");
-  if (!container) return null;
-
-  if (document.getElementById(id)) return document.getElementById(id);
-
-  const wrapper = document.createElement("div");
-  wrapper.id = `wrapper_${id}`;
-  wrapper.className = "video-box";
-
-  const video = document.createElement("video");
-  video.id = id;
-  video.autoplay = true;
-  video.playsInline = true;
-  video.muted = muted;
-
-  const name = document.createElement("div");
-  name.className = "participant-name";
-  name.innerText = label;
-
-  wrapper.appendChild(video);
-  wrapper.appendChild(name);
-  container.appendChild(wrapper);
-
-  return video;
-}
-
-async function startLocalStream() {
-  try {
-    if (localStream) return;
-
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true
-    });
-
-    const video = createVideoElement("localVideo", "You", true);
-    if (video) video.srcObject = localStream;
-
-  } catch (err) {
-    console.error(err);
-    alert("Camera access denied");
-  }
-}
-
-document.getElementById("startCamBtn")?.addEventListener("click", async () => {
-  await startLocalStream();
-
-  if (meetingId) {
-    socket.emit("join_meeting", { meetingId, userId });
+socket.on("participant_update", (data) => {
+  const counter = document.getElementById(`count-${data.roomId}`);
+  if(counter){
+    counter.innerText = data.count;
   }
 });
-
-document.getElementById("toggleAudioBtn")?.addEventListener("click", () => {
-  localStream?.getAudioTracks().forEach(track => track.enabled = !track.enabled);
-});
-
-document.getElementById("toggleVideoBtn")?.addEventListener("click", () => {
-  localStream?.getVideoTracks().forEach(track => track.enabled = !track.enabled);
-});
-
-document.getElementById("shareScreenBtn")?.addEventListener("click", async () => {
-  screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-});
-
-document.getElementById("requestJoinBtn")?.addEventListener("click", () => {
-  socket.emit("request_join_meeting", { meetingId, userId });
-});
-
-document.querySelectorAll(".approveBtn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    socket.emit("approve_user", {
-      meetingId,
-      userId: btn.dataset.userId
-    });
-  });
-});
-
-document.querySelectorAll(".rejectBtn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    socket.emit("reject_user", {
-      meetingId,
-      userId: btn.dataset.userId
-    });
-  });
-});
-
-document.getElementById("reactionForm")?.addEventListener("submit", function(e) {
-  e.preventDefault();
-  const reaction = this.reaction.value;
-  socket.emit("send_reaction", { meetingId, reaction });
-  alert("Reaction sent: " + reaction);
-});
-
-document.getElementById("endMeetingBtn")?.addEventListener("click", () => {
-  socket.emit("end_meeting", { meetingId });
-});
-
-document.getElementById("leaveBtn")?.addEventListener("click", () => {
-  location.href = "/video-counseling";
-});
-
-socket.on("approved", () => location.reload());
-socket.on("meeting_ended", () => location.href = "/video-counseling");
 </script>
 
 </body>
