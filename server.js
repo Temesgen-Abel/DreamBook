@@ -1030,7 +1030,7 @@ app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
 // REQUEST COUNSELING SESSION
 // ======================================================
 
-app.post("/video-counseling", mustBeLoggedIn, async (req, res) => {
+app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   const io = req.app.get("io");
   const client = await pool.connect();
 
