@@ -978,7 +978,7 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 // PRODUCTION VIDEO COUNSELING + LIVE MEETING ROUTES
 // ======================================================
 
-app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
+app.get("/live-meetings", mustBeLoggedIn, async (req, res) => {
   try {
     const currentUser = req.user;
     let users = [];
@@ -1026,11 +1026,10 @@ app.get("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
   }
 });
 
-// ======================================================
-// REQUEST COUNSELING SESSION
-// ======================================================
+//create live-meeting
 
-app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
+
+app.post("/live", mustBeLoggedIn, async (req, res) => {
   const io = req.app.get("io");
   const client = await pool.connect();
 
@@ -1063,12 +1062,12 @@ app.post("/live-meetings/create", mustBeLoggedIn, async (req, res) => {
       roomId
     });
 
-    res.redirect("/video-counseling");
+    res.redirect("/live");
 
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
-    res.redirect("/video-counseling");
+    res.redirect("/live");
   } finally {
     client.release();
   }
