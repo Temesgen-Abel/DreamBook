@@ -1004,8 +1004,7 @@ app.post("/live", mustBeLoggedIn, async (req, res) => {
        VALUES ($1, NULL, $2, 'active', $3)`,
       [
         req.user.id,
-        roomId,
-        false
+        roomId
 
       ]
     );
