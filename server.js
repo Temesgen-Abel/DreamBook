@@ -175,7 +175,7 @@ CREATE TABLE IF NOT EXISTS video_sessions (
   counselor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
   status VARCHAR(50) DEFAULT 'active',
-  shareOnDashboard BOOLEAN DEFAULT FALSE,
+  share_on_dashboard BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 `);
@@ -987,11 +987,11 @@ app.post("/live", mustBeLoggedIn, async (req, res) => {
 
     const roomId = roomResult.rows[0].id;
 
-    // Create open live session
+    // Create video session
     await client.query(
       `INSERT INTO video_sessions
-       (user_id, counselor_id, room_id, status, shareOnDashboard)
-       VALUES ($1,NULL,$2,'active',$3)`,
+       (user_id, counselor_id, room_id, status, share_on_dashboard)
+       VALUES ($1, NULL, $2, 'active', $3)`,
       [
         req.user.id,
         roomId,
@@ -999,10 +999,10 @@ app.post("/live", mustBeLoggedIn, async (req, res) => {
       ]
     );
 
-    // Organizer joins room automatically
+    // Organizer joins automatically
     await client.query(
-      `INSERT INTO room_participants (room_id,user_id)
-       VALUES ($1,$2)`,
+      `INSERT INTO room_participants (room_id, user_id)
+       VALUES ($1, $2)`,
       [roomId, req.user.id]
     );
 
@@ -1012,7 +1012,7 @@ app.post("/live", mustBeLoggedIn, async (req, res) => {
 
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error(err);
+    console.error("LIVE CREATE ERROR:", err);
     res.redirect("/live");
   } finally {
     client.release();
