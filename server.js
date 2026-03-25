@@ -175,6 +175,7 @@ CREATE TABLE IF NOT EXISTS video_sessions (
   counselor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
   status VARCHAR(50) DEFAULT 'active',
+  share_on_dashboard BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 `);
@@ -191,11 +192,6 @@ CREATE TABLE IF NOT EXISTS live_meetings (
   status VARCHAR(50) DEFAULT 'scheduled',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-`);
-
-await dbRun(`
-ALTER TABLE live_meetings
-ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ;
 `);
 
 await dbRun(`
