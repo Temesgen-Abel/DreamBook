@@ -1000,8 +1000,8 @@ app.post("/live", mustBeLoggedIn, async (req, res) => {
     // Create live session
     await client.query(
       `INSERT INTO video_sessions
-       (user_id, counselor_id, room_id, status, share_on_dashboard)
-       VALUES ($1, NULL, $2, 'active', $3)`,
+       (user_id, counselor_id, room_id, status)
+       VALUES ($1, NULL, $2, 'active')`,
       [
         req.user.id,
         roomId
