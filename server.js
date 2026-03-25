@@ -967,6 +967,73 @@ app.get("/live", mustBeLoggedIn, async (req, res) => {
   }
 });
 
+//start live meeting
+app.post("/live", mustBeLoggedIn, async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const { shareOnDashboard } = req.body;
+
+    // Prevent duplicate active live session
+    const existing = await client.query(
+      `SELECT id
+       FROM video_sessions
+       WHERE user_id = $1
+       AND status = 'active'`,
+      [req.user.id]
+    );
+
+    if (existing.rows.length > 0) {
+      await client.query("ROLLBACK");
+      return res.redirect("/live");
+    }
+
+    // Create room
+    const roomResult = await client.query(
+      `INSERT INTO rooms DEFAULT VALUES RETURNING id`
+    );
+
+    const roomId = roomResult.rows[0].id;
+
+    // Create live session
+    await client.query(
+      `INSERT INTO video_sessions
+       (user_id, counselor_id, room_id, status, share_on_dashboard)
+       VALUES ($1, NULL, $2, 'active', $3)`,
+      [
+        req.user.id,
+        roomId,
+        shareOnDashboard === "true"
+      ]
+    );
+
+    // Add host as participant
+    await client.query(
+      `INSERT INTO room_participants (room_id, user_id)
+       VALUES ($1, $2)`,
+      [roomId, req.user.id]
+    );
+
+    await client.query("COMMIT");
+
+    console.log("LIVE CREATED:", roomId);
+
+    res.redirect(`/video-room/${roomId}`);
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+
+    console.error("LIVE CREATE ERROR:", err);
+
+    res.redirect("/live");
+
+  } finally {
+    client.release();
+  }
+});
+
 //end live meeting
 app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
   try {
