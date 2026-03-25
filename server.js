@@ -1005,7 +1005,8 @@ app.post("/live", mustBeLoggedIn, async (req, res) => {
       [
         req.user.id,
         roomId,
-        shareOnDashboard === "true"
+        false
+
       ]
     );
 
