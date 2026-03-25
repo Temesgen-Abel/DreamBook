@@ -160,6 +160,27 @@
 
 </div>
 
+  <h2>Video Room</h2>
+
+  <div class="video-container">
+    <video id="localVideo" autoplay playsinline muted></video>
+  </div>
+
+<!--browser camera startup-->
+<script>
+  // Request camera access on page load
+  window.onload = function() {
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(function(stream) {
+        // We don't need to do anything with the stream here
+        // Just requesting access to trigger browser permissions
+        stream.getTracks().forEach(track => track.stop());
+      })
+      .catch(function(err) {
+        console.log("Camera access denied or not available:", err);
+      });
+  };
+</script>
 
 <!-- SOCKET.IO -->
 <script src="/socket.io/socket.io.js"></script>
