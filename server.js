@@ -943,102 +943,27 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
 
 app.get("/live", mustBeLoggedIn, async (req, res) => {
   try {
-    const currentUser = req.user;
-
-    // One single query only
-    const meetingResult = await pool.query(
-      `SELECT vs.id,
-              vs.room_id,
-              vs.status,
-              vs.user_id AS host_id,
-              u.username AS host_name
-       FROM video_sessions vs
-       JOIN users u ON vs.user_id = u.id
-       WHERE vs.status = 'active'
-       ORDER BY vs.created_at DESC`
-    );
+    const meetings = await pool.query(`
+      SELECT
+        vs.id,
+        vs.room_id,
+        u.username AS host_name,
+        vs.user_id AS host_id
+      FROM video_sessions vs
+      JOIN users u ON vs.user_id = u.id
+      WHERE vs.status = 'active'
+      ORDER BY vs.created_at DESC
+    `);
 
     res.render("live", {
-      meetings: meetingResult.rows,
-      userId: currentUser.id,
-      lang: "en"
+      meetings: meetings.rows,
+      userId: req.user.id,
+      lang: req.query.lang || "en"
     });
 
   } catch (err) {
-    console.error("LIVE ERROR:", err);
-    res.status(500).send("Server error");
-  }
-});
-
-//create live-meeting
-
-app.post("/live", mustBeLoggedIn, async (req, res) => {
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
-    const { shareOnDashboard } = req.body;
-
-    // Create room
-    const roomResult = await client.query(
-      `INSERT INTO rooms DEFAULT VALUES RETURNING id`
-    );
-
-    const roomId = roomResult.rows[0].id;
-
-    // Create video session
-    await client.query(
-  `INSERT INTO video_sessions
-   (user_id, counselor_id, room_id, status)
-   VALUES ($1, NULL, $2, 'active')`,
-  [
-    req.user.id,
-    roomId
-  ]
-);
-    // Organizer joins automatically
-    await client.query(
-      `INSERT INTO room_participants (room_id, user_id)
-       VALUES ($1, $2)`,
-      [roomId, req.user.id]
-    );
-
-    await client.query("COMMIT");
-
-    res.redirect(`/video-room/${roomId}`);
-
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("LIVE CREATE ERROR:", err);
-    res.redirect("/live");
-  } finally {
-    client.release();
-  }
-});
-
-// ======================================================
-// ACCEPT COUNSELING
-// ======================================================
-
-app.post("/approve-meeting/:id", mustBeLoggedIn, async (req, res) => {
-  try {
-    await pool.query(
-      `UPDATE video_sessions
-       SET status='approved'
-       WHERE id=$1`,
-      [req.params.id]
-    );
-
-    const io = req.app.get("io");
-
-    io.emit("meeting_started");
-
-    res.redirect("/live");
-
-  } catch (err) {
     console.error(err);
-    res.redirect("/live");
+    res.send("Error loading live page");
   }
 });
 
@@ -1064,29 +989,28 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
 
 //counseling 
 app.get("/video-room/:roomId", mustBeLoggedIn, async (req, res) => {
-  try {
-    const roomId = req.params.roomId;
+  const { roomId } = req.params;
 
-    const meeting = await pool.query(
-      `SELECT vs.*, 
-              u.username AS host_name,
-              c.username AS counselor_name
-       FROM video_sessions vs
-       JOIN users u ON vs.user_id = u.id
-       JOIN users c ON vs.counselor_id = c.id
-       WHERE vs.room_id = $1`,
+  try {
+    const room = await pool.query(
+      `SELECT * FROM rooms WHERE id=$1`,
       [roomId]
     );
 
-    if (meeting.rows.length === 0) {
+    if (!room.rows.length) {
       return res.redirect("/live");
     }
 
+    await pool.query(
+      `INSERT INTO room_participants (room_id, user_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [roomId, req.user.id]
+    );
+
     res.render("video-room", {
       roomId,
-      user: req.user,
-      meeting: meeting.rows[0],
-      lang: "en"
+      user: req.user
     });
 
   } catch (err) {

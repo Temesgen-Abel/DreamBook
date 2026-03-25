@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>DreamBook Live Room</title>
+
+<style>
+body{
+  font-family:Arial;
+  background:#111;
+  color:white;
+  text-align:center;
+  padding:20px;
+}
+
+video{
+  width:420px;
+  border-radius:12px;
+  background:black;
+}
+
+.leave-btn{
+  margin-top:20px;
+  padding:10px 20px;
+  background:red;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<h2>Live Video Room 🎥</h2>
+
+<video id="localVideo" autoplay playsinline muted></video>
+
+<br>
+
+<button class="leave-btn" onclick="window.location='/live'">
+Leave Room
+</button>
+
+<script>
+navigator.mediaDevices.getUserMedia({
+  video:true,
+  audio:true
+})
+.then(stream => {
+  document.getElementById("localVideo").srcObject = stream;
+})
+.catch(err => {
+  console.error("Camera error:", err);
+});
+</script>
+
+<script>
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true
+    });
+
+    const video = document.getElementById("localVideo");
+    video.srcObject = stream;
+    await video.play();
+
+  } catch (err) {
+    console.error("Camera failed:", err);
+  }
+}
+
+startCamera();
+</script>
+
+</body>
+</html>
