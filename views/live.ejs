@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="<%= lang || 'en' %>">
 <head>
@@ -87,19 +88,16 @@
     .end-btn:hover{
       background:darkred;
     }
-
   </style>
 </head>
 <body>
 
 <div class="container">
 
-  <!-- START LIVE -->
   <div class="card">
     <h2>Start Live Discussion 🎥</h2>
 
     <form method="POST" action="/live">
-
       <div class="share-box">
         <label>
           <input type="checkbox" name="shareOnDashboard" value="true" checked>
@@ -108,17 +106,13 @@
       </div>
 
       <button type="submit">Start Live Now</button>
-
     </form>
   </div>
 
-
-  <!-- ACTIVE LIVE DISCUSSIONS -->
   <div class="card">
     <h2>Available Live Discussions 🔴</h2>
 
     <% if (meetings && meetings.length > 0) { %>
-
       <% meetings.forEach(meeting => { %>
 
         <div class="meeting">
@@ -140,49 +134,21 @@
 
           <% if (meeting.host_id === userId) { %>
             <form method="POST" action="/end-meeting/<%= meeting.id %>">
-              <button class="end-btn">
-                End Live
-              </button>
+              <button class="end-btn">End Live</button>
             </form>
           <% } %>
 
         </div>
 
       <% }) %>
-
     <% } else { %>
-
       <p>No live discussions available now.</p>
-
     <% } %>
 
   </div>
 
 </div>
 
-  <h2>Video Room</h2>
-
-  <div class="video-container">
-    <video id="localVideo" autoplay playsinline muted></video>
-  </div>
-
-<!--browser camera startup-->
-<script>
-  // Request camera access on page load
-  window.onload = function() {
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(function(stream) {
-        // We don't need to do anything with the stream here
-        // Just requesting access to trigger browser permissions
-        stream.getTracks().forEach(track => track.stop());
-      })
-      .catch(function(err) {
-        console.log("Camera access denied or not available:", err);
-      });
-  };
-</script>
-
-<!-- SOCKET.IO -->
 <script src="/socket.io/socket.io.js"></script>
 
 <script>

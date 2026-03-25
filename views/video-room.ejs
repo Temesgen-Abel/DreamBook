@@ -1,59 +1,45 @@
+```html
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>DreamBook Live Room</title>
+  <meta charset="UTF-8">
+  <title>Video Room</title>
 
-<style>
-body{
-  font-family:Arial;
-  background:#111;
-  color:white;
-  text-align:center;
-  padding:20px;
-}
+  <style>
+    body{
+      font-family:Arial;
+      text-align:center;
+      background:#f7f8fc;
+      margin:0;
+      padding:20px;
+    }
 
-video{
-  width:420px;
-  border-radius:12px;
-  background:black;
-}
+    h2{
+      margin-bottom:20px;
+    }
 
-.leave-btn{
-  margin-top:20px;
-  padding:10px 20px;
-  background:red;
-  color:white;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
-</style>
+    .videos{
+      display:flex;
+      justify-content:center;
+      gap:20px;
+      flex-wrap:wrap;
+    }
+
+    video{
+      width:420px;
+      max-width:100%;
+      border-radius:12px;
+      background:black;
+    }
+  </style>
 </head>
 <body>
 
 <h2>Live Video Room 🎥</h2>
 
-<video id="localVideo" autoplay playsinline muted></video>
-
-<br>
-
-<button class="leave-btn" onclick="window.location='/live'">
-Leave Room
-</button>
-
-<script>
-navigator.mediaDevices.getUserMedia({
-  video:true,
-  audio:true
-})
-.then(stream => {
-  document.getElementById("localVideo").srcObject = stream;
-})
-.catch(err => {
-  console.error("Camera error:", err);
-});
-</script>
+<div class="videos">
+  <video id="localVideo" autoplay playsinline muted></video>
+</div>
 
 <script>
 async function startCamera() {
@@ -63,16 +49,20 @@ async function startCamera() {
       audio: true
     });
 
-    const video = document.getElementById("localVideo");
-    video.srcObject = stream;
-    await video.play();
+    const localVideo = document.getElementById("localVideo");
+    localVideo.srcObject = stream;
+
+    await localVideo.play();
+
+    console.log("Camera started successfully");
 
   } catch (err) {
-    console.error("Camera failed:", err);
+    console.error("Camera error:", err);
+    alert("Camera permission failed: " + err.message);
   }
 }
 
-startCamera();
+window.onload = startCamera;
 </script>
 
 </body>
