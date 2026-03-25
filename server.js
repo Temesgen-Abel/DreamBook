@@ -175,7 +175,7 @@ CREATE TABLE IF NOT EXISTS video_sessions (
   counselor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
   status VARCHAR(50) DEFAULT 'active',
-  share_on_dashboard BOOLEAN DEFAULT FALSE,
+  shareOnDashboard BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 `);
