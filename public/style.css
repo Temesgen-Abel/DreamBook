@@ -727,3 +727,19 @@ button {
   outline: 3px solid var(--accent);
   outline-offset: 3px;
 }
+
+/* Live Discussion Shares */
+.live-share-post {
+  border-left: 4px solid #ff6b6b;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+}
+
+.live-indicator {
+  background: #ff6b6b;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: bold;
+  margin-left: 8px;
+}

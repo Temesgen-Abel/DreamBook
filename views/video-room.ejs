@@ -58,6 +58,41 @@ button{
   background:#f3f4f8;
   border-radius:8px;
 }
+.reply-item{
+  margin-left:20px;
+  margin-top:4px;
+  padding:6px;
+  background:#e8ecf0;
+  border-radius:6px;
+  border-left:3px solid #007bff;
+}
+.reply-btn{
+  font-size:12px;
+  color:#007bff;
+  cursor:pointer;
+  margin-left:8px;
+  text-decoration:underline;
+}
+.reply-form{
+  display:none;
+  margin-top:6px;
+  margin-left:20px;
+}
+.reply-form input{
+  width:calc(100% - 60px);
+  padding:4px;
+  border:1px solid #ccc;
+  border-radius:4px;
+}
+.reply-form button{
+  padding:4px 8px;
+  margin-left:4px;
+  background:#007bff;
+  color:white;
+  border:none;
+  border-radius:4px;
+  cursor:pointer;
+}
 #floatingReactions{
   position:fixed;
   right:20px;
@@ -109,7 +144,8 @@ button{
 <button onclick="sendInteraction('heart')">❤️</button>
 <button onclick="sendInteraction('laugh')">😂</button>
 <button onclick="sendInteraction('crying')">😢</button>
-<button onclick="shareLive()">🔗 Share</button>
+<button onclick="shareLive()">🔗 Share link</button>
+<button onclick="shareToCommunity()">📢 Share to Community</button>
 </div>
 
 <div class="live-counts">
@@ -127,11 +163,30 @@ button{
 </div>
 
 <div class="reaction-feed" id="reactionFeed">
-<% comments.forEach(c => { %>
-<div class="reaction-item">
+<% 
+// Group comments by parent_id
+const topLevelComments = comments.filter(c => !c.parent_id);
+const replies = comments.filter(c => c.parent_id);
+
+topLevelComments.forEach(c => { 
+%>
+<div class="reaction-item" data-id="<%= c.id %>">
 <strong><%= c.username %>:</strong> <%= c.comment %>
+<button class="reply-btn" onclick="showReplyForm(<%= c.id %>)">Reply</button>
+<div class="reply-form" id="reply-form-<%= c.id %>">
+<input id="reply-input-<%= c.id %>" placeholder="Write a reply...">
+<button onclick="sendReply(<%= c.id %>)">Send</button>
 </div>
-<% }) %>
+<% 
+const commentReplies = replies.filter(r => r.parent_id === c.id);
+commentReplies.forEach(reply => { 
+%>
+<div class="reply-item">
+<strong><%= reply.username %>:</strong> <%= reply.comment %>
+</div>
+<% }); %>
+</div>
+<% }); %>
 </div>
 
 <div id="floatingReactions"></div>
@@ -335,7 +390,7 @@ socket.on("participant_update",(data)=>{
 });
 
 socket.on("live_interaction_update", (payload) => {
-  const { username, type, comment } = payload;
+  const { id, username, type, comment, parentId } = payload;
 
   if(type === "like" || type === "heart" || type === "laugh" || type === "crying" || type === "share"){
     const map = {
@@ -351,10 +406,30 @@ socket.on("live_interaction_update", (payload) => {
 
   if(type === "comment" && comment){
     const feed = document.getElementById("reactionFeed");
-    const item = document.createElement("div");
-    item.className = "reaction-item";
-    item.innerHTML = `<strong>${username}:</strong> ${comment}`;
-    feed.appendChild(item);
+
+    if(parentId){
+      // This is a reply
+      const parentElement = document.querySelector(`.reaction-item[data-id="${parentId}"]`);
+      if(parentElement){
+        const replyDiv = document.createElement("div");
+        replyDiv.className = "reply-item";
+        replyDiv.innerHTML = `<strong>${username}:</strong> ${comment}`;
+        parentElement.appendChild(replyDiv);
+      }
+    } else {
+      // This is a new top-level comment
+      const item = document.createElement("div");
+      item.className = "reaction-item";
+      item.setAttribute("data-id", id);
+      item.innerHTML = `<strong>${username}:</strong> ${comment}
+        <button class="reply-btn" onclick="showReplyForm(${id})">Reply</button>
+        <div class="reply-form" id="reply-form-${id}">
+          <input id="reply-input-${id}" placeholder="Write a reply...">
+          <button onclick="sendReply(${id})">Send</button>
+        </div>`;
+      feed.appendChild(item);
+    }
+
     feed.scrollTop = feed.scrollHeight;
   }
 });
@@ -452,6 +527,62 @@ async function sendComment(){
 function shareLive(){
   navigator.clipboard.writeText(window.location.href);
   sendInteraction("share");
+}
+
+function shareToCommunity(){
+  const liveUrl = window.location.href;
+  const postBody = `🎥 I'm hosting a live dream discussion! Join me here: ${liveUrl}\n\n#LiveDreamDiscussion #DreamBook`;
+
+  fetch("/create-post", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      body: postBody,
+      is_live_share: 'true',
+      live_room_id: roomId
+    })
+  })
+  .then(response => {
+    if(response.redirected || response.ok){
+      alert("Live discussion shared to community!");
+      sendInteraction("share");
+    } else {
+      return response.text().then(text => {
+        throw new Error(`HTTP ${response.status}: ${text}`);
+      });
+    }
+  })
+  .catch(error => {
+    console.error("Error sharing to community:", error);
+    alert("Failed to share to community. Please try again.");
+  });
+}
+
+function showReplyForm(commentId){
+  const form = document.getElementById(`reply-form-${commentId}`);
+  if(form){
+    form.style.display = form.style.display === 'block' ? 'none' : 'block';
+  }
+}
+
+function sendReply(parentId){
+  const input = document.getElementById(`reply-input-${parentId}`);
+  const text = input.value.trim();
+  if(!text) return;
+
+  fetch("/live-interaction",{
+    method:"POST",
+    headers:{ "Content-Type":"application/x-www-form-urlencoded" },
+    body:new URLSearchParams({
+      roomId,
+      type:"comment",
+      comment:text,
+      parentId: parentId.toString()
+    })
+  });
+
+  input.value = "";
+  document.getElementById(`reply-form-${parentId}`).style.display = 'none';
 }
 
 joinRoom();

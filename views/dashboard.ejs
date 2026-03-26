@@ -40,8 +40,15 @@
     <div class="posts-list">
       <% if (posts.length) { %>
         <% posts.forEach(post => { %>
-          <article class="post-card">
-            <h2><a href="/post/<%= post.id %>"><%= post.username %>'s Dream</a></h2>
+          <article class="post-card <%= post.is_live_share ? 'live-share-post' : '' %>">
+            <h2>
+              <a href="/post/<%= post.id %>">
+                <%= post.username %>'s Dream
+                <% if (post.is_live_share) { %>
+                  <span class="live-indicator">🎥 LIVE</span>
+                <% } %>
+              </a>
+            </h2>
             <p><%- post.body %></p>
 
             <div class="reactions">

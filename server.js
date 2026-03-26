@@ -98,6 +98,8 @@ CREATE TABLE IF NOT EXISTS users (
       authorid INTEGER REFERENCES users(id) ON DELETE SET NULL,
       username TEXT,
       body TEXT,
+      is_live_share BOOLEAN DEFAULT FALSE,
+      live_room_id UUID,
       createdDate TIMESTAMPTZ DEFAULT NOW()
     )
   `);
@@ -187,6 +189,7 @@ CREATE TABLE IF NOT EXISTS live_interactions (
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   type VARCHAR(20) CHECK(type IN ('like','dislike','comment','share','heart','laugh','crying')),
   comment TEXT,
+  parent_id INTEGER REFERENCES live_interactions(id) ON DELETE CASCADE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 `);
@@ -212,6 +215,13 @@ CREATE TABLE IF NOT EXISTS live_interactions (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 `);
+
+// Migration: Add parent_id column for replies
+try {
+  await dbRun(`ALTER TABLE live_interactions ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES live_interactions(id) ON DELETE CASCADE`);
+} catch (err) {
+  console.log("Migration note: parent_id column may already exist or migration failed:", err.message);
+}
 
 await dbRun(`
 CREATE TABLE IF NOT EXISTS meeting_documents (
@@ -779,6 +789,8 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
   const errors = [];
 
   const text = req.body.body ? req.body.body.trim() : "";
+  const isLiveShare = req.body.is_live_share === 'true';
+  const liveRoomId = req.body.live_room_id;
 
   // ✅ Validation
   if (!text) {
@@ -798,10 +810,10 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
 
   // ✅ Insert post
   const inserted = await dbGet(
-    `INSERT INTO posts (authorid, username, body, createdDate)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO posts (authorid, username, body, is_live_share, live_room_id, createdDate)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING id`,
-    [req.user.id, req.user.username, text, now]
+    [req.user.id, req.user.username, text, isLiveShare, liveRoomId, now]
   );
 
   const io = req.app.get("io");
@@ -1059,7 +1071,7 @@ app.get("/video-room/:roomId", mustBeLoggedIn, async (req, res) => {
     );
 
     const comments = await pool.query(
-      `SELECT li.comment,u.username
+      `SELECT li.id, li.comment, li.parent_id, u.username
        FROM live_interactions li
        JOIN users u ON li.user_id=u.id
        WHERE li.room_id=$1
@@ -1086,18 +1098,22 @@ app.get("/video-room/:roomId", mustBeLoggedIn, async (req, res) => {
 // ============================
 app.post("/live-interaction", mustBeLoggedIn, async (req, res) => {
   try {
-    const { roomId, type, comment } = req.body;
+    const { roomId, type, comment, parentId } = req.body;
 
-    await pool.query(
-      `INSERT INTO live_interactions (room_id,user_id,type,comment)
-       VALUES ($1,$2,$3,$4)`,
-      [roomId, req.user.id, type, comment || null]
+    const result = await pool.query(
+      `INSERT INTO live_interactions (room_id,user_id,type,comment,parent_id)
+       VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+      [roomId, req.user.id, type, comment || null, parentId || null]
     );
 
+    const newInteractionId = result.rows[0].id;
+
     io.to(`room_${roomId}`).emit("live_interaction_update", {
+      id: newInteractionId,
       username: req.user.username,
       type,
-      comment
+      comment,
+      parentId
     });
 
     res.json({ success:true });
