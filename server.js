@@ -14,6 +14,7 @@ const http = require("http");
 const fs = require("fs");
 const multer = require("multer");
 
+
 const app = express();
 
 // Setup storage folder and filename
@@ -33,6 +34,10 @@ const cron = require("node-cron");
 
 cron.schedule("0 2 * * *", () => {
   require("./backup");
+});
+
+const socket = io({
+  transports: ["websocket", "polling"]
 });
 
 
@@ -393,6 +398,15 @@ app.use(unreadMiddleware);
 
 app.use((req, _, next) => {
   console.log(`[REQ] ${req.method} ${req.path}`);
+  next();
+});
+
+app.enable("trust proxy");
+
+app.use((req, res, next) => {
+  if (req.header("x-forwarded-proto") !== "https") {
+    return res.redirect(`https://${req.header("host")}${req.url}`);
+  }
   next();
 });
 
