@@ -1160,6 +1160,20 @@ io.on("connection", (socket) => {
   });
 
   // =========================
+  // VIDEO REACTIONS
+  // =========================
+  socket.on("video_reaction", ({ roomId, userId, reaction }) => {
+    const payload = {
+      roomId,
+      userId,
+      reaction,
+      createdAt: new Date().toISOString()
+    };
+
+    io.to(`room_${roomId}`).emit("new_video_reaction", payload);
+  });
+
+  // =========================
   // APPROVAL
   // =========================
 

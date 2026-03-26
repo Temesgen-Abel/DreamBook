@@ -22,6 +22,7 @@
       justify-content:center;
       gap:20px;
       flex-wrap:wrap;
+      margin-bottom:18px;
     }
 
     video{
@@ -29,6 +30,65 @@
       max-width:100%;
       border-radius:12px;
       background:black;
+      box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .reaction-panel{
+      max-width:920px;
+      margin:0 auto 10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:center;
+      align-items:center;
+    }
+
+    .reaction-button{
+      font-size:24px;
+      padding:9px 12px;
+      border:none;
+      background:#ffffff;
+      border-radius:999px;
+      box-shadow:0 1px 3px rgba(0,0,0,.18);
+      cursor:pointer;
+      transition:transform .1s ease, box-shadow .2s ease;
+    }
+
+    .reaction-button:hover{
+      transform:scale(1.08);
+      box-shadow:0 4px 10px rgba(0,0,0,.24);
+    }
+
+    .reaction-feed{
+      max-width:920px;
+      margin:0 auto;
+      text-align:left;
+      min-height:120px;
+      border:1px solid #dfe3ec;
+      border-radius:12px;
+      background:#fff;
+      padding:10px;
+      box-shadow:0 3px 9px rgba(0,0,0,0.08);
+      overflow-y:auto;
+    }
+
+    .reaction-item{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-bottom:6px;
+      padding:6px;
+      border-radius:8px;
+      background:#f9fafc;
+      font-size:15px;
+    }
+
+    .reaction-item:last-child{ margin-bottom:0; }
+
+    @keyframes fadeOut {
+      0% { opacity: 1; transform: translateY(0); }
+      80% { opacity: 1; transform: translateY(-4px); }
+      100% { opacity: 0; transform: translateY(-12px); }
     }
   </style>
 </head>
@@ -38,30 +98,103 @@
 
 <div class="videos">
   <video id="localVideo" autoplay playsinline muted></video>
+  <video id="remoteVideo" autoplay playsinline></video>
+  <video id="remoteVideo2" autoplay playsinline></video>
+  <video id="volume" autoplay playsinline muted></video>
 </div>
 
+<div class="reaction-panel">
+  <span><strong>React live:</strong></span>
+  <button class="reaction-button" onclick="sendReaction('👍')">👍</button>
+  <button class="reaction-button" onclick="sendReaction('❤️')">❤️</button>
+  <button class="reaction-button" onclick="sendReaction('😂')">😂</button>
+  <button class="reaction-button" onclick="sendReaction('😮')">😮</button>
+  <button class="reaction-button" onclick="sendReaction('😢')">😢</button>
+  <button class="reaction-button" onclick="sendReaction('👏')">👏</button>
+</div>
+
+<div class="reaction-feed" id="reactionFeed" aria-live="polite"></div>
+
 <script>
-async function startCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true
+  const roomId = "<%= roomId %>";
+  const userId = <%- JSON.stringify(user.id) %>;
+  const socket = io();
+
+  socket.emit("join_room", { roomId, userId });
+
+  socket.on("participant_joined", (data) => {
+    addReactionMessage(`User ${data.userId} joined the room.`);
+  });
+
+  socket.on("participant_left", (data) => {
+    addReactionMessage(`User left: ${data.socketId}`);
+  });
+
+  socket.on("new_video_reaction", (data) => {
+    if (data.roomId !== roomId) return;
+    displayReaction(data.userId, data.reaction);
+  });
+
+  async function startCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      });
+
+      const localVideo = document.getElementById("localVideo");
+      localVideo.srcObject = stream;
+
+      await localVideo.play();
+
+      console.log("Camera started successfully");
+
+    } catch (err) {
+      console.error("Camera error:", err);
+      alert("Camera permission failed: " + err.message);
+    }
+  }
+
+  window.onload = startCamera;
+
+  function sendReaction(reaction) {
+    socket.emit("video_reaction", {
+      roomId,
+      userId,
+      reaction
     });
 
-    const localVideo = document.getElementById("localVideo");
-    localVideo.srcObject = stream;
-
-    await localVideo.play();
-
-    console.log("Camera started successfully");
-
-  } catch (err) {
-    console.error("Camera error:", err);
-    alert("Camera permission failed: " + err.message);
+    displayReaction(userId, reaction, true);
   }
-}
 
-window.onload = startCamera;
+  function displayReaction(uid, reaction, own = false) {
+    const feed = document.getElementById("reactionFeed");
+    const item = document.createElement("div");
+    item.className = "reaction-item";
+    item.textContent = `${own ? 'You' : 'User ' + uid} reacted ${reaction}`;
+
+    const icon = document.createElement("span");
+    icon.textContent = reaction;
+    item.prepend(icon);
+
+    feed.appendChild(item);
+    feed.scrollTop = feed.scrollHeight;
+
+    // ephemeral float effect
+    if (!own) {
+      item.style.animation = "fadeOut 2.5s ease forwards";
+      setTimeout(() => item.remove(), 2200);
+    }
+  }
+
+  function addReactionMessage(msg) {
+    const feed = document.getElementById("reactionFeed");
+    const item = document.createElement("div");
+    item.className = "reaction-item";
+    item.textContent = msg;
+    feed.appendChild(item);
+    feed.scrollTop = feed.scrollHeight;
+  }
 </script>
 
 </body>
