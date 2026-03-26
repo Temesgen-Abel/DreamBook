@@ -3,104 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <title>Video Room</title>
-
 <style>
-body{
-  font-family:Arial;
-  text-align:center;
-  background:#f7f8fc;
-  margin:0;
-  padding:20px;
-}
-
-.videos{
-  display:flex;
-  justify-content:center;
-  gap:20px;
-  flex-wrap:wrap;
-}
-
-video{
-  width:420px;
-  max-width:100%;
-  border-radius:12px;
-  background:black;
-}
-
-.controls,.live-toolbar{
-  margin:15px 0;
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  flex-wrap:wrap;
-}
-
-button{
-  padding:10px 14px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
-
-.live-counts{
-  margin:15px;
-  font-size:18px;
-}
-
-.comment-box{
-  display:flex;
-  max-width:900px;
-  margin:auto;
-  gap:10px;
-}
-
-.comment-box input{
-  flex:1;
-  padding:10px;
-}
-
-.reaction-feed{
-  max-width:900px;
-  margin:15px auto;
-  background:white;
-  padding:10px;
-  border-radius:12px;
-  min-height:120px;
-  overflow-y:auto;
-}
-
-.reaction-item{
-  padding:8px;
-  margin-bottom:6px;
-  background:#f3f4f8;
-  border-radius:8px;
-}
-
-#floatingReactions{
-  position:fixed;
-  right:20px;
-  bottom:20px;
-  pointer-events:none;
-}
-
-.float-reaction{
-  font-size:30px;
-  animation: floatUp 2s linear forwards;
-}
-
-@keyframes floatUp{
-  from{opacity:1;transform:translateY(0);}
-  to{opacity:0;transform:translateY(-180px);}
-}
+body { font-family: Arial; text-align:center; background:#f7f8fc; margin:0; padding:20px; }
+.videos { display:flex; justify-content:center; gap:20px; flex-wrap:wrap; }
+video { width:300px; max-width:100%; border-radius:12px; background:black; }
+.controls,.live-toolbar{ margin:15px 0; display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
+button{ padding:10px 14px; border:none; border-radius:8px; cursor:pointer; }
+.comment-box{ display:flex; max-width:900px; margin:auto; gap:10px; }
+.comment-box input{ flex:1; padding:10px; }
+.reaction-feed{ max-width:900px; margin:15px auto; background:white; padding:10px; border-radius:12px; min-height:120px; overflow-y:auto; }
+.reaction-item{ padding:8px; margin-bottom:6px; background:#f3f4f8; border-radius:8px; }
+#floatingReactions{ position:fixed; right:20px; bottom:20px; pointer-events:none; }
+.float-reaction{ font-size:30px; animation: floatUp 2s linear forwards; }
+@keyframes floatUp{ from{opacity:1;transform:translateY(0);} to{opacity:0;transform:translateY(-180px);} }
 </style>
 </head>
 <body>
 
 <h2>Live Video Room 🎥</h2>
 
-<div class="videos">
-<video id="localVideo" autoplay muted playsinline></video>
-<video id="remoteVideo" autoplay playsinline></video>
+<div class="videos" id="videoContainer">
+  <video id="localVideo" autoplay muted playsinline></video>
 </div>
 
 <div class="controls">
@@ -145,149 +68,143 @@ button{
 <div id="floatingReactions"></div>
 
 <script src="/socket.io/socket.io.js"></script>
-
 <script>
 const roomId = "<%= roomId %>";
 const userId = <%= user.id %>;
 const hostId = <%= hostId %>;
-
 const socket = io();
 
-const pc = new RTCPeerConnection({
-  iceServers:[
-    { urls:"stun:stun.l.google.com:19302" }
-  ]
-});
-
 let localStream;
+let pcs = {}; // PeerConnections per participant
 let currentFacing = "user";
 
-socket.emit("join_room",{ roomId,userId });
-
-async function startMedia(){
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video:{ facingMode: currentFacing },
-    audio:true
-  });
-
+// Get user media and attach to local video
+async function startMedia() {
+  localStream = await navigator.mediaDevices.getUserMedia({ video:{facingMode:currentFacing}, audio:true });
   document.getElementById("localVideo").srcObject = localStream;
-
-  localStream.getTracks().forEach(track=>{
-    pc.addTrack(track,localStream);
-  });
 }
 
-startMedia();
-
-socket.on("participant_update",(data)=>{
-  document.getElementById("viewerCount").innerText = data.count;
+startMedia().then(() => {
+  socket.emit("join_room",{roomId,userId});
 });
 
+// Handle participant join: create new PeerConnection
+socket.on("participant_joined", async (data) => {
+  if(data.id === userId) return; // ignore self
+  const pc = new RTCPeerConnection({ iceServers:[{urls:"stun:stun.l.google.com:19302"}] });
+  pcs[data.id] = pc;
+
+  // Add local tracks
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  // Handle remote tracks
+  pc.ontrack = (event) => {
+    let video = document.getElementById(`video-${data.id}`);
+    if(!video){
+      video = document.createElement("video");
+      video.id = `video-${data.id}`;
+      video.autoplay = true;
+      video.playsInline = true;
+      document.getElementById("videoContainer").appendChild(video);
+    }
+    video.srcObject = event.streams[0];
+  };
+
+  // Exchange ICE candidates
+  pc.onicecandidate = (e) => { if(e.candidate) socket.emit("ice_candidate",{to:data.id,candidate:e.candidate}); };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  socket.emit("offer",{to:data.id,offer});
+});
+
+// Receive offer from remote participant
+socket.on("offer", async (data) => {
+  const pc = new RTCPeerConnection({ iceServers:[{urls:"stun:stun.l.google.com:19302"}] });
+  pcs[data.from] = pc;
+
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  pc.ontrack = (event) => {
+    let video = document.getElementById(`video-${data.from}`);
+    if(!video){
+      video = document.createElement("video");
+      video.id = `video-${data.from}`;
+      video.autoplay = true;
+      video.playsInline = true;
+      document.getElementById("videoContainer").appendChild(video);
+    }
+    video.srcObject = event.streams[0];
+  };
+
+  pc.onicecandidate = (e) => { if(e.candidate) socket.emit("ice_candidate",{to:data.from,candidate:e.candidate}); };
+  await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  socket.emit("answer",{to:data.from,answer});
+});
+
+// Receive answer
+socket.on("answer", async (data) => {
+  const pc = pcs[data.from];
+  if(pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+});
+
+// Receive ICE candidates
+socket.on("ice_candidate", async (data) => {
+  const pc = pcs[data.from];
+  if(pc) await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+});
+
+// Update viewer count
+socket.on("participant_update",(data)=> document.getElementById("viewerCount").innerText=data.count);
+
+// Live interaction updates (comments, reactions)
 socket.on("live_interaction_update",(data)=>{
-
-  if(data.type==="comment"){
-    addComment(data.username,data.comment);
-  }
-
-  if(data.type==="like"){
-    increment("likeCount");
-    floatReaction("👍");
-  }
-
-  if(data.type==="dislike"){
-    increment("dislikeCount");
-    floatReaction("👎");
-  }
-
-  if(data.type==="heart"){
-    increment("heartCount");
-    floatReaction("❤️");
-  }
-
-  if(data.type==="laugh"){
-    increment("laughCount");
-    floatReaction("😂");
-  }
-
-  if(data.type==="crying"){
-    increment("cryingCount");
-    floatReaction("😢");
-  }
-
-  if(data.type==="share"){
-    increment("shareCount");
-    floatReaction("🔗");
-  }
+  if(data.type==="comment") addComment(data.username,data.comment);
+  else increment(`${data.type}Count`) && floatReaction(getReactionIcon(data.type));
 });
+
+function getReactionIcon(type){
+  return {like:"👍",dislike:"👎",heart:"❤️",laugh:"😂",crying:"😢",share:"🔗"}[type];
+}
 
 function increment(id){
-  const el = document.getElementById(id);
-  el.innerText = parseInt(el.innerText)+1;
+  const el=document.getElementById(id);
+  if(el) el.innerText = parseInt(el.innerText)+1;
 }
 
 async function sendInteraction(type){
-  await fetch("/live-interaction",{
-    method:"POST",
-    headers:{ "Content-Type":"application/x-www-form-urlencoded" },
-    body:new URLSearchParams({ roomId,type })
-  });
+  await fetch("/live-interaction",{ method:"POST", headers:{ "Content-Type":"application/x-www-form-urlencoded" }, body:new URLSearchParams({roomId,type}) });
 }
 
 async function sendComment(){
-  const text = document.getElementById("commentInput").value.trim();
+  const text=document.getElementById("commentInput").value.trim();
   if(!text) return;
-
-  await fetch("/live-interaction",{
-    method:"POST",
-    headers:{ "Content-Type":"application/x-www-form-urlencoded" },
-    body:new URLSearchParams({
-      roomId,
-      type:"comment",
-      comment:text
-    })
-  });
-
+  await fetch("/live-interaction",{ method:"POST", headers:{ "Content-Type":"application/x-www-form-urlencoded" }, body:new URLSearchParams({ roomId,type:"comment",comment:text }) });
   document.getElementById("commentInput").value="";
 }
 
 function addComment(user,text){
-  const div = document.createElement("div");
+  const div=document.createElement("div");
   div.className="reaction-item";
   div.innerHTML=`<strong>${user}:</strong> ${text}`;
   document.getElementById("reactionFeed").appendChild(div);
 }
 
 function floatReaction(icon){
-  const div = document.createElement("div");
-  div.className="float-reaction";
-  div.innerText = icon;
+  const div=document.createElement("div");
+  div.className="float-reaction"; div.innerText=icon;
   document.getElementById("floatingReactions").appendChild(div);
   setTimeout(()=>div.remove(),2000);
 }
 
-function shareLive(){
-  navigator.clipboard.writeText(window.location.href);
-  sendInteraction("share");
-  alert("Link copied 🔗");
-}
+function shareLive(){ navigator.clipboard.writeText(window.location.href); sendInteraction("share"); alert("Link copied 🔗"); }
+function toggleMute(){ localStream.getAudioTracks()[0].enabled=!localStream.getAudioTracks()[0].enabled; }
+function toggleCamera(){ localStream.getVideoTracks()[0].enabled=!localStream.getVideoTracks()[0].enabled; }
+async function switchCamera(){ currentFacing=currentFacing==="user"?"environment":"user"; await startMedia(); }
 
-function toggleMute(){
-  localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
-}
-
-function toggleCamera(){
-  localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
-}
-
-async function switchCamera(){
-  currentFacing = currentFacing === "user" ? "environment" : "user";
-  startMedia();
-}
-
-function endLive(){
-  location.href="/live";
-}
+function endLive(){ location.href="/live"; }
 </script>
-
 </body>
 </html>

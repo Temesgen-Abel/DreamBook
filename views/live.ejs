@@ -4,70 +4,19 @@
 <meta charset="UTF-8">
 <title>Live Meetings</title>
 <link rel="stylesheet" href="/style.css">
-
 <style>
-body{
-  font-family:Arial,sans-serif;
-  background:#f7f8fc;
-  margin:0;
-  padding:20px;
-}
-
-.container{
-  max-width:1000px;
-  margin:auto;
-}
-
-.card{
-  background:white;
-  padding:20px;
-  margin-bottom:20px;
-  border-radius:12px;
-  box-shadow:0 4px 10px rgba(0,0,0,0.08);
-}
-
-button{
-  padding:10px;
-  border:none;
-  border-radius:8px;
-  width:100%;
-  cursor:pointer;
-  background:#007bff;
-  color:white;
-}
-
-button:hover{
-  background:#0056b3;
-}
-
-.meeting{
-  padding:15px;
-  border-bottom:1px solid #eee;
-}
-
-.join-btn{
-  display:inline-block;
-  margin-top:8px;
-  padding:8px 14px;
-  background:#28a745;
-  color:white;
-  border-radius:6px;
-  text-decoration:none;
-}
-
-.join-btn:hover{
-  background:#1f7f34;
-}
-
-.end-btn{
-  background:red;
-  margin-top:10px;
-}
-
-.counter{
-  font-size:14px;
-  color:#666;
-}
+body{ font-family:Arial,sans-serif; background:#f7f8fc; margin:0; padding:20px; }
+.container{ max-width:1000px; margin:auto; }
+.card{ background:white; padding:20px; margin-bottom:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.08); }
+button{ padding:10px; border:none; border-radius:8px; width:100%; cursor:pointer; background:#007bff; color:white; }
+button:hover{ background:#0056b3; }
+.meeting{ padding:15px; border-bottom:1px solid #eee; }
+.join-btn{ display:inline-block; margin-top:8px; padding:8px 14px; background:#28a745; color:white; border-radius:6px; text-decoration:none; }
+.join-btn:hover{ background:#1f7f34; }
+.end-btn{ background:red; margin-top:10px; }
+.counter{ font-size:14px; color:#666; }
+.participant-videos{ display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
+.participant-videos video{ width:150px; border-radius:10px; background:black; }
 </style>
 </head>
 <body>
@@ -76,13 +25,10 @@ button:hover{
 
 <div class="card">
 <h2>Start Live Discussion 🎥</h2>
-
 <form method="POST" action="/live">
 <label>
-<input type="checkbox" name="shareOnDashboard" value="true" checked>
-Share on dashboard
+<input type="checkbox" name="shareOnDashboard" value="true" checked> Share on dashboard
 </label>
-
 <button type="submit">Start Live Now</button>
 </form>
 </div>
@@ -93,19 +39,15 @@ Share on dashboard
 <% if (meetings && meetings.length > 0) { %>
 <% meetings.forEach(meeting => { %>
 
-<div class="meeting">
+<div class="meeting" data-room="<%= meeting.room_id %>">
 <strong><%= meeting.host_name %></strong> is live now 🔴
-
 <div class="counter">Room: <%= meeting.room_id %></div>
+<div class="counter">Participants: <span id="count-<%= meeting.room_id %>">1</span></div>
 
-<div class="counter">
-Participants:
-<span id="count-<%= meeting.room_id %>">1</span>
-</div>
+<!-- Container for participant video thumbnails -->
+<div class="participant-videos" id="videos-<%= meeting.room_id %>"></div>
 
-<a class="join-btn" href="/video-room/<%= meeting.room_id %>">
-Join Discussion
-</a>
+<a class="join-btn" href="/video-room/<%= meeting.room_id %>">Join Discussion</a>
 
 <% if (meeting.host_id === userId) { %>
 <form method="POST" action="/end-meeting/<%= meeting.id %>">
@@ -121,21 +63,46 @@ Join Discussion
 <% } %>
 
 </div>
-
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-
 <script>
 const socket = io();
 
-socket.on("meeting_started", ()=> location.reload());
-socket.on("meeting_ended", ()=> location.reload());
-
-socket.on("participant_update",(data)=>{
-  const el = document.getElementById(`count-${data.roomId}`);
-  if(el) el.innerText = data.count;
+// Update participant counts in real-time
+socket.on("participant_update", (data) => {
+  const countEl = document.getElementById(`count-${data.roomId}`);
+  if(countEl) countEl.innerText = data.count;
 });
+
+// Only for hosts: show participant video thumbnails
+<% meetings.forEach(meeting => { if(meeting.host_id === userId){ %>
+const room<%= meeting.room_id %> = "<%= meeting.room_id %>";
+socket.emit("join_room",{ roomId: room<%= meeting.room_id %>, userId: <%= userId %> });
+
+const pcs<%= meeting.room_id %> = {};
+const localStream<%= meeting.room_id %> = new MediaStream(); // just placeholder for host
+socket.on("participant_joined", async (data) => {
+  if(data.roomId !== room<%= meeting.room_id %> || data.id === <%= userId %>) return;
+
+  const pc = new RTCPeerConnection({ iceServers:[{urls:"stun:stun.l.google.com:19302"}] });
+  pcs<%= meeting.room_id %>[data.id] = pc;
+
+  pc.ontrack = (event) => {
+    let video = document.getElementById(`video-${data.id}`);
+    if(!video){
+      video = document.createElement("video");
+      video.id = `video-${data.id}`;
+      video.autoplay = true;
+      video.playsInline = true;
+      document.getElementById(`videos-${room<%= meeting.room_id %>}`).appendChild(video);
+    }
+    video.srcObject = event.streams[0];
+  };
+
+  pc.onicecandidate = (e) => { if(e.candidate) socket.emit("ice_candidate",{ to:data.id, candidate:e.candidate }); };
+});
+<% } }) %>
 </script>
 
 </body>
