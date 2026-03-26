@@ -88,6 +88,7 @@ button{
 <div class="controls">
 <button onclick="toggleMute()">🎤 Mute</button>
 <button onclick="toggleCamera()">📷 Camera</button>
+<button onclick="toggleAudioOnly()" id="audioOnlyBtn">🔈 Audio Only</button>
 <button onclick="switchCamera()">🔄 Switch</button>
 <button onclick="toggleVolume()">🔊 Mute/Unmute Playback</button>
 <label style="display:inline-flex; align-items:center; gap:8px;">
@@ -150,6 +151,29 @@ let localStream;
 let pcs = {};
 let currentFacing = "user";
 let currentVolume = 1;
+let isAudioOnly = false;
+
+function toggleAudioOnly(){
+  isAudioOnly = !isAudioOnly;
+
+  if(localStream){
+    const videoTrack = localStream.getVideoTracks()[0];
+    if(videoTrack){
+      videoTrack.enabled = !isAudioOnly;
+    }
+  }
+
+  const localVideo = document.getElementById("localVideo");
+  if(isAudioOnly){
+    localVideo.style.opacity = 0.4;
+    localVideo.style.filter = "grayscale(100%)";
+    document.getElementById("audioOnlyBtn").innerText = "🎥 Video + Audio";
+  } else {
+    localVideo.style.opacity = 1;
+    localVideo.style.filter = "none";
+    document.getElementById("audioOnlyBtn").innerText = "🔈 Audio Only";
+  }
+}
 
 function setVolume(volume){
   currentVolume = Number(volume);
@@ -164,6 +188,13 @@ async function startMedia(){
     video:{ facingMode: currentFacing },
     audio:true
   });
+
+  if(isAudioOnly){
+    const videoTrack = localStream.getVideoTracks()[0];
+    if(videoTrack){
+      videoTrack.enabled = false;
+    }
+  }
 
   const localVideo = document.getElementById("localVideo");
   localVideo.srcObject = localStream;
@@ -303,6 +334,31 @@ socket.on("participant_update",(data)=>{
   document.getElementById("viewerCount").innerText = data.count;
 });
 
+socket.on("live_interaction_update", (payload) => {
+  const { username, type, comment } = payload;
+
+  if(type === "like" || type === "heart" || type === "laugh" || type === "crying" || type === "share"){
+    const map = {
+      like: "likeCount",
+      heart: "heartCount",
+      laugh: "laughCount",
+      crying: "cryingCount",
+      share: "shareCount"
+    };
+    const counter = document.getElementById(map[type]);
+    if(counter) counter.innerText = Number(counter.innerText || 0) + 1;
+  }
+
+  if(type === "comment" && comment){
+    const feed = document.getElementById("reactionFeed");
+    const item = document.createElement("div");
+    item.className = "reaction-item";
+    item.innerHTML = `<strong>${username}:</strong> ${comment}`;
+    feed.appendChild(item);
+    feed.scrollTop = feed.scrollHeight;
+  }
+});
+
 socket.on("force_mute", ()=>{
   localStream.getAudioTracks().forEach(track=>track.enabled=false);
 });
@@ -400,6 +456,10 @@ function shareLive(){
 
 joinRoom();
 </script>
+<form action="/dashboard" method="get">
+  <button type="submit" class="btn">Back to Homepage</button>
+  </form>
+
 
 </body>
 </html>
