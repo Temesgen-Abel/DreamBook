@@ -223,6 +223,16 @@ try {
   console.log("Migration note: parent_id column may already exist or migration failed:", err.message);
 }
 
+// Migration: Add live share columns to posts
+try {
+  console.log("Running live share migration...");
+  await dbRun(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS is_live_share BOOLEAN DEFAULT FALSE`);
+  await dbRun(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS live_room_id UUID`);
+  console.log("Live share migration completed successfully");
+} catch (err) {
+  console.log("Migration note: live share columns may already exist or migration failed:", err.message);
+}
+
 await dbRun(`
 CREATE TABLE IF NOT EXISTS meeting_documents (
   id SERIAL PRIMARY KEY,
@@ -322,6 +332,11 @@ async function authMiddleware(req, res, next) {
 
 function mustBeLoggedIn(req, res, next) {
   if (!req.user) {
+    // Check if this is an AJAX request
+    const isAjax = req.headers['x-requested-with'] === 'XMLHttpRequest' || req.headers.accept?.includes('application/json');
+    if (isAjax) {
+      return res.status(401).json({ success: false, error: "Not logged in" });
+    }
     return res.redirect("/login")
   }
   next()
@@ -791,14 +806,18 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
   const text = req.body.body ? req.body.body.trim() : "";
   const isLiveShare = req.body.is_live_share === 'true';
   const liveRoomId = req.body.live_room_id;
+  const isAjax = req.headers['x-requested-with'] === 'XMLHttpRequest' || req.headers.accept?.includes('application/json');
 
   // ✅ Validation
   if (!text) {
     errors.push("Post content cannot be empty.");
   }
 
-  // ❌ If validation fails, re-render with errors
+  // ❌ If validation fails
   if (errors.length) {
+    if (isAjax) {
+      return res.status(400).json({ success: false, errors });
+    }
     return res.render("create-post", {
       title: "Create Post | eDreamBook",
       user: req.user,
@@ -832,7 +851,12 @@ app.post("/create-post", mustBeLoggedIn, async (req, res) => {
     createdDate: post.createdDate
   });
 
-  // ✅ Redirect on success
+  // ✅ Handle AJAX vs form submission
+  if (isAjax) {
+    return res.json({ success: true, postId: inserted.id });
+  }
+
+  // ✅ Redirect on success for form submissions
   res.redirect("/dashboard");
 });
 

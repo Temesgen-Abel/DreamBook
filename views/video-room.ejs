@@ -533,9 +533,22 @@ function shareToCommunity(){
   const liveUrl = window.location.href;
   const postBody = `🎥 I'm hosting a live dream discussion! Join me here: ${liveUrl}\n\n#LiveDreamDiscussion #DreamBook`;
 
+  console.log("Sharing to community:", { roomId, postBody, userId, hostId });
+
+  const formData = new URLSearchParams({
+    body: postBody,
+    is_live_share: 'true',
+    live_room_id: roomId
+  });
+
+  console.log("Form data:", formData.toString());
+
   fetch("/create-post", {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "X-Requested-With": "XMLHttpRequest"
+    },
     body: new URLSearchParams({
       body: postBody,
       is_live_share: 'true',
@@ -543,18 +556,38 @@ function shareToCommunity(){
     })
   })
   .then(response => {
-    if(response.redirected || response.ok){
-      alert("Live discussion shared to community!");
-      sendInteraction("share");
+    console.log("Response received:", {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      redirected: response.redirected,
+      url: response.url
+    });
+
+    if(response.ok){
+      return response.json().catch(() => {
+        console.error("Response was OK but not valid JSON");
+        throw new Error("Invalid JSON response");
+      });
     } else {
       return response.text().then(text => {
-        throw new Error(`HTTP ${response.status}: ${text}`);
+        console.error("Error response text:", text);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       });
     }
   })
+  .then(data => {
+    console.log("Success data:", data);
+    if(data.success){
+      alert("Live discussion shared to community!");
+      sendInteraction("share");
+    } else {
+      alert("Failed to share to community: " + (data.errors ? data.errors.join(", ") : data.error || "Unknown error"));
+    }
+  })
   .catch(error => {
-    console.error("Error sharing to community:", error);
-    alert("Failed to share to community. Please try again.");
+    console.error("Final error:", error);
+    alert("Failed to share to community. Error: " + error.message);
   });
 }
 
