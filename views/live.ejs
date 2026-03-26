@@ -44,7 +44,6 @@ button:hover{ background:#0056b3; }
 <div class="counter">Room: <%= meeting.room_id %></div>
 <div class="counter">Participants: <span id="count-<%= meeting.room_id %>">1</span></div>
 
-<!-- Container for participant video thumbnails -->
 <div class="participant-videos" id="videos-<%= meeting.room_id %>"></div>
 
 <a class="join-btn" href="/video-room/<%= meeting.room_id %>">Join Discussion</a>
@@ -67,41 +66,83 @@ button:hover{ background:#0056b3; }
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const socket = io();
-
-// Update participant counts in real-time
-socket.on("participant_update", (data) => {
-  const countEl = document.getElementById(`count-${data.roomId}`);
-  if(countEl) countEl.innerText = data.count;
+const socket = io({
+  transports: ["websocket", "polling"]
 });
 
-// Only for hosts: show participant video thumbnails
+// =========================
+// PARTICIPANT COUNT UPDATE
+// =========================
+socket.on("participant_update", (data) => {
+  const countEl = document.getElementById(`count-${data.roomId}`);
+  if(countEl){
+    countEl.innerText = data.count;
+  }
+});
+
+// =========================
+// HOST PREVIEW ONLY
+// =========================
 <% meetings.forEach(meeting => { if(meeting.host_id === userId){ %>
-const room<%= meeting.room_id %> = "<%= meeting.room_id %>";
-socket.emit("join_room",{ roomId: room<%= meeting.room_id %>, userId: <%= userId %> });
 
-const pcs<%= meeting.room_id %> = {};
-const localStream<%= meeting.room_id %> = new MediaStream(); // just placeholder for host
+const roomId_<%= meeting.id %> = "<%= meeting.room_id %>";
+
+socket.emit("join_room", {
+  roomId: roomId_<%= meeting.id %>,
+  userId: <%= userId %>
+});
+
+const pcs_<%= meeting.id %> = {};
+
 socket.on("participant_joined", async (data) => {
-  if(data.roomId !== room<%= meeting.room_id %> || data.id === <%= userId %>) return;
+  if(data.roomId !== roomId_<%= meeting.id %>) return;
 
-  const pc = new RTCPeerConnection({ iceServers:[{urls:"stun:stun.l.google.com:19302"}] });
-  pcs<%= meeting.room_id %>[data.id] = pc;
+  if(pcs_<%= meeting.id %>[data.socketId]) return;
+
+  const pc = new RTCPeerConnection({
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" }
+    ]
+  });
+
+  pcs_<%= meeting.id %>[data.socketId] = pc;
 
   pc.ontrack = (event) => {
-    let video = document.getElementById(`video-${data.id}`);
+    let video = document.getElementById(`video-${data.socketId}`);
+
     if(!video){
       video = document.createElement("video");
-      video.id = `video-${data.id}`;
+      video.id = `video-${data.socketId}`;
       video.autoplay = true;
       video.playsInline = true;
-      document.getElementById(`videos-${room<%= meeting.room_id %>}`).appendChild(video);
+      video.muted = true;
+
+      document.getElementById("videos-<%= meeting.room_id %>").appendChild(video);
     }
+
     video.srcObject = event.streams[0];
   };
 
-  pc.onicecandidate = (e) => { if(e.candidate) socket.emit("ice_candidate",{ to:data.id, candidate:e.candidate }); };
+  pc.onicecandidate = (e) => {
+    if(e.candidate){
+      socket.emit("webrtc_ice_candidate", {
+        to: data.socketId,
+        candidate: e.candidate
+      });
+    }
+  };
 });
+
+socket.on("participant_left", (data) => {
+  const video = document.getElementById(`video-${data.socketId}`);
+  if(video) video.remove();
+
+  if(pcs_<%= meeting.id %>[data.socketId]){
+    pcs_<%= meeting.id %>[data.socketId].close();
+    delete pcs_<%= meeting.id %>[data.socketId];
+  }
+});
+
 <% } }) %>
 </script>
 

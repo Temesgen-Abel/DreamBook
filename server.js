@@ -36,11 +36,6 @@ cron.schedule("0 2 * * *", () => {
   require("./backup");
 });
 
-const socket = io({
-  transports: ["websocket", "polling"]
-});
-
-
 // ===================================================================
 // 1. DATABASE SETUP
 // ===================================================================
@@ -971,15 +966,17 @@ app.get("/live", mustBeLoggedIn, async (req, res) => {
         vs.user_id AS host_id
       FROM video_sessions vs
       JOIN users u ON vs.user_id = u.id
-      WHERE vs.status = 'active'
+      WHERE vs.status='active'
       ORDER BY vs.created_at DESC
     `);
 
     res.render("live", {
       meetings: meetings.rows,
       userId: req.user.id,
+      username: req.user.username,
       lang: req.query.lang || "en"
     });
+
   } catch (err) {
     console.error(err);
     res.send("Error loading live page");
@@ -987,14 +984,13 @@ app.get("/live", mustBeLoggedIn, async (req, res) => {
 });
 
 // ============================
-// START LIVE MEETING
+// START LIVE
 // ============================
 app.post("/live", mustBeLoggedIn, async (req, res) => {
   const client = await pool.connect();
+
   try {
     await client.query("BEGIN");
-
-    const { shareOnDashboard } = req.body;
 
     const existing = await client.query(
       `SELECT id FROM video_sessions
@@ -1007,34 +1003,81 @@ app.post("/live", mustBeLoggedIn, async (req, res) => {
       return res.redirect("/live");
     }
 
-    const roomResult = await client.query(
+    const room = await client.query(
       `INSERT INTO rooms DEFAULT VALUES RETURNING id`
     );
 
-    const roomId = roomResult.rows[0].id;
+    const roomId = room.rows[0].id;
 
     await client.query(
-      `INSERT INTO video_sessions (user_id, counselor_id, room_id, status)
-       VALUES ($1, NULL, $2, 'active')`,
+      `INSERT INTO video_sessions (user_id, room_id, status)
+       VALUES ($1,$2,'active')`,
       [req.user.id, roomId]
     );
 
     await client.query(
-      `INSERT INTO room_participants (room_id, user_id)
-       VALUES ($1, $2)`,
+      `INSERT INTO room_participants (room_id,user_id)
+       VALUES ($1,$2)`,
       [roomId, req.user.id]
     );
 
     await client.query("COMMIT");
-    console.log("LIVE CREATED:", roomId);
 
     res.redirect(`/video-room/${roomId}`);
+
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("LIVE CREATE ERROR:", err);
+    console.error(err);
     res.redirect("/live");
+
   } finally {
     client.release();
+  }
+});
+
+// ============================
+// VIDEO ROOM
+// ============================
+app.get("/video-room/:roomId", mustBeLoggedIn, async (req, res) => {
+  const { roomId } = req.params;
+
+  try {
+    const host = await pool.query(
+      `SELECT user_id
+       FROM video_sessions
+       WHERE room_id=$1 AND status='active'`,
+      [roomId]
+    );
+
+    if (!host.rows.length) return res.redirect("/live");
+
+    await pool.query(
+      `INSERT INTO room_participants (room_id,user_id)
+       VALUES ($1,$2)
+       ON CONFLICT DO NOTHING`,
+      [roomId, req.user.id]
+    );
+
+    const comments = await pool.query(
+      `SELECT li.comment,u.username
+       FROM live_interactions li
+       JOIN users u ON li.user_id=u.id
+       WHERE li.room_id=$1
+       AND li.type='comment'
+       ORDER BY li.created_at ASC`,
+      [roomId]
+    );
+
+    res.render("video-room", {
+      roomId,
+      user: req.user,
+      hostId: host.rows[0].user_id,
+      comments: comments.rows
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.redirect("/live");
   }
 });
 
@@ -1046,211 +1089,110 @@ app.post("/live-interaction", mustBeLoggedIn, async (req, res) => {
     const { roomId, type, comment } = req.body;
 
     await pool.query(
-      `INSERT INTO live_interactions (room_id, user_id, type, comment)
+      `INSERT INTO live_interactions (room_id,user_id,type,comment)
        VALUES ($1,$2,$3,$4)`,
       [roomId, req.user.id, type, comment || null]
     );
 
-    const io = req.app.get("io");
-
     io.to(`room_${roomId}`).emit("live_interaction_update", {
-      roomId,
       username: req.user.username,
       type,
       comment
     });
 
-    res.json({ success: true });
+    res.json({ success:true });
+
   } catch (err) {
     console.error(err);
-    res.json({ success: false });
+    res.json({ success:false });
   }
 });
 
 // ============================
-// GET LIVE INTERACTIONS
-// ============================
-app.get("/live-interactions/:roomId", mustBeLoggedIn, async (req, res) => {
-  try {
-    const roomId = req.params.roomId;
-
-    const likes = await pool.query(
-      `SELECT COUNT(*) FROM live_interactions
-       WHERE room_id=$1 AND type='like'`,
-      [roomId]
-    );
-
-    const dislikes = await pool.query(
-      `SELECT COUNT(*) FROM live_interactions
-       WHERE room_id=$1 AND type='dislike'`,
-      [roomId]
-    );
-
-    const comments = await pool.query(
-      `SELECT li.comment, u.username
-       FROM live_interactions li
-       JOIN users u ON li.user_id=u.id
-       WHERE li.room_id=$1
-       AND li.type='comment'
-       ORDER BY li.created_at ASC`,
-      [roomId]
-    );
-
-    res.json({
-      likes: Number(likes.rows[0].count),
-      dislikes: Number(dislikes.rows[0].count),
-      comments: comments.rows
-    });
-  } catch (err) {
-    console.error(err);
-    res.json({ likes: 0, dislikes: 0, comments: [] });
-  }
-});
-
-// ============================
-// END LIVE MEETING
-// ============================
-app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
-  try {
-    await pool.query(
-      `UPDATE video_sessions SET status='ended'
-       WHERE id=$1 AND user_id=$2`,
-      [req.params.id, req.user.id]
-    );
-
-    req.app.get("io").emit("meeting_ended");
-    res.redirect("/live");
-  } catch (err) {
-    console.error(err);
-    res.redirect("/live");
-  }
-});
-
-// ============================
-// VIDEO ROOM / COUNSELING
-// ============================
-app.get("/video-room/:roomId", mustBeLoggedIn, async (req, res) => {
-  const { roomId } = req.params;
-
-  try {
-    const host = await pool.query(
-      `SELECT user_id FROM video_sessions
-       WHERE room_id=$1 AND status='active'`,
-      [roomId]
-    );
-
-    if (!host.rows.length) return res.redirect("/live");
-
-    const hostId = host.rows[0].user_id;
-
-    await pool.query(
-      `INSERT INTO room_participants (room_id, user_id)
-       VALUES ($1,$2)
-       ON CONFLICT DO NOTHING`,
-      [roomId, req.user.id]
-    );
-
-    const comments = await pool.query(
-      `SELECT li.comment, u.username
-       FROM live_interactions li
-       JOIN users u ON li.user_id=u.id
-       WHERE li.room_id=$1 AND li.type='comment'
-       ORDER BY li.created_at ASC`,
-      [roomId]
-    );
-
-    res.render("video-room", {
-      roomId,
-      user: req.user,
-      hostId,
-      comments: comments.rows
-    });
-  } catch (err) {
-    console.error(err);
-    res.redirect("/live");
-  }
-});
-
-// ============================
-// SOCKET.IO REALTIME
+// SOCKET.IO LIVE SYSTEM
 // ============================
 const activePeers = {};
-const userSockets = new Map();
 
 io.on("connection", (socket) => {
 
-  // ======= Join User Private Room =======
-  socket.on("join_user_room", (userId) => {
-    socket.userId = Number(userId);
-    socket.join(`user_${userId}`);
+  socket.on("join_room", ({ roomId, userId, username }) => {
 
-    if (!userSockets.has(userId)) userSockets.set(userId, new Set());
-    userSockets.get(userId).add(socket.id);
-  });
-
-  // ======= Join Video Room =======
-  socket.on("join_room", ({ roomId, userId }) => {
     socket.join(`room_${roomId}`);
-    activePeers[socket.id] = { roomId, userId };
+
+    activePeers[socket.id] = {
+      roomId,
+      userId,
+      username
+    };
 
     const room = io.sockets.adapter.rooms.get(`room_${roomId}`);
     const count = room ? room.size : 1;
 
-    io.to(`room_${roomId}`).emit("participant_update", { roomId, count });
-    socket.to(`room_${roomId}`).emit("participant_joined", { socketId: socket.id, userId });
+    io.to(`room_${roomId}`).emit("participant_update", {
+      roomId,
+      count
+    });
+
+    socket.to(`room_${roomId}`).emit("participant_joined", {
+      socketId: socket.id,
+      userId,
+      username
+    });
   });
 
-  // ======= Join Meeting =======
-  socket.on("join_meeting", ({ meetingId, userId }) => {
-    socket.join(`meeting_${meetingId}`);
-    activePeers[socket.id] = { meetingId, userId };
-    socket.to(`meeting_${meetingId}`).emit("participant_joined", { socketId: socket.id, userId });
-  });
+  // ===== WEBRTC =====
+ socket.on("webrtc_offer", ({ to, sdp, from }) => {
+  const sender = activePeers[from];
 
-  // ======= WebRTC Signaling =======
-  socket.on("webrtc_offer", ({ to, sdp, from }) => {
-    io.to(to).emit("webrtc_offer", { sdp, from });
+  io.to(to).emit("webrtc_offer", {
+    sdp,
+    from,
+    username: sender ? sender.username : "Participant"
   });
+});
 
   socket.on("webrtc_answer", ({ to, sdp, from }) => {
     io.to(to).emit("webrtc_answer", { sdp, from });
   });
 
   socket.on("webrtc_ice_candidate", ({ to, candidate, from }) => {
-    io.to(to).emit("webrtc_ice_candidate", { candidate, from });
+    io.to(to).emit("webrtc_ice_candidate", {
+      candidate,
+      from
+    });
   });
 
-  // ======= Reactions / Interactions =======
-  socket.on("video_reaction", ({ roomId, userId, reaction }) => {
-    io.to(`room_${roomId}`).emit("new_video_reaction", { roomId, userId, reaction, createdAt: new Date().toISOString() });
+  // ===== HOST CONTROL =====
+  socket.on("mute_participant", ({ socketId }) => {
+    io.to(socketId).emit("force_mute");
   });
 
-  socket.on("viewer_ready", ({ roomId }) => {
-    socket.to(`room_${roomId}`).emit("viewer_ready", { socketId: socket.id });
+  socket.on("remove_participant", ({ socketId }) => {
+    io.to(socketId).emit("force_disconnect");
   });
 
-  socket.on("approve_user", ({ socketId }) => io.to(socketId).emit("approved"));
-  socket.on("reject_user", ({ socketId }) => io.to(socketId).emit("rejected"));
-
-  // ======= Disconnect =======
+  // ===== DISCONNECT =====
   socket.on("disconnect", () => {
     const peer = activePeers[socket.id];
 
     if (peer?.roomId) {
       const roomName = `room_${peer.roomId}`;
-      socket.to(roomName).emit("participant_left", { socketId: socket.id });
+
+      socket.to(roomName).emit("participant_left", {
+        socketId: socket.id
+      });
+
       const room = io.sockets.adapter.rooms.get(roomName);
       const count = room ? room.size : 0;
-      io.to(roomName).emit("participant_update", { roomId: peer.roomId, count });
-    }
 
-    if (peer?.meetingId) {
-      socket.to(`meeting_${peer.meetingId}`).emit("participant_left", { socketId: socket.id });
+      io.to(roomName).emit("participant_update", {
+        roomId: peer.roomId,
+        count
+      });
     }
 
     delete activePeers[socket.id];
   });
-
 });
 
 // =====================================================

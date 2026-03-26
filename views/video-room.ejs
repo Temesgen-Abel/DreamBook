@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,16 +9,69 @@ body { font-family: Arial; text-align:center; background:#f7f8fc; margin:0; padd
 .videos { display:flex; justify-content:center; gap:20px; flex-wrap:wrap; }
 .video-wrapper { position:relative; display:inline-block; }
 video { width:300px; max-width:100%; border-radius:12px; background:black; }
-.username-label { position:absolute; bottom:5px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.6); color:white; padding:2px 6px; border-radius:4px; font-size:14px; }
-.controls,.live-toolbar,.host-controls{ margin:15px 0; display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
-button{ padding:10px 14px; border:none; border-radius:8px; cursor:pointer; }
-.comment-box{ display:flex; max-width:900px; margin:auto; gap:10px; }
-.comment-box input{ flex:1; padding:10px; }
-.reaction-feed{ max-width:900px; margin:15px auto; background:white; padding:10px; border-radius:12px; min-height:120px; overflow-y:auto; }
-.reaction-item{ padding:8px; margin-bottom:6px; background:#f3f4f8; border-radius:8px; }
-#floatingReactions{ position:fixed; right:20px; bottom:20px; pointer-events:none; }
-.float-reaction{ font-size:30px; animation: floatUp 2s linear forwards; }
-@keyframes floatUp{ from{opacity:1;transform:translateY(0);} to{opacity:0;transform:translateY(-180px);} }
+.username-label {
+  position:absolute;
+  bottom:5px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(0,0,0,0.6);
+  color:white;
+  padding:2px 6px;
+  border-radius:4px;
+  font-size:14px;
+}
+.controls,.live-toolbar,.host-controls{
+  margin:15px 0;
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+button{
+  padding:10px 14px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+.comment-box{
+  display:flex;
+  max-width:900px;
+  margin:auto;
+  gap:10px;
+}
+.comment-box input{
+  flex:1;
+  padding:10px;
+}
+.reaction-feed{
+  max-width:900px;
+  margin:15px auto;
+  background:white;
+  padding:10px;
+  border-radius:12px;
+  min-height:120px;
+  overflow-y:auto;
+}
+.reaction-item{
+  padding:8px;
+  margin-bottom:6px;
+  background:#f3f4f8;
+  border-radius:8px;
+}
+#floatingReactions{
+  position:fixed;
+  right:20px;
+  bottom:20px;
+  pointer-events:none;
+}
+.float-reaction{
+  font-size:30px;
+  animation: floatUp 2s linear forwards;
+}
+@keyframes floatUp{
+  from{opacity:1;transform:translateY(0);}
+  to{opacity:0;transform:translateY(-180px);}
+}
 </style>
 </head>
 <body>
@@ -38,17 +92,14 @@ button{ padding:10px 14px; border:none; border-radius:8px; cursor:pointer; }
 <button onclick="endLive()">⛔ End</button>
 </div>
 
-<!-- Host-only controls -->
 <% if(user.id === hostId){ %>
 <div class="host-controls">
 <button onclick="muteAll()">🔇 Mute All</button>
-<button onclick="removeParticipant()">❌ Remove Participant</button>
 </div>
 <% } %>
 
 <div class="live-toolbar">
 <button onclick="sendInteraction('like')">👍</button>
-<button onclick="sendInteraction('dislike')">👎</button>
 <button onclick="sendInteraction('heart')">❤️</button>
 <button onclick="sendInteraction('laugh')">😂</button>
 <button onclick="sendInteraction('crying')">😢</button>
@@ -57,7 +108,6 @@ button{ padding:10px 14px; border:none; border-radius:8px; cursor:pointer; }
 
 <div class="live-counts">
 👍 <span id="likeCount">0</span>
-👎 <span id="dislikeCount">0</span>
 ❤️ <span id="heartCount">0</span>
 😂 <span id="laughCount">0</span>
 😢 <span id="cryingCount">0</span>
@@ -86,149 +136,213 @@ const roomId = "<%= roomId %>";
 const userId = <%= user.id %>;
 const hostId = <%= hostId %>;
 const username = "<%= user.username %>";
-const socket = io();
+
+const socket = io({
+  transports:["websocket","polling"]
+});
 
 let localStream;
 let pcs = {};
 let currentFacing = "user";
 
-// =========================
-// GET LOCAL MEDIA
-// =========================
-async function startMedia() {
-  localStream = await navigator.mediaDevices.getUserMedia({ video:{facingMode:currentFacing}, audio:true });
+async function startMedia(){
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode: currentFacing },
+    audio:true
+  });
+
   document.getElementById("localVideo").srcObject = localStream;
 }
 
-// =========================
-// JOIN ROOM
-// =========================
-async function joinRoom() {
+async function joinRoom(){
   await startMedia();
-  socket.emit("join_room",{ roomId, userId, username });
+
+  socket.emit("join_room",{
+    roomId,
+    userId,
+    username
+  });
 }
 
-// =========================
-// PEER CONNECTION
-// =========================
-function createPeerConnection(socketId, remoteName){
-  const pc = new RTCPeerConnection({ iceServers:[{ urls:"stun:stun.l.google.com:19302" }] });
+function createPeerConnection(socketId, remoteName="Participant"){
+  const pc = new RTCPeerConnection({
+    iceServers:[
+      { urls:"stun:stun.l.google.com:19302" }
+    ]
+  });
 
-  pc.ontrack = (event) => {
-    let videoWrapper = document.getElementById(`wrapper-${socketId}`);
-    if(!videoWrapper){
-      videoWrapper = document.createElement("div");
-      videoWrapper.className = "video-wrapper";
-      videoWrapper.id = `wrapper-${socketId}`;
+  pc.ontrack = (event)=>{
+    let wrapper = document.getElementById(`wrapper-${socketId}`);
+
+    if(!wrapper){
+      wrapper = document.createElement("div");
+      wrapper.className = "video-wrapper";
+      wrapper.id = `wrapper-${socketId}`;
+
       const video = document.createElement("video");
       video.id = `video-${socketId}`;
       video.autoplay = true;
       video.playsInline = true;
-      videoWrapper.appendChild(video);
 
       const label = document.createElement("div");
       label.className = "username-label";
       label.innerText = remoteName;
-      videoWrapper.appendChild(label);
 
-      document.getElementById("videoContainer").appendChild(videoWrapper);
+      wrapper.appendChild(video);
+      wrapper.appendChild(label);
+
+      document.getElementById("videoContainer").appendChild(wrapper);
     }
+
     document.getElementById(`video-${socketId}`).srcObject = event.streams[0];
   };
 
-  pc.onicecandidate = (e) => {
-    if(e.candidate) socket.emit("webrtc_ice_candidate",{ to: socketId, from: socket.id, candidate: e.candidate });
+  pc.onicecandidate = (e)=>{
+    if(e.candidate){
+      socket.emit("webrtc_ice_candidate",{
+        to: socketId,
+        from: socket.id,
+        candidate:e.candidate
+      });
+    }
   };
 
   return pc;
 }
 
-// =========================
-// SIGNALING
-// =========================
-socket.on("participant_joined", async ({ socketId, username: remoteName }) => {
+socket.on("participant_joined", async ({ socketId, username:remoteName })=>{
   if(pcs[socketId]) return;
 
   const pc = createPeerConnection(socketId, remoteName);
   pcs[socketId] = pc;
 
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  localStream.getTracks().forEach(track=>{
+    pc.addTrack(track, localStream);
+  });
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
-  socket.emit("webrtc_offer",{ to: socketId, from: socket.id, sdp: offer });
+
+  socket.emit("webrtc_offer",{
+    to: socketId,
+    from: socket.id,
+    sdp: offer
+  });
 });
 
-socket.on("webrtc_offer", async ({ from, sdp, username: remoteName }) => {
+socket.on("webrtc_offer", async ({ from, sdp })=>{
   if(pcs[from]) return;
 
-  const pc = createPeerConnection(from, remoteName);
+  const pc = createPeerConnection(from);
   pcs[from] = pc;
 
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  localStream.getTracks().forEach(track=>{
+    pc.addTrack(track, localStream);
+  });
 
   await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
-  socket.emit("webrtc_answer",{ to: from, from: socket.id, sdp: answer });
+
+  socket.emit("webrtc_answer",{
+    to: from,
+    from: socket.id,
+    sdp: answer
+  });
 });
 
-socket.on("webrtc_answer", async ({ from, sdp }) => {
-  const pc = pcs[from];
-  if(pc) await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+socket.on("webrtc_answer", async ({ from, sdp })=>{
+  if(pcs[from]){
+    await pcs[from].setRemoteDescription(new RTCSessionDescription(sdp));
+  }
 });
 
-socket.on("webrtc_ice_candidate", async ({ from, candidate }) => {
-  const pc = pcs[from];
-  if(pc) await pc.addIceCandidate(new RTCIceCandidate(candidate));
+socket.on("webrtc_ice_candidate", async ({ from, candidate })=>{
+  if(pcs[from]){
+    await pcs[from].addIceCandidate(new RTCIceCandidate(candidate));
+  }
 });
 
-socket.on("participant_left", ({ socketId }) => {
-  if(pcs[socketId]) pcs[socketId].close();
-  delete pcs[socketId];
+socket.on("participant_left", ({ socketId })=>{
+  if(pcs[socketId]){
+    pcs[socketId].close();
+    delete pcs[socketId];
+  }
+
   const wrapper = document.getElementById(`wrapper-${socketId}`);
   if(wrapper) wrapper.remove();
 });
 
-// =========================
-// LIVE INTERACTIONS
-// =========================
-socket.on("live_interaction_update", (data) => {
-  if(data.type==="comment") addComment(data.username,data.comment);
-  else increment(`${data.type}Count`) && floatReaction(getReactionIcon(data.type));
+socket.on("participant_update",(data)=>{
+  document.getElementById("viewerCount").innerText = data.count;
 });
 
-function getReactionIcon(type){ return {like:"👍",dislike:"👎",heart:"❤️",laugh:"😂",crying:"😢",share:"🔗"}[type]; }
-function increment(id){ const el=document.getElementById(id); if(el) el.innerText = parseInt(el.innerText)+1; }
-async function sendInteraction(type){ await fetch("/live-interaction",{ method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:new URLSearchParams({ roomId,type }) }); }
-async function sendComment(){ 
-  const text = document.getElementById("commentInput").value.trim(); 
-  if(!text) return; 
-  await fetch("/live-interaction",{ method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:new URLSearchParams({ roomId,type:"comment",comment:text }) }); 
+socket.on("force_mute", ()=>{
+  localStream.getAudioTracks().forEach(track=>track.enabled=false);
+});
+
+socket.on("force_disconnect", ()=>{
+  location.href="/live";
+});
+
+function muteAll(){
+  Object.keys(pcs).forEach(socketId=>{
+    socket.emit("mute_participant",{ socketId });
+  });
+}
+
+function toggleMute(){
+  localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
+}
+
+function toggleCamera(){
+  localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
+}
+
+async function switchCamera(){
+  localStream.getTracks().forEach(track=>track.stop());
+  currentFacing = currentFacing==="user" ? "environment" : "user";
+  await startMedia();
+}
+
+function endLive(){
+  location.href="/live";
+}
+
+async function sendInteraction(type){
+  await fetch("/live-interaction",{
+    method:"POST",
+    headers:{ "Content-Type":"application/x-www-form-urlencoded" },
+    body:new URLSearchParams({ roomId,type })
+  });
+}
+
+async function sendComment(){
+  const text = document.getElementById("commentInput").value.trim();
+  if(!text) return;
+
+  await fetch("/live-interaction",{
+    method:"POST",
+    headers:{ "Content-Type":"application/x-www-form-urlencoded" },
+    body:new URLSearchParams({
+      roomId,
+      type:"comment",
+      comment:text
+    })
+  });
+
   document.getElementById("commentInput").value="";
 }
-function addComment(user,text){ const div=document.createElement("div"); div.className="reaction-item"; div.innerHTML=`<strong>${user}:</strong> ${text}`; document.getElementById("reactionFeed").appendChild(div); }
-function floatReaction(icon){ const div=document.createElement("div"); div.className="float-reaction"; div.innerText=icon; document.getElementById("floatingReactions").appendChild(div); setTimeout(()=>div.remove(),2000); }
-function shareLive(){ navigator.clipboard.writeText(window.location.href); sendInteraction("share"); alert("Link copied 🔗"); }
-function toggleMute(){ localStream.getAudioTracks()[0].enabled=!localStream.getAudioTracks()[0].enabled; }
-function toggleCamera(){ localStream.getVideoTracks()[0].enabled=!localStream.getVideoTracks()[0].enabled; }
-async function switchCamera(){ currentFacing=currentFacing==="user"?"environment":"user"; await startMedia(); }
-function endLive(){ location.href="/live"; }
 
-// =========================
-// HOST CONTROLS
-// =========================
-function muteAll(){
-  Object.values(pcs).forEach(pc => {
-    pc.getSenders().forEach(sender => { if(sender.track.kind==="audio") sender.track.enabled=false; });
-  });
-  alert("All participants muted!");
-}
-function removeParticipant(){
-  alert("This feature requires server-side implementation to remove participant.");
+function shareLive(){
+  navigator.clipboard.writeText(window.location.href);
+  sendInteraction("share");
 }
 
 joinRoom();
 </script>
+
 </body>
 </html>
+```
