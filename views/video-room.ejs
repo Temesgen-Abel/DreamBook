@@ -1,200 +1,151 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Video Room</title>
+<meta charset="UTF-8">
+<title>Video Room</title>
 
-  <style>
+<style>
+body{
+  font-family:Arial;
+  text-align:center;
+  background:#f7f8fc;
+  margin:0;
+  padding:20px;
+}
 
-          .live-toolbar{
-        display:flex;
-        gap:10px;
-        justify-content:center;
-        margin:15px 0;
-      }
+.videos{
+  display:flex;
+  justify-content:center;
+  gap:20px;
+  flex-wrap:wrap;
+}
 
-      .live-toolbar button{
-        font-size:22px;
-        border:none;
-        background:white;
-        padding:10px;
-        border-radius:50%;
-        cursor:pointer;
-      }
+video{
+  width:420px;
+  max-width:100%;
+  border-radius:12px;
+  background:black;
+}
 
-      .live-counts{
-        margin:10px;
-        font-size:18px;
-      }
+.controls,.live-toolbar{
+  margin:15px 0;
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
 
-      .comment-box{
-        display:flex;
-        gap:10px;
-        max-width:900px;
-        margin:auto;
-      }
+button{
+  padding:10px 14px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
 
-      .comment-box input{
-        flex:1;
-        padding:10px;
-        border-radius:8px;
-      }
+.live-counts{
+  margin:15px;
+  font-size:18px;
+}
 
-      #floatingReactions{
-        position:fixed;
-        right:20px;
-        bottom:20px;
-        pointer-events:none;
-      }
+.comment-box{
+  display:flex;
+  max-width:900px;
+  margin:auto;
+  gap:10px;
+}
 
-      .float-reaction{
-        font-size:30px;
-        animation: floatUp 2s linear forwards;
-      }
+.comment-box input{
+  flex:1;
+  padding:10px;
+}
 
-      @keyframes floatUp{
-        from{
-          opacity:1;
-          transform:translateY(0);
-        }
-        to{
-          opacity:0;
-          transform:translateY(-180px);
-        }
-      }
-    body{
-      font-family:Arial;
-      text-align:center;
-      background:#f7f8fc;
-      margin:0;
-      padding:20px;
-    }
+.reaction-feed{
+  max-width:900px;
+  margin:15px auto;
+  background:white;
+  padding:10px;
+  border-radius:12px;
+  min-height:120px;
+  overflow-y:auto;
+}
 
-    h2{
-      margin-bottom:20px;
-    }
+.reaction-item{
+  padding:8px;
+  margin-bottom:6px;
+  background:#f3f4f8;
+  border-radius:8px;
+}
 
-    .videos{
-      display:flex;
-      justify-content:center;
-      gap:20px;
-      flex-wrap:wrap;
-      margin-bottom:18px;
-    }
+#floatingReactions{
+  position:fixed;
+  right:20px;
+  bottom:20px;
+  pointer-events:none;
+}
 
-    video{
-      width:420px;
-      max-width:100%;
-      border-radius:12px;
-      background:black;
-      box-shadow:0 4px 12px rgba(0,0,0,0.15);
-    }
+.float-reaction{
+  font-size:30px;
+  animation: floatUp 2s linear forwards;
+}
 
-    .reaction-panel{
-      max-width:920px;
-      margin:0 auto 10px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      justify-content:center;
-      align-items:center;
-    }
-
-    .reaction-button{
-      font-size:24px;
-      padding:9px 12px;
-      border:none;
-      background:#ffffff;
-      border-radius:999px;
-      box-shadow:0 1px 3px rgba(0,0,0,.18);
-      cursor:pointer;
-      transition:transform .1s ease, box-shadow .2s ease;
-    }
-
-    .reaction-button:hover{
-      transform:scale(1.08);
-      box-shadow:0 4px 10px rgba(0,0,0,.24);
-    }
-
-    .reaction-feed{
-      max-width:920px;
-      margin:0 auto;
-      text-align:left;
-      min-height:120px;
-      border:1px solid #dfe3ec;
-      border-radius:12px;
-      background:#fff;
-      padding:10px;
-      box-shadow:0 3px 9px rgba(0,0,0,0.08);
-      overflow-y:auto;
-    }
-
-    .reaction-item{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      margin-bottom:6px;
-      padding:6px;
-      border-radius:8px;
-      background:#f9fafc;
-      font-size:15px;
-    }
-
-    .reaction-item:last-child{ margin-bottom:0; }
-
-    @keyframes fadeOut {
-      0% { opacity: 1; transform: translateY(0); }
-      80% { opacity: 1; transform: translateY(-4px); }
-      100% { opacity: 0; transform: translateY(-12px); }
-    }
-  </style>
+@keyframes floatUp{
+  from{opacity:1;transform:translateY(0);}
+  to{opacity:0;transform:translateY(-180px);}
+}
+</style>
 </head>
 <body>
 
 <h2>Live Video Room 🎥</h2>
 
 <div class="videos">
-  <video id="localVideo" autoplay playsinline muted></video>
-  <video id="remoteVideo" autoplay playsinline></video>
+<video id="localVideo" autoplay muted playsinline></video>
+<video id="remoteVideo" autoplay playsinline></video>
+</div>
+
+<div class="controls">
+<button onclick="toggleMute()">🎤 Mute</button>
+<button onclick="toggleCamera()">📷 Camera</button>
+<button onclick="switchCamera()">🔄 Switch</button>
+<button onclick="endLive()">⛔ End</button>
 </div>
 
 <div class="live-toolbar">
-
-  <button onclick="sendInteraction('like')">👍</button>
-  <button onclick="sendInteraction('dislike')">👎</button>
-  <button onclick="sendInteraction('heart')">❤️</button>
-  <button onclick="sendInteraction('laugh')">😂</button>
-  <button onclick="sendInteraction('crying')">😢</button>
-  <button onclick="shareLive()">🔗 Share</button>
-
+<button onclick="sendInteraction('like')">👍</button>
+<button onclick="sendInteraction('dislike')">👎</button>
+<button onclick="sendInteraction('heart')">❤️</button>
+<button onclick="sendInteraction('laugh')">😂</button>
+<button onclick="sendInteraction('crying')">😢</button>
+<button onclick="shareLive()">🔗 Share</button>
 </div>
 
-      <div class="live-counts">
-        👍 <span id="likeCount">0</span>
-        👎 <span id="dislikeCount">0</span>
-        😢 <span id="cryingCount">0</span>
-        😂 <span id="laughCount">0</span>
-        ❤️ <span id="heartCount">0</span>
-        🔗 <span id="shareCount">0</span>
-        👁️ <span id="viewerCount">1</span>
-      </div>
+<div class="live-counts">
+👍 <span id="likeCount">0</span>
+👎 <span id="dislikeCount">0</span>
+❤️ <span id="heartCount">0</span>
+😂 <span id="laughCount">0</span>
+😢 <span id="cryingCount">0</span>
+🔗 <span id="shareCount">0</span>
+👁️ <span id="viewerCount">1</span>
+</div>
 
-      <div class="comment-box">
-        <input id="commentInput" placeholder="Write live comment...">
-        <button onclick="sendComment()">Send</button>
-      </div>
+<div class="comment-box">
+<input id="commentInput" placeholder="Write live comment...">
+<button onclick="sendComment()">Send</button>
+</div>
 
-      <div class="reaction-feed" id="reactionFeed">
-        <% comments.forEach(c => { %>
-          <div class="reaction-item">
-            <strong><%= c.username %>:</strong> <%= c.comment %>
-          </div>
-        <% }) %>
-      </div>
+<div class="reaction-feed" id="reactionFeed">
+<% comments.forEach(c => { %>
+<div class="reaction-item">
+<strong><%= c.username %>:</strong> <%= c.comment %>
+</div>
+<% }) %>
+</div>
 
 <div id="floatingReactions"></div>
 
 <script src="/socket.io/socket.io.js"></script>
+
 <script>
 const roomId = "<%= roomId %>";
 const userId = <%= user.id %>;
@@ -203,97 +154,92 @@ const hostId = <%= hostId %>;
 const socket = io();
 
 const pc = new RTCPeerConnection({
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    {
-      urls: "turn:your-turn-server.com:3478",
-      username: "user",
-      credential: "pass"
-    }
+  iceServers:[
+    { urls:"stun:stun.l.google.com:19302" }
   ]
 });
 
-let likes = 0;
-let dislikes = 0;
-let viewers = 1;
+let localStream;
+let currentFacing = "user";
 
-socket.emit("join_room", {
-  roomId,
-  userId:<%= user.id %>
-});
+socket.emit("join_room",{ roomId,userId });
 
-socket.on("participant_update", data => {
+async function startMedia(){
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode: currentFacing },
+    audio:true
+  });
+
+  document.getElementById("localVideo").srcObject = localStream;
+
+  localStream.getTracks().forEach(track=>{
+    pc.addTrack(track,localStream);
+  });
+}
+
+startMedia();
+
+socket.on("participant_update",(data)=>{
   document.getElementById("viewerCount").innerText = data.count;
 });
 
-socket.on("participant_joined", () => {
-  viewers++;
-  document.getElementById("viewerCount").innerText = viewers;
-});
+socket.on("live_interaction_update",(data)=>{
 
-socket.on("participant_left", () => {
-  viewers--;
-  document.getElementById("viewerCount").innerText = viewers;
-});
-
-socket.on("live_interaction_update", data => {
-
-  if(data.type === "comment"){
-    addComment(data.username, data.comment);
+  if(data.type==="comment"){
+    addComment(data.username,data.comment);
   }
 
-  if(data.type === "like"){
-    likes++;
-    document.getElementById("likeCount").innerText = likes;
+  if(data.type==="like"){
+    increment("likeCount");
     floatReaction("👍");
   }
 
-  if(data.type === "dislike"){
-    dislikes++;
-    document.getElementById("dislikeCount").innerText = dislikes;
+  if(data.type==="dislike"){
+    increment("dislikeCount");
     floatReaction("👎");
   }
 
-  if(data.type === "heart"){
+  if(data.type==="heart"){
+    increment("heartCount");
     floatReaction("❤️");
   }
 
-  if(data.type === "laugh"){
+  if(data.type==="laugh"){
+    increment("laughCount");
     floatReaction("😂");
   }
 
-  if(data.type === "crying"){
+  if(data.type==="crying"){
+    increment("cryingCount");
     floatReaction("😢");
   }
 
-  if(data.type === "share"){
+  if(data.type==="share"){
+    increment("shareCount");
     floatReaction("🔗");
   }
 });
 
+function increment(id){
+  const el = document.getElementById(id);
+  el.innerText = parseInt(el.innerText)+1;
+}
+
 async function sendInteraction(type){
-  await fetch("/live-interaction", {
+  await fetch("/live-interaction",{
     method:"POST",
-    headers:{
-      "Content-Type":"application/x-www-form-urlencoded"
-    },
-    body:new URLSearchParams({
-      roomId,
-      type
-    })
+    headers:{ "Content-Type":"application/x-www-form-urlencoded" },
+    body:new URLSearchParams({ roomId,type })
   });
 }
 
 async function sendComment(){
   const text = document.getElementById("commentInput").value.trim();
-
   if(!text) return;
 
-  await fetch("/live-interaction", {
+  await fetch("/live-interaction",{
     method:"POST",
-    headers:{
-      "Content-Type":"application/x-www-form-urlencoded"
-    },
+    headers:{ "Content-Type":"application/x-www-form-urlencoded" },
     body:new URLSearchParams({
       roomId,
       type:"comment",
@@ -304,31 +250,44 @@ async function sendComment(){
   document.getElementById("commentInput").value="";
 }
 
-function addComment(user, text){
-  const feed = document.getElementById("reactionFeed");
-
+function addComment(user,text){
   const div = document.createElement("div");
   div.className="reaction-item";
   div.innerHTML=`<strong>${user}:</strong> ${text}`;
-
-  feed.appendChild(div);
-  feed.scrollTop = feed.scrollHeight;
+  document.getElementById("reactionFeed").appendChild(div);
 }
 
 function floatReaction(icon){
   const div = document.createElement("div");
   div.className="float-reaction";
   div.innerText = icon;
-
   document.getElementById("floatingReactions").appendChild(div);
-
   setTimeout(()=>div.remove(),2000);
 }
 
 function shareLive(){
   navigator.clipboard.writeText(window.location.href);
-  alert("Live link copied 🔗");
+  sendInteraction("share");
+  alert("Link copied 🔗");
+}
+
+function toggleMute(){
+  localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
+}
+
+function toggleCamera(){
+  localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
+}
+
+async function switchCamera(){
+  currentFacing = currentFacing === "user" ? "environment" : "user";
+  startMedia();
+}
+
+function endLive(){
+  location.href="/live";
 }
 </script>
+
 </body>
 </html>

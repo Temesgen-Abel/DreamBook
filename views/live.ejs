@@ -1,182 +1,141 @@
-
 <!DOCTYPE html>
 <html lang="<%= lang || 'en' %>">
 <head>
-  <meta charset="UTF-8">
-  <title>Live Meetings</title>
-  <link rel="stylesheet" href="/style.css">
+<meta charset="UTF-8">
+<title>Live Meetings</title>
+<link rel="stylesheet" href="/style.css">
 
-  <style>
-    body{
-      font-family: Arial, sans-serif;
-      background:#f7f8fc;
-      margin:0;
-      padding:20px;
-    }
+<style>
+body{
+  font-family:Arial,sans-serif;
+  background:#f7f8fc;
+  margin:0;
+  padding:20px;
+}
 
-    .container{
-      max-width:1000px;
-      margin:auto;
-    }
+.container{
+  max-width:1000px;
+  margin:auto;
+}
 
-    .card{
-      background:white;
-      padding:20px;
-      margin-bottom:20px;
-      border-radius:12px;
-      box-shadow:0 4px 10px rgba(0,0,0,0.08);
-    }
+.card{
+  background:white;
+  padding:20px;
+  margin-bottom:20px;
+  border-radius:12px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.08);
+}
 
-    h2{
-      margin-bottom:15px;
-      color:#333;
-    }
+button{
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  width:100%;
+  cursor:pointer;
+  background:#007bff;
+  color:white;
+}
 
-    button{
-      padding:10px;
-      border-radius:8px;
-      border:none;
-      margin-top:10px;
-      width:100%;
-      background:#007bff;
-      color:white;
-      cursor:pointer;
-    }
+button:hover{
+  background:#0056b3;
+}
 
-    button:hover{
-      background:#0056b3;
-    }
+.meeting{
+  padding:15px;
+  border-bottom:1px solid #eee;
+}
 
-    .meeting{
-      padding:15px;
-      border-bottom:1px solid #eee;
-    }
+.join-btn{
+  display:inline-block;
+  margin-top:8px;
+  padding:8px 14px;
+  background:#28a745;
+  color:white;
+  border-radius:6px;
+  text-decoration:none;
+}
 
-    .meeting:last-child{
-      border-bottom:none;
-    }
+.join-btn:hover{
+  background:#1f7f34;
+}
 
-    .join-btn{
-      display:inline-block;
-      margin-top:8px;
-      padding:8px 14px;
-      background:#28a745;
-      color:white;
-      border-radius:6px;
-      text-decoration:none;
-    }
+.end-btn{
+  background:red;
+  margin-top:10px;
+}
 
-    .join-btn:hover{
-      background:#1f7f34;
-    }
-
-    .counter{
-      font-size:14px;
-      color:#666;
-      margin-top:6px;
-    }
-
-    .share-box{
-      margin-top:10px;
-    }
-
-    .end-btn{
-      background:red;
-      margin-top:10px;
-    }
-
-    .end-btn:hover{
-      background:darkred;
-    }
-  </style>
+.counter{
+  font-size:14px;
+  color:#666;
+}
+</style>
 </head>
 <body>
 
 <div class="container">
 
-  <div class="card">
-    <h2>Start Live Discussion 🎥</h2>
+<div class="card">
+<h2>Start Live Discussion 🎥</h2>
 
-    <form method="POST" action="/live">
-      <div class="share-box">
-        <label>
-          <input type="checkbox" name="shareOnDashboard" value="true" checked>
-          Share on dashboard
-        </label>
-      </div>
+<form method="POST" action="/live">
+<label>
+<input type="checkbox" name="shareOnDashboard" value="true" checked>
+Share on dashboard
+</label>
 
-      <button type="submit">Start Live Now</button>
-    </form>
-  </div>
+<button type="submit">Start Live Now</button>
+</form>
+</div>
 
-  <div class="card">
-    <h2>Available Live Discussions 🔴</h2>
+<div class="card">
+<h2>Available Live Discussions 🔴</h2>
 
-    <% if (meetings && meetings.length > 0) { %>
-      <% meetings.forEach(meeting => { %>
+<% if (meetings && meetings.length > 0) { %>
+<% meetings.forEach(meeting => { %>
 
-        <div class="meeting">
+<div class="meeting">
+<strong><%= meeting.host_name %></strong> is live now 🔴
 
-          <strong><%= meeting.host_name %></strong> is live now 🔴
+<div class="counter">Room: <%= meeting.room_id %></div>
 
-          <div class="counter">
-            Room: <%= meeting.room_id %>
-          </div>
+<div class="counter">
+Participants:
+<span id="count-<%= meeting.room_id %>">1</span>
+</div>
 
-          <div class="counter">
-            Participants:
-            <span id="count-<%= meeting.room_id %>">1</span>
-          </div>
+<a class="join-btn" href="/video-room/<%= meeting.room_id %>">
+Join Discussion
+</a>
 
-          <a class="join-btn" href="/video-room/<%= meeting.room_id %>">
-            Join Discussion
-          </a>
+<% if (meeting.host_id === userId) { %>
+<form method="POST" action="/end-meeting/<%= meeting.id %>">
+<button class="end-btn">End Live</button>
+</form>
+<% } %>
 
-          <% if (meeting.host_id === userId) { %>
-            <form method="POST" action="/end-meeting/<%= meeting.id %>">
-              <button class="end-btn">End Live</button>
-            </form>
-          <% } %>
+</div>
 
-        </div>
+<% }) %>
+<% } else { %>
+<p>No live discussions available now.</p>
+<% } %>
 
-      <% }) %>
-    <% } else { %>
-      <p>No live discussions available now.</p>
-    <% } %>
-
-  </div>
+</div>
 
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 
 <script>
-
 const socket = io();
 
-    socket.on("meeting_started", () => {
-      location.reload();
-    });
+socket.on("meeting_started", ()=> location.reload());
+socket.on("meeting_ended", ()=> location.reload());
 
-    socket.on("meeting_ended", () => {
-      location.reload();
-    });
-
-    socket.on("participant_update", (data) => {
-      const counter = document.getElementById(`count-${data.roomId}`);
-      if(counter){
-        counter.innerText = data.count;
-      }
+socket.on("participant_update",(data)=>{
+  const el = document.getElementById(`count-${data.roomId}`);
+  if(el) el.innerText = data.count;
 });
-
-function endLive(sessionId){
-  fetch("/end-meeting/" + sessionId,{
-    method:"POST"
-  }).then(()=>{
-    location.href="/live";
-  });
-}
 </script>
 
 </body>
