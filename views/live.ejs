@@ -155,23 +155,23 @@
 
 const socket = io();
 
-socket.on("meeting_started", () => {
-  location.reload();
+    socket.on("meeting_started", () => {
+      location.reload();
+    });
+
+    socket.on("meeting_ended", () => {
+      location.reload();
+    });
+
+    socket.on("participant_update", (data) => {
+      const counter = document.getElementById(`count-${data.roomId}`);
+      if(counter){
+        counter.innerText = data.count;
+      }
 });
 
-socket.on("meeting_ended", () => {
-  location.reload();
-});
-
-socket.on("participant_update", (data) => {
-  const counter = document.getElementById(`count-${data.roomId}`);
-  if(counter){
-    counter.innerText = data.count;
-  }
-});
-
-function endLive(){
-  fetch("/end-meeting/<%= roomId %>",{
+function endLive(sessionId){
+  fetch("/end-meeting/" + sessionId,{
     method:"POST"
   }).then(()=>{
     location.href="/live";
