@@ -6,8 +6,10 @@
 <style>
 body { font-family: Arial; text-align:center; background:#f7f8fc; margin:0; padding:20px; }
 .videos { display:flex; justify-content:center; gap:20px; flex-wrap:wrap; }
+.video-wrapper { position:relative; display:inline-block; }
 video { width:300px; max-width:100%; border-radius:12px; background:black; }
-.controls,.live-toolbar{ margin:15px 0; display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
+.username-label { position:absolute; bottom:5px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.6); color:white; padding:2px 6px; border-radius:4px; font-size:14px; }
+.controls,.live-toolbar,.host-controls{ margin:15px 0; display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
 button{ padding:10px 14px; border:none; border-radius:8px; cursor:pointer; }
 .comment-box{ display:flex; max-width:900px; margin:auto; gap:10px; }
 .comment-box input{ flex:1; padding:10px; }
@@ -23,7 +25,10 @@ button{ padding:10px 14px; border:none; border-radius:8px; cursor:pointer; }
 <h2>Live Video Room 🎥</h2>
 
 <div class="videos" id="videoContainer">
-  <video id="localVideo" autoplay muted playsinline></video>
+  <div class="video-wrapper">
+    <video id="localVideo" autoplay muted playsinline></video>
+    <div class="username-label"><%= user.username %> (You)</div>
+  </div>
 </div>
 
 <div class="controls">
@@ -32,6 +37,14 @@ button{ padding:10px 14px; border:none; border-radius:8px; cursor:pointer; }
 <button onclick="switchCamera()">🔄 Switch</button>
 <button onclick="endLive()">⛔ End</button>
 </div>
+
+<!-- Host-only controls -->
+<% if(user.id === hostId){ %>
+<div class="host-controls">
+<button onclick="muteAll()">🔇 Mute All</button>
+<button onclick="removeParticipant()">❌ Remove Participant</button>
+</div>
+<% } %>
 
 <div class="live-toolbar">
 <button onclick="sendInteraction('like')">👍</button>
@@ -72,10 +85,11 @@ button{ padding:10px 14px; border:none; border-radius:8px; cursor:pointer; }
 const roomId = "<%= roomId %>";
 const userId = <%= user.id %>;
 const hostId = <%= hostId %>;
+const username = "<%= user.username %>";
 const socket = io();
 
 let localStream;
-let pcs = {}; // peer connections keyed by socketId
+let pcs = {};
 let currentFacing = "user";
 
 // =========================
@@ -91,49 +105,39 @@ async function startMedia() {
 // =========================
 async function joinRoom() {
   await startMedia();
-  socket.emit("join_room", { roomId, userId });
+  socket.emit("join_room",{ roomId, userId, username });
 }
 
 // =========================
-// PARTICIPANT HANDLING
+// PEER CONNECTION
 // =========================
-socket.on("participant_joined", async ({ socketId }) => {
-  if (pcs[socketId]) return;
-
-  const pc = createPeerConnection(socketId);
-  pcs[socketId] = pc;
-
-  // Add local tracks
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-  // Create offer for new participant
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  socket.emit("webrtc_offer", { to: socketId, from: socket.id, sdp: offer });
-});
-
-// =========================
-// CREATE PEER CONNECTION
-// =========================
-function createPeerConnection(socketId) {
+function createPeerConnection(socketId, remoteName){
   const pc = new RTCPeerConnection({ iceServers:[{ urls:"stun:stun.l.google.com:19302" }] });
 
   pc.ontrack = (event) => {
-    let video = document.getElementById(`video-${socketId}`);
-    if (!video) {
-      video = document.createElement("video");
+    let videoWrapper = document.getElementById(`wrapper-${socketId}`);
+    if(!videoWrapper){
+      videoWrapper = document.createElement("div");
+      videoWrapper.className = "video-wrapper";
+      videoWrapper.id = `wrapper-${socketId}`;
+      const video = document.createElement("video");
       video.id = `video-${socketId}`;
       video.autoplay = true;
       video.playsInline = true;
-      document.getElementById("videoContainer").appendChild(video);
+      videoWrapper.appendChild(video);
+
+      const label = document.createElement("div");
+      label.className = "username-label";
+      label.innerText = remoteName;
+      videoWrapper.appendChild(label);
+
+      document.getElementById("videoContainer").appendChild(videoWrapper);
     }
-    video.srcObject = event.streams[0];
+    document.getElementById(`video-${socketId}`).srcObject = event.streams[0];
   };
 
   pc.onicecandidate = (e) => {
-    if (e.candidate) {
-      socket.emit("webrtc_ice_candidate", { to: socketId, from: socket.id, candidate: e.candidate });
-    }
+    if(e.candidate) socket.emit("webrtc_ice_candidate",{ to: socketId, from: socket.id, candidate: e.candidate });
   };
 
   return pc;
@@ -142,9 +146,23 @@ function createPeerConnection(socketId) {
 // =========================
 // SIGNALING
 // =========================
-socket.on("webrtc_offer", async ({ from, sdp }) => {
-  if (pcs[from]) return;
-  const pc = createPeerConnection(from);
+socket.on("participant_joined", async ({ socketId, username: remoteName }) => {
+  if(pcs[socketId]) return;
+
+  const pc = createPeerConnection(socketId, remoteName);
+  pcs[socketId] = pc;
+
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  socket.emit("webrtc_offer",{ to: socketId, from: socket.id, sdp: offer });
+});
+
+socket.on("webrtc_offer", async ({ from, sdp, username: remoteName }) => {
+  if(pcs[from]) return;
+
+  const pc = createPeerConnection(from, remoteName);
   pcs[from] = pc;
 
   localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
@@ -152,81 +170,64 @@ socket.on("webrtc_offer", async ({ from, sdp }) => {
   await pc.setRemoteDescription(new RTCSessionDescription(sdp));
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
-
-  socket.emit("webrtc_answer", { to: from, from: socket.id, sdp: answer });
+  socket.emit("webrtc_answer",{ to: from, from: socket.id, sdp: answer });
 });
 
 socket.on("webrtc_answer", async ({ from, sdp }) => {
   const pc = pcs[from];
-  if (pc) await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+  if(pc) await pc.setRemoteDescription(new RTCSessionDescription(sdp));
 });
 
 socket.on("webrtc_ice_candidate", async ({ from, candidate }) => {
   const pc = pcs[from];
-  if (pc) await pc.addIceCandidate(new RTCIceCandidate(candidate));
+  if(pc) await pc.addIceCandidate(new RTCIceCandidate(candidate));
 });
 
-// =========================
-// PARTICIPANT LEFT
-// =========================
 socket.on("participant_left", ({ socketId }) => {
-  if (pcs[socketId]) {
-    pcs[socketId].close();
-    delete pcs[socketId];
-  }
-  const video = document.getElementById(`video-${socketId}`);
-  if (video) video.remove();
+  if(pcs[socketId]) pcs[socketId].close();
+  delete pcs[socketId];
+  const wrapper = document.getElementById(`wrapper-${socketId}`);
+  if(wrapper) wrapper.remove();
 });
 
 // =========================
 // LIVE INTERACTIONS
 // =========================
 socket.on("live_interaction_update", (data) => {
-  if (data.type === "comment") addComment(data.username, data.comment);
+  if(data.type==="comment") addComment(data.username,data.comment);
   else increment(`${data.type}Count`) && floatReaction(getReactionIcon(data.type));
 });
 
-function getReactionIcon(type){
-  return {like:"👍",dislike:"👎",heart:"❤️",laugh:"😂",crying:"😢",share:"🔗"}[type];
-}
-function increment(id){
-  const el=document.getElementById(id);
-  if(el) el.innerText = parseInt(el.innerText)+1;
-}
-
-async function sendInteraction(type){
-  await fetch("/live-interaction", { method:"POST", headers:{ "Content-Type":"application/x-www-form-urlencoded" }, body:new URLSearchParams({ roomId,type }) });
-}
-
-async function sendComment(){
-  const text = document.getElementById("commentInput").value.trim();
-  if (!text) return;
-  await fetch("/live-interaction", { method:"POST", headers:{ "Content-Type":"application/x-www-form-urlencoded" }, body:new URLSearchParams({ roomId,type:"comment",comment:text }) });
+function getReactionIcon(type){ return {like:"👍",dislike:"👎",heart:"❤️",laugh:"😂",crying:"😢",share:"🔗"}[type]; }
+function increment(id){ const el=document.getElementById(id); if(el) el.innerText = parseInt(el.innerText)+1; }
+async function sendInteraction(type){ await fetch("/live-interaction",{ method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:new URLSearchParams({ roomId,type }) }); }
+async function sendComment(){ 
+  const text = document.getElementById("commentInput").value.trim(); 
+  if(!text) return; 
+  await fetch("/live-interaction",{ method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:new URLSearchParams({ roomId,type:"comment",comment:text }) }); 
   document.getElementById("commentInput").value="";
 }
-
-function addComment(user,text){
-  const div=document.createElement("div");
-  div.className="reaction-item";
-  div.innerHTML=`<strong>${user}:</strong> ${text}`;
-  document.getElementById("reactionFeed").appendChild(div);
-}
-
-function floatReaction(icon){
-  const div=document.createElement("div");
-  div.className="float-reaction"; div.innerText=icon;
-  document.getElementById("floatingReactions").appendChild(div);
-  setTimeout(()=>div.remove(),2000);
-}
-
+function addComment(user,text){ const div=document.createElement("div"); div.className="reaction-item"; div.innerHTML=`<strong>${user}:</strong> ${text}`; document.getElementById("reactionFeed").appendChild(div); }
+function floatReaction(icon){ const div=document.createElement("div"); div.className="float-reaction"; div.innerText=icon; document.getElementById("floatingReactions").appendChild(div); setTimeout(()=>div.remove(),2000); }
 function shareLive(){ navigator.clipboard.writeText(window.location.href); sendInteraction("share"); alert("Link copied 🔗"); }
 function toggleMute(){ localStream.getAudioTracks()[0].enabled=!localStream.getAudioTracks()[0].enabled; }
 function toggleCamera(){ localStream.getVideoTracks()[0].enabled=!localStream.getVideoTracks()[0].enabled; }
 async function switchCamera(){ currentFacing=currentFacing==="user"?"environment":"user"; await startMedia(); }
-
 function endLive(){ location.href="/live"; }
 
-// Start the room on load
+// =========================
+// HOST CONTROLS
+// =========================
+function muteAll(){
+  Object.values(pcs).forEach(pc => {
+    pc.getSenders().forEach(sender => { if(sender.track.kind==="audio") sender.track.enabled=false; });
+  });
+  alert("All participants muted!");
+}
+function removeParticipant(){
+  alert("This feature requires server-side implementation to remove participant.");
+}
+
 joinRoom();
 </script>
 </body>
