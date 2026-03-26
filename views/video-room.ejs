@@ -5,6 +5,63 @@
   <title>Video Room</title>
 
   <style>
+
+          .live-toolbar{
+        display:flex;
+        gap:10px;
+        justify-content:center;
+        margin:15px 0;
+      }
+
+      .live-toolbar button{
+        font-size:22px;
+        border:none;
+        background:white;
+        padding:10px;
+        border-radius:50%;
+        cursor:pointer;
+      }
+
+      .live-counts{
+        margin:10px;
+        font-size:18px;
+      }
+
+      .comment-box{
+        display:flex;
+        gap:10px;
+        max-width:900px;
+        margin:auto;
+      }
+
+      .comment-box input{
+        flex:1;
+        padding:10px;
+        border-radius:8px;
+      }
+
+      #floatingReactions{
+        position:fixed;
+        right:20px;
+        bottom:20px;
+        pointer-events:none;
+      }
+
+      .float-reaction{
+        font-size:30px;
+        animation: floatUp 2s linear forwards;
+      }
+
+      @keyframes floatUp{
+        from{
+          opacity:1;
+          transform:translateY(0);
+        }
+        to{
+          opacity:0;
+          transform:translateY(-180px);
+        }
+      }
     body{
       font-family:Arial;
       text-align:center;
@@ -99,103 +156,179 @@
 <div class="videos">
   <video id="localVideo" autoplay playsinline muted></video>
   <video id="remoteVideo" autoplay playsinline></video>
-  <video id="remoteVideo2" autoplay playsinline></video>
-  <video id="volume" autoplay playsinline muted></video>
 </div>
 
-<div class="reaction-panel">
-  <span><strong>React live:</strong></span>
-  <button class="reaction-button" onclick="sendReaction('👍')">👍</button>
-  <button class="reaction-button" onclick="sendReaction('❤️')">❤️</button>
-  <button class="reaction-button" onclick="sendReaction('😂')">😂</button>
-  <button class="reaction-button" onclick="sendReaction('😮')">😮</button>
-  <button class="reaction-button" onclick="sendReaction('😢')">😢</button>
-  <button class="reaction-button" onclick="sendReaction('👏')">👏</button>
+<div class="live-toolbar">
+
+  <button onclick="sendInteraction('like')">👍</button>
+  <button onclick="sendInteraction('dislike')">👎</button>
+  <button onclick="sendInteraction('heart')">❤️</button>
+  <button onclick="sendInteraction('laugh')">😂</button>
+  <button onclick="sendInteraction('crying')">😢</button>
+  <button onclick="shareLive()">🔗 Share</button>
+
 </div>
 
-<div class="reaction-feed" id="reactionFeed" aria-live="polite"></div>
+      <div class="live-counts">
+        👍 <span id="likeCount">0</span>
+        👎 <span id="dislikeCount">0</span>
+        😢 <span id="cryingCount">0</span>
+        😂 <span id="laughCount">0</span>
+        ❤️ <span id="heartCount">0</span>
+        🔗 <span id="shareCount">0</span>
+        👁️ <span id="viewerCount">1</span>
+      </div>
 
+      <div class="comment-box">
+        <input id="commentInput" placeholder="Write live comment...">
+        <button onclick="sendComment()">Send</button>
+      </div>
+
+      <div class="reaction-feed" id="reactionFeed">
+        <% comments.forEach(c => { %>
+          <div class="reaction-item">
+            <strong><%= c.username %>:</strong> <%= c.comment %>
+          </div>
+        <% }) %>
+      </div>
+
+<div id="floatingReactions"></div>
+
+<script src="/socket.io/socket.io.js"></script>
 <script>
-  const roomId = "<%= roomId %>";
-  const userId = <%- JSON.stringify(user.id) %>;
-  const socket = io();
+const roomId = "<%= roomId %>";
+const userId = <%= user.id %>;
+const hostId = <%= hostId %>;
 
-  socket.emit("join_room", { roomId, userId });
+const socket = io();
 
-  socket.on("participant_joined", (data) => {
-    addReactionMessage(`User ${data.userId} joined the room.`);
-  });
-
-  socket.on("participant_left", (data) => {
-    addReactionMessage(`User left: ${data.socketId}`);
-  });
-
-  socket.on("new_video_reaction", (data) => {
-    if (data.roomId !== roomId) return;
-    displayReaction(data.userId, data.reaction);
-  });
-
-  async function startCamera() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true
-      });
-
-      const localVideo = document.getElementById("localVideo");
-      localVideo.srcObject = stream;
-
-      await localVideo.play();
-
-      console.log("Camera started successfully");
-
-    } catch (err) {
-      console.error("Camera error:", err);
-      alert("Camera permission failed: " + err.message);
+const pc = new RTCPeerConnection({
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    {
+      urls: "turn:your-turn-server.com:3478",
+      username: "user",
+      credential: "pass"
     }
+  ]
+});
+
+let likes = 0;
+let dislikes = 0;
+let viewers = 1;
+
+socket.emit("join_room", {
+  roomId,
+  userId:<%= user.id %>
+});
+
+socket.on("participant_update", data => {
+  document.getElementById("viewerCount").innerText = data.count;
+});
+
+socket.on("participant_joined", () => {
+  viewers++;
+  document.getElementById("viewerCount").innerText = viewers;
+});
+
+socket.on("participant_left", () => {
+  viewers--;
+  document.getElementById("viewerCount").innerText = viewers;
+});
+
+socket.on("live_interaction_update", data => {
+
+  if(data.type === "comment"){
+    addComment(data.username, data.comment);
   }
 
-  window.onload = startCamera;
+  if(data.type === "like"){
+    likes++;
+    document.getElementById("likeCount").innerText = likes;
+    floatReaction("👍");
+  }
 
-  function sendReaction(reaction) {
-    socket.emit("video_reaction", {
+  if(data.type === "dislike"){
+    dislikes++;
+    document.getElementById("dislikeCount").innerText = dislikes;
+    floatReaction("👎");
+  }
+
+  if(data.type === "heart"){
+    floatReaction("❤️");
+  }
+
+  if(data.type === "laugh"){
+    floatReaction("😂");
+  }
+
+  if(data.type === "crying"){
+    floatReaction("😢");
+  }
+
+  if(data.type === "share"){
+    floatReaction("🔗");
+  }
+});
+
+async function sendInteraction(type){
+  await fetch("/live-interaction", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/x-www-form-urlencoded"
+    },
+    body:new URLSearchParams({
       roomId,
-      userId,
-      reaction
-    });
+      type
+    })
+  });
+}
 
-    displayReaction(userId, reaction, true);
-  }
+async function sendComment(){
+  const text = document.getElementById("commentInput").value.trim();
 
-  function displayReaction(uid, reaction, own = false) {
-    const feed = document.getElementById("reactionFeed");
-    const item = document.createElement("div");
-    item.className = "reaction-item";
-    item.textContent = `${own ? 'You' : 'User ' + uid} reacted ${reaction}`;
+  if(!text) return;
 
-    const icon = document.createElement("span");
-    icon.textContent = reaction;
-    item.prepend(icon);
+  await fetch("/live-interaction", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/x-www-form-urlencoded"
+    },
+    body:new URLSearchParams({
+      roomId,
+      type:"comment",
+      comment:text
+    })
+  });
 
-    feed.appendChild(item);
-    feed.scrollTop = feed.scrollHeight;
+  document.getElementById("commentInput").value="";
+}
 
-    // ephemeral float effect
-    if (!own) {
-      item.style.animation = "fadeOut 2.5s ease forwards";
-      setTimeout(() => item.remove(), 2200);
-    }
-  }
+function addComment(user, text){
+  const feed = document.getElementById("reactionFeed");
 
-  function addReactionMessage(msg) {
-    const feed = document.getElementById("reactionFeed");
-    const item = document.createElement("div");
-    item.className = "reaction-item";
-    item.textContent = msg;
-    feed.appendChild(item);
-    feed.scrollTop = feed.scrollHeight;
-  }
+  const div = document.createElement("div");
+  div.className="reaction-item";
+  div.innerHTML=`<strong>${user}:</strong> ${text}`;
+
+  feed.appendChild(div);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function floatReaction(icon){
+  const div = document.createElement("div");
+  div.className="float-reaction";
+  div.innerText = icon;
+
+  document.getElementById("floatingReactions").appendChild(div);
+
+  setTimeout(()=>div.remove(),2000);
+}
+
+function shareLive(){
+  navigator.clipboard.writeText(window.location.href);
+  alert("Live link copied 🔗");
+}
 </script>
-
 </body>
 </html>

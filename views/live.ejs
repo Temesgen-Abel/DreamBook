@@ -152,6 +152,7 @@
 <script src="/socket.io/socket.io.js"></script>
 
 <script>
+
 const socket = io();
 
 socket.on("meeting_started", () => {
@@ -168,6 +169,14 @@ socket.on("participant_update", (data) => {
     counter.innerText = data.count;
   }
 });
+
+function endLive(){
+  fetch("/end-meeting/<%= roomId %>",{
+    method:"POST"
+  }).then(()=>{
+    location.href="/live";
+  });
+}
 </script>
 
 </body>
