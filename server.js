@@ -1158,7 +1158,6 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
       return res.status(400).send("Invalid meeting id");
     }
 
-    // Find meeting by numeric id
     const result = await pool.query(
       "SELECT * FROM live_meetings WHERE id = $1",
       [meetingId]
@@ -1170,57 +1169,25 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
 
     const meeting = result.rows[0];
 
-    // Only creator can end live
-    if (meeting.creator_id !== req.user.id) {
+    // Must match EJS: host_id
+    if (Number(meeting.host_id) !== Number(req.user.id)) {
       return res.status(403).send("Unauthorized");
     }
 
-    // Delete meeting
     await pool.query(
       "DELETE FROM live_meetings WHERE id = $1",
       [meetingId]
     );
 
-    console.log(`✅ Meeting ${meetingId} ended by user ${req.user.id}`);
+    console.log(`✅ Meeting ${meetingId} ended by host ${req.user.id}`);
 
-    res.redirect("/live");
+    return res.redirect("/live");
 
   } catch (err) {
     console.error("End meeting error:", err);
-    res.status(500).send("Server error");
+    return res.status(500).send(err.message);
   }
 });
-// ============================
-// SOCKET.IO LIVE SYSTEM
-// ============================
-const activePeers = {};
-
-io.on("connection", (socket) => {
-
-  socket.on("join_room", ({ roomId, userId, username }) => {
-
-    socket.join(`room_${roomId}`);
-
-    activePeers[socket.id] = {
-      roomId,
-      userId,
-      username
-    };
-
-    const room = io.sockets.adapter.rooms.get(`room_${roomId}`);
-    const count = room ? room.size : 1;
-
-    io.to(`room_${roomId}`).emit("participant_update", {
-      roomId,
-      count
-    });
-
-    socket.to(`room_${roomId}`).emit("participant_joined", {
-      socketId: socket.id,
-      userId,
-      username
-    });
-  });
 
   // ===== WEBRTC =====
  socket.on("webrtc_offer", ({ to, sdp, from }) => {
