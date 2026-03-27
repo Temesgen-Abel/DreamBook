@@ -1150,20 +1150,43 @@ app.post("/live-interaction", mustBeLoggedIn, async (req, res) => {
 
 //end live interaction
 
-app.post("/end-meeting:id", mustBeLoggedIn, async (req, res) => {
-  const meetingId = req.params.id;
+app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
   try {
-    await pool.query(
-      `UPDATE video_sessions SET status='ended' WHERE id=$1 AND user_id=$2`,
-      [meetingId, req.user.id]
-    );
+      const meetingId = req.params.id;
 
-    res.json({ success:true });
+      // verify meeting exists
+      const result = await pool.query(
+        "SELECT * FROM live_meetings WHERE id = $1",
+        [meetingId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).send("Meeting not found");
+      }
+
+      const meeting = result.rows[0];
+
+      // only creator can end meeting
+      if (meeting.creator_id !== req.user.id) {
+        return res.status(403).send("Unauthorized");
+      }
+
+      // delete meeting
+      await pool.query(
+        "DELETE FROM live_meetings WHERE id = $1",
+        [meetingId]
+      );
+
+      console.log(`Meeting ${meetingId} ended by user ${req.user.id}`);
+
+    res.redirect("/live");
+
   } catch (err) {
-    console.error(err);
-    res.json({ success:false });
+    console.error("End meeting error:", err);
+    res.status(500).send("Server error");
   }
 });
+
 
 // ============================
 // SOCKET.IO LIVE SYSTEM
