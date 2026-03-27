@@ -1159,7 +1159,7 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
     }
 
     const result = await pool.query(
-      "SELECT id, host_id FROM live_meetings WHERE id = $1::int",
+      "SELECT id, user_id AS host_id FROM video_sessions WHERE id = $1::int",
       [meetingId]
     );
 
@@ -1174,7 +1174,7 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
     }
 
     await pool.query(
-      "DELETE FROM live_meetings WHERE id = $1::int",
+      "DELETE FROM video_sessions WHERE id = $1::int",
       [meetingId]
     );
 
