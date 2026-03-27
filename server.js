@@ -1148,36 +1148,33 @@ app.post("/live-interaction", mustBeLoggedIn, async (req, res) => {
   }
 });
 
-//end live interaction
+//end live-meeting 
 
 app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
   try {
-      const meetingId = req.params.id;
+    const meetingId = parseInt(req.params.id);
 
-      // verify meeting exists
-      const result = await pool.query(
-        "SELECT * FROM live_meetings WHERE id = $1",
-        [meetingId]
-      );
+    const result = await pool.query(
+      "SELECT * FROM live_meetings WHERE id = $1",
+      [meetingId]
+    );
 
-      if (result.rows.length === 0) {
-        return res.status(404).send("Meeting not found");
-      }
+    if (result.rows.length === 0) {
+      return res.status(404).send("Meeting not found");
+    }
 
-      const meeting = result.rows[0];
+    const meeting = result.rows[0];
 
-      // only creator can end meeting
-      if (meeting.creator_id !== req.user.id) {
-        return res.status(403).send("Unauthorized");
-      }
+    if (meeting.creator_id !== req.user.id) {
+      return res.status(403).send("Unauthorized");
+    }
 
-      // delete meeting
-      await pool.query(
-        "DELETE FROM live_meetings WHERE id = $1",
-        [meetingId]
-      );
+    await pool.query(
+      "DELETE FROM live_meetings WHERE id = $1",
+      [meetingId]
+    );
 
-      console.log(`Meeting ${meetingId} ended by user ${req.user.id}`);
+    console.log(`Meeting ${meetingId} ended`);
 
     res.redirect("/live");
 
@@ -1186,8 +1183,6 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
     res.status(500).send("Server error");
   }
 });
-
-
 // ============================
 // SOCKET.IO LIVE SYSTEM
 // ============================
