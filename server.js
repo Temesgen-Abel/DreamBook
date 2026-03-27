@@ -1152,8 +1152,13 @@ app.post("/live-interaction", mustBeLoggedIn, async (req, res) => {
 
 app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
   try {
-    const meetingId = parseInt(req.params.id);
+    const meetingId = parseInt(req.params.id, 10);
 
+    if (isNaN(meetingId)) {
+      return res.status(400).send("Invalid meeting id");
+    }
+
+    // Find meeting by numeric id
     const result = await pool.query(
       "SELECT * FROM live_meetings WHERE id = $1",
       [meetingId]
@@ -1165,16 +1170,18 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
 
     const meeting = result.rows[0];
 
+    // Only creator can end live
     if (meeting.creator_id !== req.user.id) {
       return res.status(403).send("Unauthorized");
     }
 
+    // Delete meeting
     await pool.query(
       "DELETE FROM live_meetings WHERE id = $1",
       [meetingId]
     );
 
-    console.log(`Meeting ${meetingId} ended`);
+    console.log(`✅ Meeting ${meetingId} ended by user ${req.user.id}`);
 
     res.redirect("/live");
 
