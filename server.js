@@ -1152,14 +1152,14 @@ app.post("/live-interaction", mustBeLoggedIn, async (req, res) => {
 
 app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
   try {
-    const meetingId = parseInt(req.params.id, 10);
+    const meetingId = Number(req.params.id);
 
-    if (isNaN(meetingId)) {
+    if (!Number.isInteger(meetingId)) {
       return res.status(400).send("Invalid meeting id");
     }
 
     const result = await pool.query(
-      "SELECT * FROM live_meetings WHERE id = $1",
+      "SELECT id, host_id FROM live_meetings WHERE id = $1::int",
       [meetingId]
     );
 
@@ -1169,28 +1169,27 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
 
     const meeting = result.rows[0];
 
-    // Must match EJS: host_id
     if (Number(meeting.host_id) !== Number(req.user.id)) {
       return res.status(403).send("Unauthorized");
     }
 
     await pool.query(
-      "DELETE FROM live_meetings WHERE id = $1",
+      "DELETE FROM live_meetings WHERE id = $1::int",
       [meetingId]
     );
 
-    console.log(`✅ Meeting ${meetingId} ended by host ${req.user.id}`);
+    console.log(`✅ Meeting ${meetingId} ended`);
 
     return res.redirect("/live");
 
   } catch (err) {
-    console.error("End meeting error:", err);
+    console.error("End meeting full error:", err);
     return res.status(500).send(err.message);
   }
 });
 
 
-
+//socket.io setup for live video rooms
   const activePeers = {};
 
 io.on("connection", (socket) => {
