@@ -1148,6 +1148,23 @@ app.post("/live-interaction", mustBeLoggedIn, async (req, res) => {
   }
 });
 
+//end live interaction
+
+app.post("/end-meeting:id", mustBeLoggedIn, async (req, res) => {
+  const meetingId = req.params.id;
+  try {
+    await pool.query(
+      `UPDATE video_sessions SET status='ended' WHERE id=$1 AND user_id=$2`,
+      [meetingId, req.user.id]
+    );
+
+    res.json({ success:true });
+  } catch (err) {
+    console.error(err);
+    res.json({ success:false });
+  }
+});
+
 // ============================
 // SOCKET.IO LIVE SYSTEM
 // ============================
