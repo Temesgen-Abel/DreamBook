@@ -1191,21 +1191,70 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
 
 
 
-  // ===== WEBRTC =====
- socket.on("webrtc_offer", ({ to, sdp, from }) => {
-  const sender = activePeers[from];
+  const activePeers = {};
 
-  io.to(to).emit("webrtc_offer", {
-    sdp,
-    from,
-    username: sender ? sender.username : "Participant"
+io.on("connection", (socket) => {
+
+  // =========================
+  // JOIN ROOM
+  // =========================
+  socket.on("join_room", ({ roomId, userId, username }) => {
+    const roomName = `room_${roomId}`;
+
+    socket.join(roomName);
+
+    activePeers[socket.id] = {
+      roomId,
+      userId,
+      username
+    };
+
+    const room = io.sockets.adapter.rooms.get(roomName);
+    const count = room ? room.size : 1;
+
+    io.to(roomName).emit("participant_update", {
+      roomId,
+      count
+    });
+
+    socket.to(roomName).emit("participant_joined", {
+      socketId: socket.id,
+      userId,
+      username
+    });
+
+    console.log(`✅ ${username} joined ${roomName}`);
   });
-});
 
+
+  // =========================
+  // WEBRTC OFFER
+  // =========================
+  socket.on("webrtc_offer", ({ to, sdp, from }) => {
+    const sender = activePeers[from];
+
+    io.to(to).emit("webrtc_offer", {
+      sdp,
+      from,
+      username: sender ? sender.username : "Participant"
+    });
+  });
+
+
+  // =========================
+  // WEBRTC ANSWER
+  // =========================
   socket.on("webrtc_answer", ({ to, sdp, from }) => {
-    io.to(to).emit("webrtc_answer", { sdp, from });
+    io.to(to).emit("webrtc_answer", {
+      sdp,
+      from
+    });
   });
 
+
+  // =========================
+  // WEBRTC ICE CANDIDATE
+  // =========================
   socket.on("webrtc_ice_candidate", ({ to, candidate, from }) => {
     io.to(to).emit("webrtc_ice_candidate", {
       candidate,
@@ -1213,25 +1262,37 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
     });
   });
 
-  // ===== HOST CONTROL =====
+
+  // =========================
+  // HOST CONTROL: MUTE
+  // =========================
   socket.on("mute_participant", ({ socketId }) => {
     io.to(socketId).emit("force_mute");
   });
 
+
+  // =========================
+  // HOST CONTROL: REMOVE
+  // =========================
   socket.on("remove_participant", ({ socketId }) => {
     io.to(socketId).emit("force_disconnect");
   });
 
-  // ===== DISCONNECT =====
+
+  // =========================
+  // DISCONNECT
+  // =========================
   socket.on("disconnect", () => {
     const peer = activePeers[socket.id];
 
-    if (peer?.roomId) {
+    if (peer && peer.roomId) {
       const roomName = `room_${peer.roomId}`;
 
       socket.to(roomName).emit("participant_left", {
         socketId: socket.id
       });
+
+      delete activePeers[socket.id];
 
       const room = io.sockets.adapter.rooms.get(roomName);
       const count = room ? room.size : 0;
@@ -1240,11 +1301,12 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
         roomId: peer.roomId,
         count
       });
-    }
 
-    delete activePeers[socket.id];
+      console.log(`❌ ${socket.id} left ${roomName}`);
+    }
   });
 
+});
 // =====================================================
 // START SERVER
 // =====================================================
