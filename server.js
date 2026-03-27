@@ -1189,6 +1189,8 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
   }
 });
 
+
+
   // ===== WEBRTC =====
  socket.on("webrtc_offer", ({ to, sdp, from }) => {
   const sender = activePeers[from];
@@ -1242,7 +1244,6 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
 
     delete activePeers[socket.id];
   });
-});
 
 // =====================================================
 // START SERVER
