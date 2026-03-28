@@ -779,8 +779,13 @@ app.get("/dictionary/search", async (req, res) => {
         VALUES ($1, $2, $3, $4)`,
       [term_en.trim(), meaning_en.trim(), term_am.trim(), meaning_am.trim()]
     );
-    res.redirect("/dictionary");
-  });
+    // sucess message after scuccessfuly adding term
+    res.render("dictionary", {
+      title: "Dream Dictionary | eDreamBook",
+      description: "Explore the eDreamBook Dream Dictionary with thousands of dream symbols and their meanings.",
+      canonical: "https://dreambook.com.et/dictionary",
+      success: "added"
+    });
 
   
 
