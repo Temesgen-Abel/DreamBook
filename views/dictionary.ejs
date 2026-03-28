@@ -21,7 +21,7 @@
   </header>
 
   <!-- ERROR MESSAGES -->
-  <% if (errors && errors.length) { %>
+  <% if (typeof errors !== 'undefined' && errors.length) { %>
     <div class="alert error">
       <% errors.forEach(e => { %>
         <p><%= e %></p>
