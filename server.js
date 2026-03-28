@@ -786,6 +786,7 @@ app.get("/dictionary/search", async (req, res) => {
       canonical: "https://dreambook.com.et/dictionary",
       success: "added"
     });
+});
 
   
 
