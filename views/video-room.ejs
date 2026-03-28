@@ -253,7 +253,11 @@ async function startMedia(){
 
   const localVideo = document.getElementById("localVideo");
   localVideo.srcObject = localStream;
-  localVideo.muted = true;
+  localVideo.muted = true; // keep local preview muted to prevent echo
+  localVideo.volume = 0;
+
+  // Apply playback action state to remote streams when ready
+  setVolume(currentVolume);
 }
 
 
@@ -286,7 +290,7 @@ function createPeerConnection(socketId, remoteName="Participant"){
       video.id = `video-${socketId}`;
       video.autoplay = true;
       video.playsInline = true;
-      video.muted = true; // start muted for autoplay compliance
+      video.muted = false; // allow remote audio once user interacts
       video.volume = currentVolume;
 
       const label = document.createElement("div");
@@ -341,10 +345,10 @@ socket.on("participant_joined", async ({ socketId, username:remoteName })=>{
   });
 });
 
-socket.on("webrtc_offer", async ({ from, sdp })=>{
+socket.on("webrtc_offer", async ({ from, sdp, username: remoteName })=>{
   if(pcs[from]) return;
 
-  const pc = createPeerConnection(from);
+  const pc = createPeerConnection(from, remoteName || "Participant");
   pcs[from] = pc;
 
   localStream.getTracks().forEach(track=>{

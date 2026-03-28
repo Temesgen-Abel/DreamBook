@@ -611,7 +611,8 @@ app.get("/logout", (req, res) => {
 //6.3 admin login route
 
 app.post("/login", async (req, res) => {
-  // check username/password from users table
+  // check username/password from users table 
+
 });
 
 
@@ -724,6 +725,64 @@ app.post("/password-reset", async (req, res) => {
 app.get("/password-reset/confirm", (req, res) => {
   res.render("password-reset-confirm");
 });
+
+//dictionary route
+app.get("/dictionary", async (req, res) => {
+  try {
+    const terms = await dbQuery("SELECT * FROM dictionary ORDER BY id DESC");
+    res.render("dictionary", {
+      title: "Dream Dictionary | eDreamBook",
+      description: "Explore the eDreamBook Dream Dictionary with thousands of dream symbols and their meanings.",
+      canonical: "https://dreambook.com.et/dictionary",
+      terms,
+      user: req.user
+    });
+  } catch (err) {
+    console.error("Dictionary error:", err);
+    res.status(500).send("Server error");
+  }
+});
+
+//dictionary search route
+app.get("/dictionary/search", async (req, res) => {
+  const q = req.query.q?.trim();
+  if (!q) {
+    return res.redirect("/dictionary");
+  }try {
+    const terms = await dbQuery(
+      "SELECT * FROM dictionary WHERE term ILIKE $1 ORDER BY id DESC",
+      [`%${q}%`]
+    );
+    res.render("dictionary", {
+      title: "Dream Dictionary | eDreamBook",
+      description: "Explore the eDreamBook Dream Dictionary with thousands of dream symbols and their meanings.",
+      canonical: "https://dreambook.com.et/dictionary",
+      terms,
+      user: req.user
+    });
+  } catch (err) {
+    console.error("Dictionary search error:", err);
+    res.status(500).send("Server error");
+  }
+});
+
+
+  //add dictionry terms and meanings
+   app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
+    const { term_en, meaning_en, term_am, meaning_am } = req.body;
+    if (!term_en || !meaning_en || !term_am || !meaning_am) {
+      return res.status(400).send("All fields are required");
+    }
+
+    await dbRun(
+      `INSERT INTO dictionary (term_en, meaning_en, term_am, meaning_am)
+        VALUES ($1, $2, $3, $4)`,
+      [term_en.trim(), meaning_en.trim(), term_am.trim(), meaning_am.trim()]
+    );
+    res.redirect("/dictionary");
+  });
+
+  
 
 // 6.7. Dashboard -------------------
 app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
