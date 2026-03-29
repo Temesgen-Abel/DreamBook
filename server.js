@@ -727,19 +727,39 @@ app.get("/password-reset/confirm", (req, res) => {
 });
 
 //dictionary route
-app.get("/dictionary", async (req, res) => {
+app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
   try {
-    const terms = await dbQuery("SELECT * FROM dictionary ORDER BY id DESC");
+    const lang = req.query.lang || "en";
+    const q = req.query.q || "";
+
+    let terms;
+
+    if (q) {
+      terms = await dbQuery(
+        `SELECT * FROM dictionary
+         WHERE term_en ILIKE $1
+            OR term_am ILIKE $1
+         ORDER BY id DESC`,
+        [`%${q}%`]
+      );
+    } else {
+      terms = await dbQuery("SELECT * FROM dictionary ORDER BY id DESC");
+    }
+
     res.render("dictionary", {
       title: "Dream Dictionary | eDreamBook",
-      description: "Explore the eDreamBook Dream Dictionary with thousands of dream symbols and their meanings.",
+      description: "Search and explore dream meanings from A to Z using eDreamBook.",
       canonical: "https://dreambook.com.et/dictionary",
       terms,
-      user: req.user
+      lang,
+      user: req.user || null,
+      errors: [],
+      searchQuery: q
     });
+
   } catch (err) {
-    console.error("Dictionary error:", err);
-    res.status(500).send("Server error");
+    console.error(err);
+    res.status(500).send("Server Error");
   }
 });
 
@@ -767,28 +787,105 @@ app.get("/dictionary/search", async (req, res) => {
 });
 
 
-  //add dictionry terms and meanings
-   app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
-    const { term_en, meaning_en, term_am, meaning_am } = req.body;
-    if (!term_en || !meaning_en || !term_am || !meaning_am) {
-      return res.status(400).send("All fields are required");
+  //add dictionary terms and meanings
+  app.post("/dictionary/add", mustBeLoggedIn, async (req, res) => {
+  try {
+    const { term, meaning, lang } = req.body;
+
+    if (!term || !meaning || !lang) {
+      return res.render("dictionary", {
+        terms: await dbQuery("SELECT * FROM dictionary ORDER BY id DESC"),
+        lang,
+        success: null,
+        errors: ["All fields are required"],
+        user: req.user || null
+      });
     }
 
-    await dbRun(
-      `INSERT INTO dictionary (term_en, meaning_en, term_am, meaning_am)
-        VALUES ($1, $2, $3, $4)`,
-      [term_en.trim(), meaning_en.trim(), term_am.trim(), meaning_am.trim()]
-    );
-    // sucess message after scuccessfuly adding term
-    res.render("dictionary", {
-      title: "Dream Dictionary | eDreamBook",
-      description: "Explore the eDreamBook Dream Dictionary with thousands of dream symbols and their meanings.",
-      canonical: "https://dreambook.com.et/dictionary",
-      success: "added"
-    });
+    if (lang === "am") {
+      await dbRun(
+        `INSERT INTO dictionary (term_am, meaning_am)
+         VALUES ($1, $2)`,
+        [term.trim(), meaning.trim()]
+      );
+    } else {
+      await dbRun(
+        `INSERT INTO dictionary (term_en, meaning_en)
+         VALUES ($1, $2)`,
+        [term.trim(), meaning.trim()]
+      );
+    }
+
+    res.redirect(`/dictionary?lang=${lang}&success=added`);
+
+  } catch (err) {
+    console.error(err);
+    res.redirect("/dictionary?error=failed");
+  }
 });
 
-  
+//edite
+
+app.post("/dictionary/:id/edit", mustBeLoggedIn, async (req, res) => {
+  try {
+    const { term, meaning, lang } = req.body;
+    const id = req.params.id;
+
+    if (lang === "am") {
+      await dbRun(
+        `UPDATE dictionary
+         SET term_am=$1, meaning_am=$2
+         WHERE id=$3`,
+        [term.trim(), meaning.trim(), id]
+      );
+    } else {
+      await dbRun(
+        `UPDATE dictionary
+         SET term_en=$1, meaning_en=$2
+         WHERE id=$3`,
+        [term.trim(), meaning.trim(), id]
+      );
+    }
+
+    res.redirect(`/dictionary?lang=${lang}&success=updated`);
+
+  } catch (err) {
+    console.error(err);
+    res.redirect("/dictionary?error=failed");
+  }
+});
+//delete route
+app.post("/dictionary/:id/delete", mustBeLoggedIn, async (req, res) => {
+  try {
+    await dbRun("DELETE FROM dictionary WHERE id=$1", [req.params.id]);
+    res.redirect("/dictionary?success=deleted");
+
+  } catch (err) {
+    console.error(err);
+    res.redirect("/dictionary?error=failed");
+  }
+});
+
+app.get("/dictionary/live", async (req, res) => {
+  try {
+    const q = req.query.q || "";
+
+    const results = await dbQuery(
+      `SELECT * FROM dictionary
+       WHERE term_en ILIKE $1
+          OR term_am ILIKE $1
+       ORDER BY id DESC
+       LIMIT 10`,
+      [`%${q}%`]
+    );
+
+    res.json(results);
+
+  } catch (err) {
+    console.error(err);
+    res.json([]);
+  }
+});
 
 // 6.7. Dashboard -------------------
 app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
