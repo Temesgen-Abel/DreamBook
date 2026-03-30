@@ -35,17 +35,34 @@
   <main class="wrapper page-wrapper">
     <h1>Dream Analyzer</h1>
 <div class ="dream-analyzer-form">
-    <% if (result) { %>
-      <h2>Analysis Result:</h2> the dream probability to be realized is <strong><%= result.category %>✅</strong>
+   <% if (result) { %>
+  <h2>Analysis Result:</h2>
+
+      <p>The dream probability to be realized is <strong><%= result.category %> ✅</strong></p>
+      <p>Score: <strong><%= result.score %></strong></p>
+      <p><%= result.advice %></p>
+
+      <ul>
+        <% result.explanation.forEach(item => { %>
+          <li><%= item %></li>
+        <% }) %>
+      </ul>
       <p>
-      <li><a href="/create-post">Press here</a>  to share your dream with the community for interpretation</li>
-      <li><a href="/dream-dictionary">Press here</a> to check the dream symbols in our dictionary</li>
-      <li><a href="/inbox">Press here</a> to have your dream privately interpreted</li>
+        <li><a href="/create-post">Press here</a> to share your dream with the community</li>
+        <li><a href="/dream-dictionary">Press here</a> to check dream symbols</li>
+        <li><a href="/inbox">Press here</a> for private interpretation</li>
       </p>
     <% } %>
+
+    <p>Answer the following questions to check the probability of your dream coming true:</p>
   </div>
 
     <form action="/dream-realness" method="POST">
+      <section>
+  <h2>Repeated Dream</h2>
+        <label><input type="radio" name="repeat" value="yes" required> Yes</label><br>
+        <label><input type="radio" name="repeat" value="no"> No</label><br>
+      </section>
       <section>
         <h2>Timing of Dream</h2>
         <label><input type="radio" name="timing" value="evening" required> Evening</label><br>
