@@ -753,7 +753,8 @@ app.get("/dictionary", mustBeLoggedIn, async (req, res) => {
       terms,
       lang,
       user: req.user || null,
-      errors: [],
+      errors: req.query.error ? ["Failed to process request"] : [],
+      success: req.query.success || null,
       searchQuery: q
     });
 
@@ -778,7 +779,11 @@ app.get("/dictionary/search", async (req, res) => {
       description: "Explore the eDreamBook Dream Dictionary with thousands of dream symbols and their meanings.",
       canonical: "https://dreambook.com.et/dictionary",
       terms,
-      user: req.user
+      lang: req.query.lang || "en",
+      user: req.user || null,
+      errors: req.query.error ? ["Failed to process request"] : [],
+      success: req.query.success || null,
+      searchQuery: q
     });
   } catch (err) {
     console.error("Dictionary search error:", err);
