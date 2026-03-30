@@ -899,15 +899,15 @@ app.get("/dictionary/live", async (req, res) => {
 // =====================================
 // DREAM ANALYZER PAGE
 // =====================================
-app.get("/dream-analysis", async (req, res) => {
+app.get("/dream-realness", async (req, res) => {
   try {
     const user = req.user || null;
 
-    res.render("dream-analysis", {
+    res.render("dream-realness", {
       lang: "en",
       title: "Dream Analyzer | DreamBook",
       description: "Discover if your dream could come true using DreamBook analyzer.",
-      canonical: "/dream-analysis",
+      canonical: "/dream-realness",
       user,
       notifications: [],
       result: null,
