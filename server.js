@@ -969,23 +969,28 @@ app.post("/dream-realness", async (req, res) => {
     // Dream Categories
     // -------------------------
     let category = "";
-    let interpretation = "";
+    let advice = "";
+    let explanation = [];
 
     if (score >= 11) {
       category = "Very High Probability 🌟";
-      interpretation = "This dream may contain a strong symbolic or prophetic meaning.";
+      advice = "This dream may contain a strong symbolic or prophetic meaning.";
+      explanation = ["High score indicates strong dream symbolism", "Consider deeper interpretation of dream elements"];
     }
     else if (score >= 8) {
       category = "Possible Dream Meaning 🔎";
-      interpretation = "Your dream may reflect important life signals or symbolic messages.";
+      advice = "Your dream may reflect important life signals or symbolic messages.";
+      explanation = ["Moderate score suggests meaningful symbolism", "Dream may carry important messages from subconscious"];
     }
     else if (score >= 5) {
       category = "Psychological Dream 🧠";
-      interpretation = "Your dream may reflect daily thoughts or subconscious processing.";
+      advice = "Your dream may reflect daily thoughts or subconscious processing.";
+      explanation = ["Dream likely reflects daily mental activity", "May be influenced by recent thoughts or experiences"];
     }
     else {
       category = "Unlikely to be Realized ❌";
-      interpretation = "This dream is most likely caused by emotions, stress, or imagination.";
+      advice = "This dream is most likely caused by emotions, stress, or imagination.";
+      explanation = ["Low score indicates dream is likely not prophetic", "Probably caused by temporary emotions or stress"];
     }
 
     res.render("dream-realness", {
@@ -999,7 +1004,8 @@ app.post("/dream-realness", async (req, res) => {
       result: {
         score,
         category,
-        interpretation
+        advice,
+        explanation
       }
     });
 
