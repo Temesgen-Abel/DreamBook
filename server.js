@@ -892,6 +892,230 @@ app.get("/dictionary/live", async (req, res) => {
   }
 });
 
+//Dream Analysis
+// ===============================
+// ADVANCED DREAM REALNESS ANALYZER
+// ===============================
+// =====================================
+// DREAM ANALYZER PAGE
+// =====================================
+app.get("/dream-analysis", async (req, res) => {
+  try {
+    const user = req.user || null;
+
+    res.render("dream-analysis", {
+      lang: "en",
+      title: "Dream Analyzer | DreamBook",
+      description: "Discover if your dream could come true using DreamBook analyzer.",
+      canonical: "/dream-analysis",
+      user,
+      notifications: [],
+      result: null,
+      noindex: false
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+});
+
+
+// =====================================
+// DREAM REALNESS ANALYZER
+// =====================================
+app.post("/dream-realness", async (req, res) => {
+
+  try {
+
+    const user = req.user || null;
+
+    const { timing, memory, health, emotion } = req.body;
+
+    let score = 0;
+
+    // -------------------------
+    // Dream Timing
+    // -------------------------
+    const timingScore = {
+      morning: 5,
+      post_midnight: 4,
+      midnight: 3,
+      evening: 1,
+      day_dream: 0
+    };
+
+    score += timingScore[timing] || 0;
+
+    // -------------------------
+    // Dream Memorability
+    // -------------------------
+    if (memory === "vivid") score += 4;
+    else score += 1;
+
+    // -------------------------
+    // Health
+    // -------------------------
+    if (health === "healthy") score += 3;
+    else score += 0;
+
+    // -------------------------
+    // Emotion
+    // -------------------------
+    if (emotion === "not_emotional") score += 3;
+    else score -= 1;
+
+    // -------------------------
+    // Dream Categories
+    // -------------------------
+    let category = "";
+    let interpretation = "";
+
+    if (score >= 11) {
+      category = "Very High Probability 🌟";
+      interpretation = "This dream may contain a strong symbolic or prophetic meaning.";
+    }
+    else if (score >= 8) {
+      category = "Possible Dream Meaning 🔎";
+      interpretation = "Your dream may reflect important life signals or symbolic messages.";
+    }
+    else if (score >= 5) {
+      category = "Psychological Dream 🧠";
+      interpretation = "Your dream may reflect daily thoughts or subconscious processing.";
+    }
+    else {
+      category = "Unlikely to be Realized ❌";
+      interpretation = "This dream is most likely caused by emotions, stress, or imagination.";
+    }
+
+    res.render("dream-analysis", {
+      lang: "en",
+      title: "Dream Analyzer | DreamBook",
+      description: "Discover if your dream could come true using DreamBook analyzer.",
+      canonical: "/dream-analysis",
+      user,
+      notifications: [],
+      noindex: false,
+      result: {
+        score,
+        category,
+        interpretation
+      }
+    });
+
+  } catch (err) {
+    console.error("Dream analyzer error:", err);
+    res.status(500).send("Server Error");
+  }
+
+});
+
+
+app.post("/dream-realness", async (req, res) => {
+  try {
+    const user = req.user || null;
+
+    const {
+      timing,
+      memory,
+      health,
+      emotion,
+      repeat
+    } = req.body;
+
+    let score = 0;
+    let explanation = [];
+
+    // ---------------- Timing ----------------
+    if (timing === "morning") {
+      score += 4;
+      explanation.push("Morning dreams are often clearer and more memorable.");
+    } else if (timing === "post_midnight") {
+      score += 3;
+      explanation.push("Post-midnight dreams may carry stronger symbolic value.");
+    } else if (timing === "midnight") {
+      score += 2;
+      explanation.push("Midnight dreams have moderate symbolic probability.");
+    } else if (timing === "evening") {
+      score += 1;
+      explanation.push("Evening dreams are often influenced by daily thoughts.");
+    } else {
+      explanation.push("Day dreams usually reflect active imagination.");
+    }
+
+    // ---------------- Memory ----------------
+    if (memory === "vivid") {
+      score += 3;
+      explanation.push("A vivid dream usually indicates stronger subconscious imprint.");
+    } else {
+      score += 1;
+      explanation.push("Weak memory lowers reliability.");
+    }
+
+    // ---------------- Health ----------------
+    if (health === "healthy") {
+      score += 2;
+      explanation.push("Healthy physical condition improves dream clarity.");
+    } else {
+      explanation.push("Illness can distort dream symbolism.");
+    }
+
+    // ---------------- Emotion ----------------
+    if (emotion === "not_emotional") {
+      score += 3;
+      explanation.push("Dream not driven by emotion may carry deeper meaning.");
+    } else {
+      explanation.push("Emotionally driven dreams often reflect stress.");
+    }
+
+    // ---------------- Repeated Dream ----------------
+    if (repeat === "yes") {
+      score += 4;
+      explanation.push("Repeated dreams often indicate stronger psychological or symbolic importance.");
+    }
+
+    // ---------------- Category ----------------
+    let category = "";
+    let advice = "";
+
+    if (score >= 13) {
+      category = "Highly Possible";
+      advice = "This dream has strong symbolic consistency and may deserve deeper interpretation.";
+    } else if (score >= 9) {
+      category = "Possible";
+      advice = "Your dream contains moderate indicators of meaningful symbolism.";
+    } else if (score >= 5) {
+      category = "Less Likely";
+      advice = "The dream may mainly reflect daily mental activity.";
+    } else {
+      category = "Unlikely";
+      advice = "This dream is probably influenced by temporary thoughts or emotions.";
+    }
+
+    // ---------------- Render ----------------
+    res.render("dream-analysis", {
+      lang: "en",
+      title: "Dream Analyzer | DreamBook",
+      description: "Discover if your dream could come true using DreamBook analyzer.",
+      canonical: "/dream-analysis",
+      user,
+      notifications: [],
+      noindex: false,
+      result: {
+        score,
+        category,
+        advice,
+        explanation
+      }
+    });
+
+  } catch (error) {
+    console.error("Advanced dream analyzer error:", error);
+    res.status(500).send("Server error");
+  }
+});
+
+
 // 6.7. Dashboard -------------------
 app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
   try {
