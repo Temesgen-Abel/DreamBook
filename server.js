@@ -988,11 +988,11 @@ app.post("/dream-realness", async (req, res) => {
       interpretation = "This dream is most likely caused by emotions, stress, or imagination.";
     }
 
-    res.render("dream-analysis", {
+    res.render("dream-realness", {
       lang: "en",
       title: "Dream Analyzer | DreamBook",
       description: "Discover if your dream could come true using DreamBook analyzer.",
-      canonical: "/dream-analysis",
+      canonical: "/dream-realness",
       user,
       notifications: [],
       noindex: false,
@@ -1093,11 +1093,11 @@ app.post("/dream-realness", async (req, res) => {
     }
 
     // ---------------- Render ----------------
-    res.render("dream-analysis", {
+    res.render("dream-realness", {
       lang: "en",
       title: "Dream Analyzer | DreamBook",
       description: "Discover if your dream could come true using DreamBook analyzer.",
-      canonical: "/dream-analysis",
+      canonical: "/dream-realness",
       user,
       notifications: [],
       noindex: false,
