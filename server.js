@@ -617,7 +617,6 @@ app.post("/login", async (req, res) => {
 
 
 //6.4 register route
-// GET: show register page
 app.get("/register", (_, res) => res.render("register", { errors: [] }));
 
 // POST: create new user
@@ -895,10 +894,7 @@ app.get("/dictionary/live", async (req, res) => {
 //Dream Analysis
 // ===============================
 // ADVANCED DREAM REALNESS ANALYZER
-// ===============================
-// =====================================
-// DREAM ANALYZER PAGE
-// =====================================
+
 app.get("/dream-realness", async (req, res) => {
   try {
     const user = req.user || null;
@@ -938,11 +934,11 @@ app.post("/dream-realness", async (req, res) => {
     // Dream Timing
     // -------------------------
     const timingScore = {
-      morning: 5,
-      post_midnight: 4,
-      midnight: 3,
+      morning: 1,
+      post_midnight: 5,
+      midnight: 5,
       evening: 1,
-      day_dream: 0
+      day_dream: 1
     };
 
     score += timingScore[timing] || 0;
@@ -1014,111 +1010,6 @@ app.post("/dream-realness", async (req, res) => {
     res.status(500).send("Server Error");
   }
 
-});
-
-
-app.post("/dream-realness", async (req, res) => {
-  try {
-    const user = req.user || null;
-
-    const {
-      timing,
-      memory,
-      health,
-      emotion,
-      repeat
-    } = req.body;
-
-    let score = 0;
-    let explanation = [];
-
-    // ---------------- Timing ----------------
-    if (timing === "morning") {
-      score += 4;
-      explanation.push("Morning dreams are often clearer and more memorable.");
-    } else if (timing === "post_midnight") {
-      score += 3;
-      explanation.push("Post-midnight dreams may carry stronger symbolic value.");
-    } else if (timing === "midnight") {
-      score += 2;
-      explanation.push("Midnight dreams have moderate symbolic probability.");
-    } else if (timing === "evening") {
-      score += 1;
-      explanation.push("Evening dreams are often influenced by daily thoughts.");
-    } else {
-      explanation.push("Day dreams usually reflect active imagination.");
-    }
-
-    // ---------------- Memory ----------------
-    if (memory === "vivid") {
-      score += 3;
-      explanation.push("A vivid dream usually indicates stronger subconscious imprint.");
-    } else {
-      score += 1;
-      explanation.push("Weak memory lowers reliability.");
-    }
-
-    // ---------------- Health ----------------
-    if (health === "healthy") {
-      score += 2;
-      explanation.push("Healthy physical condition improves dream clarity.");
-    } else {
-      explanation.push("Illness can distort dream symbolism.");
-    }
-
-    // ---------------- Emotion ----------------
-    if (emotion === "not_emotional") {
-      score += 3;
-      explanation.push("Dream not driven by emotion may carry deeper meaning.");
-    } else {
-      explanation.push("Emotionally driven dreams often reflect stress.");
-    }
-
-    // ---------------- Repeated Dream ----------------
-    if (repeat === "yes") {
-      score += 4;
-      explanation.push("Repeated dreams often indicate stronger psychological or symbolic importance.");
-    }
-
-    // ---------------- Category ----------------
-    let category = "";
-    let advice = "";
-
-    if (score >= 13) {
-      category = "Highly Possible";
-      advice = "This dream has strong symbolic consistency and may deserve deeper interpretation.";
-    } else if (score >= 9) {
-      category = "Possible";
-      advice = "Your dream contains moderate indicators of meaningful symbolism.";
-    } else if (score >= 5) {
-      category = "Less Likely";
-      advice = "The dream may mainly reflect daily mental activity.";
-    } else {
-      category = "Unlikely";
-      advice = "This dream is probably influenced by temporary thoughts or emotions.";
-    }
-
-    // ---------------- Render ----------------
-    res.render("dream-realness", {
-      lang: "en",
-      title: "Dream Analyzer | DreamBook",
-      description: "Discover if your dream could come true using DreamBook analyzer.",
-      canonical: "/dream-realness",
-      user,
-      notifications: [],
-      noindex: false,
-      result: {
-        score,
-        category,
-        advice,
-        explanation
-      }
-    });
-
-  } catch (error) {
-    console.error("Advanced dream analyzer error:", error);
-    res.status(500).send("Server error");
-  }
 });
 
 
@@ -1384,6 +1275,27 @@ app.post("/comment/:id/delete", mustBeLoggedIn, async (req, res) => {
   await dbRun("DELETE FROM comments WHERE id=$1 OR parentid=$1", [comment.id]);
   res.redirect(`/post/${comment.postid}`);
 });
+
+//Inbox routes
+
+app.get("/inbox", mustBeLoggedIn, async (req, res) => {
+  try {
+    const messages = await dbQuery(
+      `SELECT m.*, u.username AS senderUsername
+       FROM messages m
+       JOIN users u ON u.id = m.senderid
+       WHERE m.receiverid=$1
+       ORDER BY m.created_at DESC`,
+      [req.user.id]
+    );
+    res.render("inbox", { messages: messages.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+app.post("/message/:id/read", mustBeLoggedIn, async (req, res) => {}
+)
 
 // ============================
 // LIVE VIDEO + COUNSELING ROUTES
