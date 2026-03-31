@@ -1288,7 +1288,36 @@ app.get("/inbox", mustBeLoggedIn, async (req, res) => {
        ORDER BY m.createdAt DESC`,
       [req.user.id]
     );
-    res.render("inbox", { messages: messages.rows });
+
+    const users = await dbQuery(
+      `SELECT id, username FROM users WHERE id <> $1 ORDER BY username`,
+      [req.user.id]
+    );
+
+    const convMap = new Map();
+    messages.forEach(m => {
+      const senderId = m.senderid;
+      const existing = convMap.get(senderId);
+      if (!existing || new Date(m.createdAt) > new Date(existing.updatedAt)) {
+        convMap.set(senderId, {
+          id: senderId,
+          username: m.senderusername,
+          lastMessage: m.message,
+          updatedAt: m.createdAt
+        });
+      }
+    });
+
+    const conversations = Array.from(convMap.values()).sort(
+      (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+    );
+
+    res.render("inbox", {
+      conversations,
+      users,
+      user: req.user,
+      lang: req.query.lang || "en"
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");

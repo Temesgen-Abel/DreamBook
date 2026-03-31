@@ -38,7 +38,7 @@
     <form class="send-box" action="/inbox" method="POST">
       <select name="receiverId" required>
         <option value="">Select user</option>
-        <% users.forEach(u => { %>
+        <% (users || []).forEach(u => { %>
           <option value="<%= u.id %>"><%= u.username %></option>
         <% }) %>
       </select>
