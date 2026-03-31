@@ -1323,8 +1323,21 @@ app.get("/inbox", mustBeLoggedIn, async (req, res) => {
     res.status(500).send("Server error");
   }
 });
-app.post("/message/:id/read", mustBeLoggedIn, async (req, res) => {}
-)
+app.post("/message/:id/read", mustBeLoggedIn, async (req, res) => {
+
+  try {
+    const messageId = Number(req.params.id);
+    await dbRun(
+      "UPDATE messages SET is_read=true WHERE id=$1 AND receiverid=$2",
+      [messageId, req.user.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false });}
+});
+
+
 
 // ============================
 // LIVE VIDEO + COUNSELING ROUTES
