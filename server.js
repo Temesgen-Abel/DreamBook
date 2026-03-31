@@ -1323,6 +1323,36 @@ app.get("/inbox", mustBeLoggedIn, async (req, res) => {
     res.status(500).send("Server error");
   }
 });
+
+app.post("/inbox", mustBeLoggedIn, async (req, res) => {
+  try {
+    const { receiverId, message } = req.body;
+    const senderId = req.user.id;
+
+    if (!receiverId || !message || !message.trim()) {
+      return res.redirect("/inbox");
+    }
+
+    await dbRun(
+      "INSERT INTO messages (senderid, receiverid, message) VALUES ($1, $2, $3)",
+      [senderId, receiverId, message.trim()]
+    );
+
+    // Emit socket notification to receiver
+    io.to(`user_${receiverId}`).emit("new_message", {
+      senderid: senderId,
+      sendername: req.user.username,
+      message: message.trim(),
+      createdAt: new Date().toISOString()
+    });
+
+    res.redirect("/inbox");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
 app.post("/message/:id/read", mustBeLoggedIn, async (req, res) => {
 
   try {
