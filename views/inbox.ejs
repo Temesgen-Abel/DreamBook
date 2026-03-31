@@ -10,13 +10,6 @@
 
 <div class="chat-layout">
 
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <h1>Inbox</h1>
-    <h3>Online Users</h3>
-    <ul id="online-users-list"></ul>
-  </div>
- 
   <div class="chat-area">
 
     <h2>Conversations</h2>
@@ -66,7 +59,6 @@
 <script>
 (function () {
   const currentUserId = <%= JSON.stringify(user.id) %>;
-  const allUsers = <%- JSON.stringify(users) %>;
   const socket = io();
 
   /* =========================
@@ -75,42 +67,6 @@
   socket.on("connect", () => {
     if (currentUserId) socket.emit("join_room", `user_${currentUserId}`);
   });
-
-  /* =========================
-     ONLINE USERS
-  ========================= */
-  function renderOnlineUsers(list) {
-    const ul = document.getElementById("online-users-list");
-    ul.innerHTML = "";
-
-    list.forEach(userObj => {
-      const user = allUsers.find(u => String(u.id) === String(userObj.id));
-      if (!user) return;
-
-      const d = new Date(userObj.lastSeen);
-      const diffMinutes = (Date.now() - d) / 60000;
-
-      const displayText =
-        diffMinutes <= 5
-          ? "Active now"
-          : `${d.getHours().toString().padStart(2, "0")}:${d
-              .getMinutes()
-              .toString()
-              .padStart(2, "0")}`;
-
-      ul.innerHTML += `
-        <li class="user-item">
-          <a href="/chat/${user.id}">
-            <span class="online-dot"></span>
-            ${user.username}
-            <small>: ${displayText}</small>
-          </a>
-        </li>
-      `;
-    });
-  }
-
-  socket.on("online_users", renderOnlineUsers);
 
   /* =========================
      NOTIFICATIONS → INBOX
