@@ -1548,22 +1548,65 @@ io.on("connection", (socket) => {
   // =========================
   // JOIN ROOM
   // =========================
-  socket.on("join_room", ({ roomId, userId, username }) => {
-    const roomName = `room_${roomId}`;
+  socket.on("join_room", payload => {
+    // support several join styles:
+    // 1) live room object: { roomId, userId, username }
+    // 2) user room string: "user_<id>"
+    // 3) user id number/string: 123
+    if (!payload) return;
+
+    let roomName;
+    let userId;
+    let username;
+    let isLiveRoom = false;
+
+    if (typeof payload === "object" && payload !== null && payload.roomId) {
+      // live room join
+      isLiveRoom = true;
+      roomName = `room_${payload.roomId}`;
+      userId = payload.userId;
+      username = payload.username;
+
+      activePeers[socket.id] = {
+        roomId: payload.roomId,
+        userId,
+        username
+      };
+    } else if (typeof payload === "string") {
+      if (payload.startsWith("user_")) {
+        roomName = payload;
+        userId = payload.replace(/^user_/, "");
+        username = `user_${userId}`;
+      } else if (/^\d+$/.test(payload)) {
+        userId = payload;
+        roomName = `user_${payload}`;
+        username = `user_${payload}`;
+      } else {
+        roomName = payload;
+      }
+    } else if (typeof payload === "number") {
+      userId = String(payload);
+      roomName = `user_${payload}`;
+      username = `user_${payload}`;
+    } else {
+      return;
+    }
 
     socket.join(roomName);
 
-    activePeers[socket.id] = {
-      roomId,
-      userId,
-      username
-    };
+    if (!isLiveRoom) {
+      activePeers[socket.id] = {
+        roomId: null,
+        userId,
+        username
+      };
+    }
 
     const room = io.sockets.adapter.rooms.get(roomName);
     const count = room ? room.size : 1;
 
     io.to(roomName).emit("participant_update", {
-      roomId,
+      roomId: isLiveRoom ? payload.roomId : null,
       count
     });
 
@@ -1573,7 +1616,7 @@ io.on("connection", (socket) => {
       username
     });
 
-    console.log(`✅ ${username} joined ${roomName}`);
+    console.log(`✅ ${username || "anonymous"} joined ${roomName}`);
   });
 
 

@@ -11,7 +11,9 @@
   ========================= */
   // use a separate variable so we can also create a meeting socket on the same page
   const notifSocket = io();
-  notifSocket.emit("join_room", "user_<%= user ? user.id : '' %>");
+  if (<%= user ? 'true' : 'false' %> && <%= user ? user.id : 'null' %> !== null) {
+    notifSocket.emit("join_room", "user_" + <%= user.id %>);
+  }
 
   notifSocket.on("new_message", data => {
     const badge = document.getElementById("notif-count");

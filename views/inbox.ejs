@@ -73,7 +73,7 @@
      SOCKET JOIN
   ========================= */
   socket.on("connect", () => {
-    socket.emit("join_room", currentUserId);
+    if (currentUserId) socket.emit("join_room", `user_${currentUserId}`);
   });
 
   /* =========================
