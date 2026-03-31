@@ -1285,7 +1285,7 @@ app.get("/inbox", mustBeLoggedIn, async (req, res) => {
        FROM messages m
        JOIN users u ON u.id = m.senderid
        WHERE m.receiverid=$1
-       ORDER BY m.created_at DESC`,
+       ORDER BY m.createdAt DESC`,
       [req.user.id]
     );
     res.render("inbox", { messages: messages.rows });
