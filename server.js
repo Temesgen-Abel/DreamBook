@@ -1346,9 +1346,16 @@ app.get("/inbox", mustBeLoggedIn, async (req, res) => {
       (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
     );
 
+    const onlineUserIds = getOnlineUserIds();
+    const onlineUsers = await dbQuery(
+      "SELECT id, username FROM users WHERE id = ANY($1::int[]) ORDER BY username",
+      [onlineUserIds]
+    );
+
     res.render("inbox", {
       conversations,
       users,
+      onlineUsers,
       user: req.user,
       lang: req.query.lang || "en"
     });

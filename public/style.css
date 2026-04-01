@@ -465,9 +465,43 @@ button {
 ========================================================= */
 .chat-layout {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 250px 1fr;
   height: calc(100vh - var(--nav-height));
   background: var(--bg-page);
+}
+
+.online-users {
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-soft);
+  padding: var(--space-3);
+  overflow-y: auto;
+}
+
+.online-list {
+  list-style: none;
+  padding: 0;
+}
+
+.online-list li {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-1);
+}
+
+.online-list li:hover {
+  background: var(--bg-hover);
+}
+
+.online-list a {
+  margin-left: var(--space-2);
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.online-dot {
+  color: #4CAF50;
 }
 
 .sidebar {
