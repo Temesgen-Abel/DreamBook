@@ -13,11 +13,12 @@
 
 <div class="chat-layout" style="grid-template-columns: 1fr;"> 
 
+<div id="online-status"></div>
+
   <!-- CHAT AREA (same style as admin) -->
   <div class="chat-area">
 
     <h2 style="padding:10px; ">Chat with <%= otherUser.username %></h2>
-
     <!-- Messages Container -->
     <div class="messages" id="chat-list">
 
@@ -77,6 +78,18 @@ form.addEventListener("submit", () => {
 });
 
 // Incoming messages
+socket.on("online_users", users => {
+  const otherId = "<%= otherUser.id %>";
+
+  const online = users.includes(otherId);
+
+  document.getElementById("online-status").innerHTML =
+    online
+      ? "🟢 Online"
+      : "⚪ Offline";
+});
+
+
 socket.on("new_message", msg => {
   const container = document.getElementById("chat-list");
 

@@ -10,6 +10,9 @@
 
 <div class="chat-layout">
 
+  <span class="online-dot" id="online-<%= c.id %>">🟢</span>
+
+
   <div class="chat-area">
 
     <h2>Conversations</h2>
@@ -67,6 +70,22 @@
   socket.on("connect", () => {
     if (currentUserId) socket.emit("join_room", `user_${currentUserId}`);
   });
+
+
+  /* =========================
+     ONLINE STATUS
+  ========================= */
+  socket.on("online_users", users => {
+  document.querySelectorAll("[data-user-id]").forEach(li => {
+    const id = li.dataset.userId;
+    const dot = document.getElementById(`online-${id}`);
+
+    if (dot) {
+      dot.textContent = users.includes(id) ? "🟢" : "⚪";
+    }
+  });
+});
+
 
   /* =========================
      NOTIFICATIONS → INBOX

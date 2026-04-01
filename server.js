@@ -1363,24 +1363,33 @@ app.post("/inbox", mustBeLoggedIn, async (req, res) => {
     const { receiverId, message } = req.body;
     const senderId = req.user.id;
 
-    if (!receiverId || !message || !message.trim()) {
+    if (!receiverId || !message?.trim()) {
       return res.redirect("/inbox");
     }
 
-    await dbRun(
-      "INSERT INTO messages (senderid, receiverid, message) VALUES ($1, $2, $3)",
+    await pool.query(
+      `
+      INSERT INTO messages (senderid, receiverid, message, createdat)
+      VALUES ($1,$2,$3,NOW())
+      `,
       [senderId, receiverId, message.trim()]
     );
 
-    // Emit socket notification to receiver
     io.to(`user_${receiverId}`).emit("new_message", {
       senderid: senderId,
       sendername: req.user.username,
       message: message.trim(),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toLocaleTimeString()
     });
 
-    res.redirect("/inbox");
+    io.to(`user_${receiverId}`).emit("notification", {
+      fromId: senderId,
+      fromName: req.user.username,
+      preview: message.trim()
+    });
+
+    res.redirect(`/chat/${receiverId}`);
+
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
@@ -1464,26 +1473,38 @@ app.post("/chat/:id/send", mustBeLoggedIn, async (req, res) => {
     const receiverId = req.params.id;
     const { message } = req.body;
 
-    if (!message || !message.trim()) {
+    if (!message?.trim()) {
       return res.redirect(`/chat/${receiverId}`);
     }
 
     await pool.query(
       `
-      INSERT INTO messages (senderid, receiverid, message, created_at)
-      VALUES ($1, $2, $3, NOW())
+      INSERT INTO messages (senderid, receiverid, message, createdat)
+      VALUES ($1,$2,$3,NOW())
       `,
       [senderId, receiverId, message.trim()]
     );
 
+    io.to(`user_${receiverId}`).emit("new_message", {
+      senderid: senderId,
+      sendername: req.user.username,
+      message: message.trim(),
+      createdAt: new Date().toLocaleTimeString()
+    });
+
+    io.to(`user_${receiverId}`).emit("notification", {
+      fromId: senderId,
+      fromName: req.user.username,
+      preview: message.trim()
+    });
+
     res.redirect(`/chat/${receiverId}`);
 
   } catch (err) {
-    console.error("Send message error:", err);
+    console.error(err);
     res.status(500).send("Server error");
   }
 });
-
 // ============================
 // LIVE VIDEO + COUNSELING ROUTES
 // ============================
