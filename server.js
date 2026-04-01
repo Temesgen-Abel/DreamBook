@@ -1396,14 +1396,14 @@ app.get("/chat/:id", mustBeLoggedIn, async (req, res) => {
         m.message,
         m.senderid,
         u.username AS sendername,
-        TO_CHAR(m.created_at, 'HH24:MI') AS "createdAt"
+        TO_CHAR(m.createdAt, 'HH24:MI') AS "createdAt"
       FROM messages m
       JOIN users u ON u.id = m.senderid
       WHERE 
         (m.senderid = $1 AND m.receiverid = $2)
         OR
         (m.senderid = $2 AND m.receiverid = $1)
-      ORDER BY m.created_at ASC
+      ORDER BY m.createdAt ASC
       `,
       [myId, otherUserId]
     );
