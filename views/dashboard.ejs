@@ -36,6 +36,18 @@
   <button class="btn" type="submit">Post</button>
 </form>
 
+<aside class="online-users-panel" style="margin: 20px 0;padding: 12px;border: 1px solid #ddd;border-radius: 8px;background: #fff;">
+  <h3>Online users (<%= onlineUsers?.length || 0 %>)</h3>
+  <% if (onlineUsers && onlineUsers.length > 0) { %>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <% onlineUsers.forEach(u => { %>
+        <li style="margin:4px 0;"><a href="/chat/<%= u.id %>" style="text-decoration:none;">✅ <%= u.username %></a></li>
+      <% }) %>
+    </ul>
+  <% } else { %>
+    <p style="margin:0.4rem 0 0;">No users online right now.</p>
+  <% } %>
+</aside>
 
     <div class="posts-list">
       <% if (posts.length) { %>

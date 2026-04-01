@@ -1055,6 +1055,21 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
       });
     }
 
+    // Online users (from socket.io active peers)
+    const onlineUserIds = Array.from(new Set(
+      Object.values(activePeers)
+        .map(peer => peer.userId)
+        .filter(id => id !== undefined && id !== null)
+    ));
+
+    let onlineUsers = [];
+    if (onlineUserIds.length > 0) {
+      onlineUsers = await dbQuery(
+        "SELECT id, username FROM users WHERE id = ANY($1::int[]) ORDER BY username",
+        [onlineUserIds.map(id => Number(id))]
+      );
+    }
+
     // ✅ SINGLE render call
     res.render("dashboard", {
       user: req.user,
@@ -1062,6 +1077,7 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
       currentPage: page,
       totalPages,
       countReactions,
+      onlineUsers,
       user: req.user,
       request: req,      // <--- Pass req here
       lang: req.query.lang || "en",
@@ -1789,14 +1805,14 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     const peer = activePeers[socket.id];
 
-    if (peer && peer.roomId) {
+    if (!peer) return;
+
+    if (peer.roomId) {
       const roomName = `room_${peer.roomId}`;
 
       socket.to(roomName).emit("participant_left", {
         socketId: socket.id
       });
-
-      delete activePeers[socket.id];
 
       const room = io.sockets.adapter.rooms.get(roomName);
       const count = room ? room.size : 0;
@@ -1807,7 +1823,17 @@ io.on("connection", (socket) => {
       });
 
       console.log(`❌ ${socket.id} left ${roomName}`);
+    } else if (peer.userId) {
+      const roomName = `user_${peer.userId}`;
+      socket.to(roomName).emit("participant_left", {
+        socketId: socket.id,
+        userId: peer.userId,
+        username: peer.username
+      });
+      console.log(`❌ ${peer.username || peer.userId} left ${roomName}`);
     }
+
+    delete activePeers[socket.id];
   });
 
 });
