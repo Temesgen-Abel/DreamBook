@@ -16,7 +16,7 @@
   <!-- CHAT AREA (same style as admin) -->
   <div class="chat-area">
 
-    <h2 style="padding:10px, ">Chat with <%= otherUser.username %></h2>
+    <h2 style="padding:10px; ">Chat with <%= otherUser.username %></h2>
 
     <!-- Messages Container -->
     <div class="messages" id="chat-list">
@@ -28,7 +28,7 @@
 
           <div class="bubble <%= m.senderid == user.id ? 'me' : 'them' %>" data-message-id="<%= m.id %>">
             <strong><%= m.sendername %></strong><br>
-            <%- m.message %>
+            <%= m.message %>
             <br>
             <small><%= m.createdAt %></small>
           </div>

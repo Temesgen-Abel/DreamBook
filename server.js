@@ -1367,7 +1367,88 @@ app.post("/message/:id/read", mustBeLoggedIn, async (req, res) => {
     res.json({ success: false });}
 });
 
+//chat routes
+// =========================
+// CHAT PAGE ROUTE
+// =========================
+app.get("/chat/:id", requireLogin, async (req, res) => {
+  try {
+    const myId = req.user.id;
+    const otherUserId = req.params.id;
 
+    // Get other user info
+    const otherUserResult = await pool.query(
+      `SELECT id, username FROM users WHERE id = $1`,
+      [otherUserId]
+    );
+
+    if (otherUserResult.rows.length === 0) {
+      return res.status(404).send("User not found");
+    }
+
+    const otherUser = otherUserResult.rows[0];
+
+    // Load messages between two users
+    const messagesResult = await pool.query(
+      `
+      SELECT 
+        m.id,
+        m.message,
+        m.senderid,
+        u.username AS sendername,
+        TO_CHAR(m.created_at, 'HH24:MI') AS "createdAt"
+      FROM messages m
+      JOIN users u ON u.id = m.senderid
+      WHERE 
+        (m.senderid = $1 AND m.receiverid = $2)
+        OR
+        (m.senderid = $2 AND m.receiverid = $1)
+      ORDER BY m.created_at ASC
+      `,
+      [myId, otherUserId]
+    );
+
+    res.render("chat", {
+      user: req.user,
+      otherUser,
+      messages: messagesResult.rows,
+      lang: "en"
+    });
+
+  } catch (err) {
+    console.error("Chat page error:", err);
+    res.status(500).send("Server error");
+  }
+});
+
+// =========================
+// SEND MESSAGE
+// =========================
+app.post("/chat/:id/send", requireLogin, async (req, res) => {
+  try {
+    const senderId = req.user.id;
+    const receiverId = req.params.id;
+    const { message } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.redirect(`/chat/${receiverId}`);
+    }
+
+    await pool.query(
+      `
+      INSERT INTO messages (senderid, receiverid, message, created_at)
+      VALUES ($1, $2, $3, NOW())
+      `,
+      [senderId, receiverId, message.trim()]
+    );
+
+    res.redirect(`/chat/${receiverId}`);
+
+  } catch (err) {
+    console.error("Send message error:", err);
+    res.status(500).send("Server error");
+  }
+});
 
 // ============================
 // LIVE VIDEO + COUNSELING ROUTES
