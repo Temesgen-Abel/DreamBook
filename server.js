@@ -1371,7 +1371,7 @@ app.post("/message/:id/read", mustBeLoggedIn, async (req, res) => {
 // =========================
 // CHAT PAGE ROUTE
 // =========================
-app.get("/chat/:id", requireLogin, async (req, res) => {
+app.get("/chat/:id", mustBeLoggedIn, async (req, res) => {
   try {
     const myId = req.user.id;
     const otherUserId = req.params.id;
@@ -1424,7 +1424,7 @@ app.get("/chat/:id", requireLogin, async (req, res) => {
 // =========================
 // SEND MESSAGE
 // =========================
-app.post("/chat/:id/send", requireLogin, async (req, res) => {
+app.post("/chat/:id/send", mustBeLoggedIn, async (req, res) => {
   try {
     const senderId = req.user.id;
     const receiverId = req.params.id;
