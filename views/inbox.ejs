@@ -10,15 +10,13 @@
 
 <div class="chat-layout">
 
-  <span class="online-dot" id="online-<%= c.id %>">🟢</span>
-
-
   <div class="chat-area">
 
     <h2>Conversations</h2>
     <ul id="inbox-list" class="conversation-list">
       <% (conversations || []).forEach(c => { %>
         <li class="bubble them" data-user-id="<%= c.id %>">
+          <span class="online-dot" id="online-<%= c.id %>">🟢</span>
           <a href="/chat/<%= c.id %>">
             <strong><%= c.username %></strong>
             <span class="unread-badge" style="display:none;">0</span><br>
