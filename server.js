@@ -1094,6 +1094,24 @@ app.get("/dashboard", mustBeLoggedIn, async (req, res) => {
   }
 });
 
+app.get("/online-users", mustBeLoggedIn, async (req, res) => {
+  try {
+    const ids = getOnlineUserIds();
+    if (ids.length === 0) {
+      return res.json({ success: true, users: [] });
+    }
+
+    const users = await dbQuery(
+      "SELECT id, username FROM users WHERE id = ANY($1::int[]) ORDER BY username",
+      [ids]
+    );
+    res.json({ success: true, users });
+  } catch (err) {
+    console.error("Online users error:", err);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+});
+
 // 6.8. Create post -------------------
 app.get("/create-post", mustBeLoggedIn, (_, res) => res.render("create-post", {
   errors: [],
@@ -1668,7 +1686,30 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
 
 
 //socket.io setup for live video rooms
-  const activePeers = {};
+const activePeers = {};
+
+function getOnlineUserIds() {
+  return Array.from(
+    new Set(
+      Object.values(activePeers)
+        .map((peer) => Number(peer.userId))
+        .filter((id) => Number.isInteger(id) && id > 0)
+    )
+  );
+}
+
+async function broadcastOnlineUsers() {
+  const ids = getOnlineUserIds();
+  if (ids.length === 0) {
+    io.emit("online_users", []);
+    return;
+  }
+  const users = await dbQuery(
+    "SELECT id, username FROM users WHERE id = ANY($1::int[]) ORDER BY username",
+    [ids]
+  );
+  io.emit("online_users", users);
+}
 
 io.on("connection", (socket) => {
 
@@ -1744,6 +1785,9 @@ io.on("connection", (socket) => {
     });
 
     console.log(`✅ ${username || "anonymous"} joined ${roomName}`);
+
+    // Broadcast updated online users list for dashboard and other clients
+    broadcastOnlineUsers().catch((err) => console.error("broadcastOnlineUsers error:", err));
   });
 
 
@@ -1834,6 +1878,9 @@ io.on("connection", (socket) => {
     }
 
     delete activePeers[socket.id];
+
+    // Broadcast online users update after disconnect
+    broadcastOnlineUsers().catch((err) => console.error("broadcastOnlineUsers error:", err));
   });
 
 });

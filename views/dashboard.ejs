@@ -37,15 +37,18 @@
 </form>
 
 <aside class="online-users-panel" style="margin: 20px 0;padding: 12px;border: 1px solid #ddd;border-radius: 8px;background: #fff;">
-  <h3>Online users (<%= onlineUsers?.length || 0 %>)</h3>
-  <% if (onlineUsers && onlineUsers.length > 0) { %>
-    <ul style="list-style:none;padding:0;margin:0;">
+  <h3 id="online-users-title">Online users (<%= onlineUsers?.length || 0 %>)</h3>
+  <ul id="online-users-list" style="list-style:none;padding:0;margin:0;">
+    <% if (onlineUsers && onlineUsers.length > 0) { %>
       <% onlineUsers.forEach(u => { %>
         <li style="margin:4px 0;"><a href="/chat/<%= u.id %>" style="text-decoration:none;">✅ <%= u.username %></a></li>
       <% }) %>
-    </ul>
+    <% } %>
+  </ul>
+  <% if (!onlineUsers || onlineUsers.length === 0) { %>
+    <p id="online-users-empty" style="margin:0.4rem 0 0;">No users online right now.</p>
   <% } else { %>
-    <p style="margin:0.4rem 0 0;">No users online right now.</p>
+    <p id="online-users-empty" style="margin:0.4rem 0 0; display:none;">No users online right now.</p>
   <% } %>
 </aside>
 
