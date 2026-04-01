@@ -33,6 +33,38 @@
   }
 
   loadUnread();
+
+  // Online users update via socket
+  const onlineSocket = io();
+  onlineSocket.on("online_users", (users) => {
+    const title = document.getElementById("online-users-title");
+    const list = document.getElementById("online-users-list");
+    const empty = document.getElementById("online-users-empty");
+
+    if (!title || !list || !empty) return;
+
+    if (!Array.isArray(users)) return;
+
+    title.textContent = `Online users (${users.length})`;
+    list.innerHTML = "";
+
+    if (users.length === 0) {
+      empty.style.display = "block";
+      return;
+    }
+
+    empty.style.display = "none";
+    users.forEach((u) => {
+      const li = document.createElement("li");
+      li.style.margin = "4px 0";
+      const a = document.createElement("a");
+      a.href = `/chat/${u.id}`;
+      a.style.textDecoration = "none";
+      a.textContent = `✅ ${u.username}`;
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+  });
 </script>
 
 <script>
