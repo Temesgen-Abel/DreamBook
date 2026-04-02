@@ -610,7 +610,7 @@ app.get("/logout", (req, res) => {
 
 //6.3 admin login route
 
-app.post("/admin-login", async (req, res) => {
+app.post("/admin", async (req, res) => {
   const username = req.body.username?.trim();
   const password = req.body.password?.trim();
 
@@ -628,7 +628,7 @@ app.post("/admin-login", async (req, res) => {
 
   // Find the admin user in the database
   const adminUser = await dbGet(
-    "SELECT * FROM users WHERE role = 'admin' LIMIT 1"
+    "SELECT * FROM users WHERE role = 'admin' LIMIT 3"
   );
 
   if (!adminUser) {
