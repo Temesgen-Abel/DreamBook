@@ -37,7 +37,8 @@
 </form>
 
 <aside class="online-users-panel" style="margin: 20px 0;padding: 12px;border: 1px solid #ddd;border-radius: 8px;background: #fff;">
-  <h3 id="online-users-title">Online users (<%= onlineUsers?.length || 0 %>)</h3>
+  <button id="online-users-toggle" onclick="toggleOnlineUsers()" style="background:none;border:none;cursor:pointer;font-size:inherit;">Online users (<%= onlineUsers?.length || 0 %>)</button>
+  <div id="online-users-content" style="display:none;">
   <ul id="online-users-list" style="list-style:none;padding:0;margin:0;">
     <% if (onlineUsers && onlineUsers.length > 0) { %>
       <% onlineUsers.forEach(u => { %>
@@ -47,9 +48,8 @@
   </ul>
   <% if (!onlineUsers || onlineUsers.length === 0) { %>
     <p id="online-users-empty" style="margin:0.4rem 0 0;">No users online right now.</p>
-  <% } else { %>
-    <p id="online-users-empty" style="margin:0.4rem 0 0; display:none;">No users online right now.</p>
   <% } %>
+  </div>
 </aside>
 
     <div class="posts-list">
@@ -115,6 +115,12 @@
       <% } %>
     </nav>
   </main>
+  <script>
+    function toggleOnlineUsers() {
+      var content = document.getElementById('online-users-content');
+      content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    }
+  </script>
 </body>
   <%- include("includes/footer") %>
 </html>
