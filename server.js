@@ -610,9 +610,42 @@ app.get("/logout", (req, res) => {
 
 //6.3 admin login route
 
-app.post("/login", async (req, res) => {
-  // check username/password from users table 
+app.post("/admin-login", async (req, res) => {
+  const username = req.body.username?.trim();
+  const password = req.body.password?.trim();
 
+  if (!username || !password) {
+    return res.render("admin-login", {
+      errors: ["Username and password are required"]
+    });
+  }
+
+  if (username !== process.env.ADMIN_USERNAME || password !== process.env.ADMIN_PASSWORD) {
+    return res.render("admin-login", {
+      errors: ["Invalid admin credentials"]
+    });
+  }
+
+  // Find the admin user in the database
+  const adminUser = await dbGet(
+    "SELECT * FROM users WHERE role = 'admin' LIMIT 1"
+  );
+
+  if (!adminUser) {
+    return res.render("admin-login", {
+      errors: ["Admin user not found in database"]
+    });
+  }
+
+  // Issue JWT
+  const token = signToken(adminUser);
+  
+  res.cookie("eDreamBookApp", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict"
+  });
+  res.redirect("/admin");
 });
 
 
