@@ -610,7 +610,14 @@ app.get("/logout", (req, res) => {
 
 //6.3 admin login route
 
-app.post("/admin", async (req, res) => {
+app.get("/admin-login", (req, res) => {
+  res.render("admin-login", {
+    errors: [],
+    success: null
+  });
+});
+
+app.post("/admin-login", async (req, res) => {
   const username = req.body.username?.trim();
   const password = req.body.password?.trim();
 
