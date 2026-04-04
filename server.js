@@ -48,7 +48,7 @@ async function createPoolOrExit() {
   }
   pool = new Pool({
     connectionString: conn,
-    ssl: { rejectUnauthorized: false }
+    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
   });
 
   try {

@@ -198,6 +198,18 @@ const userId = <%= user.id %>;
 const hostId = <%= hostId %>;
 const username = "<%= user.username %>";
 
+// Check for WebRTC support
+if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+  alert("Your browser doesn't support video calls. Please use a modern browser like Chrome, Firefox, or Safari.");
+  window.location.href = "/live";
+}
+
+// Check for HTTPS (required for WebRTC)
+if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+  alert("Video calls require HTTPS. Please access this site over a secure connection.");
+  window.location.href = "/live";
+}
+
 const socket = io({
   transports:["websocket","polling"]
 });
@@ -207,6 +219,28 @@ let pcs = {};
 let currentFacing = "user";
 let currentVolume = 1;
 let isAudioOnly = false;
+let mediaStarted = false;
+
+// Auto-start media on page load for desktop, require click on mobile
+document.addEventListener('DOMContentLoaded', function() {
+  // Check if mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if (!isMobile) {
+    // Auto-start on desktop
+    joinRoom();
+  } else {
+    // Show start button on mobile
+    const startBtn = document.createElement('button');
+    startBtn.innerText = '🎥 Start Video Call';
+    startBtn.style.cssText = 'padding: 15px; background: #007bff; color: white; border: none; border-radius: 8px; font-size: 16px; margin: 10px; cursor: pointer;';
+    startBtn.onclick = function() {
+      joinRoom();
+      this.remove();
+    };
+    document.querySelector('.controls').prepend(startBtn);
+  }
+});
 
 function toggleAudioOnly(){
   isAudioOnly = !isAudioOnly;
@@ -239,12 +273,45 @@ function setVolume(volume){
 }
 
 async function startMedia(){
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video:{ facingMode: currentFacing },
-    audio:true
-  });
+  try {
+    // Try with preferred constraints first
+    let constraints = {
+      video: { facingMode: currentFacing },
+      audio: true
+    };
 
-  if(isAudioOnly){
+    localStream = await navigator.mediaDevices.getUserMedia(constraints);
+  } catch (error) {
+    console.warn("Preferred camera failed, trying alternatives:", error);
+
+    // Fallback 1: Try without facingMode
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      });
+      console.log("Fallback: Got media without facingMode");
+    } catch (error2) {
+      console.warn("Video failed, trying audio only:", error2);
+
+      // Fallback 2: Audio only
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({
+          video: false,
+          audio: true
+        });
+        isAudioOnly = true;
+        console.log("Fallback: Audio only mode");
+      } catch (error3) {
+        console.error("All media access failed:", error3);
+        alert("Unable to access camera or microphone. Please check permissions and try again.");
+        return;
+      }
+    }
+  }
+
+  // Apply audio-only mode if needed
+  if(isAudioOnly && localStream.getVideoTracks().length > 0){
     const videoTrack = localStream.getVideoTracks()[0];
     if(videoTrack){
       videoTrack.enabled = false;
@@ -258,23 +325,39 @@ async function startMedia(){
 
   // Apply playback action state to remote streams when ready
   setVolume(currentVolume);
+
+  // Update UI for audio-only mode
+  if(isAudioOnly){
+    localVideo.style.opacity = 0.4;
+    localVideo.style.filter = "grayscale(100%)";
+    document.getElementById("audioOnlyBtn").innerText = "🔈 Audio Only";
+  }
 }
 
 
 async function joinRoom(){
-  await startMedia();
+  try {
+    await startMedia();
 
-  socket.emit("join_room",{
-    roomId,
-    userId,
-    username
-  });
+    socket.emit("join_room",{
+      roomId,
+      userId,
+      username
+    });
+  } catch (error) {
+    console.error("Failed to join room:", error);
+    alert("Failed to access media devices. Please check your camera/microphone permissions and try again.");
+  }
 }
 
 function createPeerConnection(socketId, remoteName="Participant"){
   const pc = new RTCPeerConnection({
-    iceServers:[
-      { urls:"stun:stun.l.google.com:19302" }
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+      // Public TURN servers (you may want to use your own for production)
+      { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+      { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" }
     ]
   });
 
@@ -307,8 +390,17 @@ function createPeerConnection(socketId, remoteName="Participant"){
     remoteVideo.srcObject = event.streams[0];
     remoteVideo.volume = currentVolume;
 
-    remoteVideo.play().catch(()=>{
-      // Some browsers require user interaction to play unmuted audio. Keep tried.
+    remoteVideo.play().catch((error)=>{
+      console.warn("Autoplay failed, video will play on user interaction:", error);
+      // Add a play button for browsers that block autoplay
+      const playBtn = document.createElement('button');
+      playBtn.innerText = '▶️ Play Video';
+      playBtn.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#007bff; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;';
+      playBtn.onclick = function() {
+        remoteVideo.play();
+        this.remove();
+      };
+      wrapper.appendChild(playBtn);
     });
   };
 
@@ -320,6 +412,18 @@ function createPeerConnection(socketId, remoteName="Participant"){
         candidate:e.candidate
       });
     }
+  };
+
+  pc.oniceconnectionstatechange = ()=>{
+    console.log(`ICE connection state for ${socketId}:`, pc.iceConnectionState);
+    if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+      console.warn(`WebRTC connection failed for ${socketId}`);
+      // Could show a reconnection message here
+    }
+  };
+
+  pc.onconnectionstatechange = ()=>{
+    console.log(`Connection state for ${socketId}:`, pc.connectionState);
   };
 
   return pc;
@@ -484,19 +588,24 @@ async function switchCamera(){
   localStream.getTracks().forEach(track=>track.stop());
   currentFacing = currentFacing==="user" ? "environment" : "user";
 
-  await startMedia();
+  try {
+    await startMedia();
 
-  Object.values(pcs).forEach(pc=>{
-    const senders = pc.getSenders().filter(sender=>sender.track && sender.track.kind === 'video');
-    const newVideoTrack = localStream.getVideoTracks()[0];
-    if(newVideoTrack){
-      if(senders.length){
-        senders.forEach(sender=>sender.replaceTrack(newVideoTrack));
-      } else {
-        pc.addTrack(newVideoTrack, localStream);
+    Object.values(pcs).forEach(pc=>{
+      const senders = pc.getSenders().filter(sender=>sender.track && sender.track.kind === 'video');
+      const newVideoTrack = localStream.getVideoTracks()[0];
+      if(newVideoTrack){
+        if(senders.length){
+          senders.forEach(sender=>sender.replaceTrack(newVideoTrack));
+        } else {
+          pc.addTrack(newVideoTrack, localStream);
+        }
       }
-    }
-  });
+    });
+  } catch (error) {
+    console.error("Camera switch failed:", error);
+    alert("Unable to switch camera. This device may not support camera switching.");
+  }
 }
 
 function endLive(){
