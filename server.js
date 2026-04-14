@@ -1914,7 +1914,7 @@ io.on("connection", (socket) => {
   // =========================
   // DISCONNECT
   // =========================
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     const peer = activePeers[socket.id];
 
     if (!peer) return;
@@ -1935,6 +1935,31 @@ io.on("connection", (socket) => {
       });
 
       console.log(`❌ ${socket.id} left ${roomName}`);
+
+      // Check if the disconnecting user is the host and auto-end the meeting
+      try {
+        const sessionResult = await pool.query(
+          "SELECT id FROM video_sessions WHERE room_id = $1 AND user_id = $2",
+          [peer.roomId, peer.userId]
+        );
+
+        if (sessionResult.rows.length > 0) {
+          const meetingId = sessionResult.rows[0].id;
+          await pool.query(
+            "DELETE FROM video_sessions WHERE id = $1",
+            [meetingId]
+          );
+          console.log(`✅ Meeting ${meetingId} auto-ended (host disconnected)`);
+
+          // Notify all participants in the room that the meeting has ended
+          io.to(roomName).emit("meeting_ended", {
+            roomId: peer.roomId,
+            reason: "Host disconnected"
+          });
+        }
+      } catch (err) {
+        console.error("Error auto-ending meeting on host disconnect:", err);
+      }
     } else if (peer.userId) {
       const roomName = `user_${peer.userId}`;
       socket.to(roomName).emit("participant_left", {

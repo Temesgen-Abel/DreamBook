@@ -144,6 +144,16 @@ socket.on("participant_left", (data) => {
 });
 
 <% } }) %>
+
+// Handle meeting ended event
+socket.on("meeting_ended", (data) => {
+  // Remove the meeting from the UI
+  const meetingElement = document.querySelector(`[data-room="${data.roomId}"]`);
+  if(meetingElement) {
+    meetingElement.remove();
+  }
+});
+
 </script>
 
 </body>

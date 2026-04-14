@@ -550,6 +550,11 @@ socket.on("force_disconnect", ()=>{
   location.href="/live";
 });
 
+socket.on("meeting_ended", ({ roomId, reason })=>{
+  alert(`Meeting has ended: ${reason}`);
+  location.href="/live";
+});
+
 function muteAll(){
   Object.keys(pcs).forEach(socketId=>{
     socket.emit("mute_participant",{ socketId });
