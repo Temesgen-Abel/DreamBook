@@ -58,7 +58,7 @@ button:hover{ background:#0056b3; }
 
 <% }) %>
 <% } else { %>
-<p>No live discussions available now.</p>
+<p id="no-live-meetings">No live discussions available now.</p>
 <% } %>
 
 </div>
@@ -69,6 +69,18 @@ button:hover{ background:#0056b3; }
 const socket = io({
   transports: ["websocket", "polling"]
 });
+
+function updateLiveDashboardState() {
+  const meetingElements = document.querySelectorAll('.meeting');
+  const noLiveElement = document.getElementById('no-live-meetings');
+  if (meetingElements.length === 0) {
+    if (noLiveElement) noLiveElement.style.display = 'block';
+  } else {
+    if (noLiveElement) noLiveElement.style.display = 'none';
+  }
+}
+
+updateLiveDashboardState();
 
 // =========================
 // PARTICIPANT COUNT UPDATE
@@ -151,6 +163,7 @@ socket.on("meeting_ended", (data) => {
   const meetingElement = document.querySelector(`[data-room="${data.roomId}"]`);
   if(meetingElement) {
     meetingElement.remove();
+    updateLiveDashboardState();
   }
 });
 
