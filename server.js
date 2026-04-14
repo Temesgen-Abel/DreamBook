@@ -1723,7 +1723,7 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
     }
 
     const result = await pool.query(
-      "SELECT id, user_id AS host_id FROM video_sessions WHERE id = $1::int",
+      "SELECT id, user_id AS host_id, room_id FROM video_sessions WHERE id = $1::int",
       [meetingId]
     );
 
@@ -1743,6 +1743,12 @@ app.post("/end-meeting/:id", mustBeLoggedIn, async (req, res) => {
     );
 
     console.log(`✅ Meeting ${meetingId} ended`);
+
+    // Notify all clients that the meeting has ended
+    io.emit("meeting_ended", {
+      roomId: meeting.room_id,
+      reason: "Manually ended by host"
+    });
 
     return res.redirect("/live");
 
@@ -1951,8 +1957,8 @@ io.on("connection", (socket) => {
           );
           console.log(`✅ Meeting ${meetingId} auto-ended (host disconnected)`);
 
-          // Notify all participants in the room that the meeting has ended
-          io.to(roomName).emit("meeting_ended", {
+          // Notify all clients that the meeting has ended
+          io.emit("meeting_ended", {
             roomId: peer.roomId,
             reason: "Host disconnected"
           });
