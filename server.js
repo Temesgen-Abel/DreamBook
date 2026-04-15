@@ -633,15 +633,23 @@ app.post("/admin-login", async (req, res) => {
     });
   }
 
-  // Find the admin user in the database
-  const adminUser = await dbGet(
-    "SELECT * FROM users WHERE role = 'admin' LIMIT 3"
+  // Find the admin user in the database by the configured admin username.
+  let adminUser = await dbGet(
+    "SELECT * FROM users WHERE username = $1 LIMIT 1",
+    [process.env.ADMIN_USERNAME]
   );
 
+  if (adminUser && adminUser.role !== "admin") {
+    await dbRun("UPDATE users SET role = 'admin' WHERE id = $1", [adminUser.id]);
+    adminUser.role = "admin";
+  }
+
   if (!adminUser) {
-    return res.render("admin-login", {
-      errors: ["Admin user not found in database"]
-    });
+    const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
+    adminUser = await dbGet(
+      `INSERT INTO users (username, password, role) VALUES ($1, $2, 'admin') RETURNING *`,
+      [process.env.ADMIN_USERNAME, hashedPassword]
+    );
   }
 
   // Issue JWT
